@@ -4,5 +4,28 @@
   },
   "scripts": {
     "test": "jest"
-  }
+  },
+  "name": "chat-rpg-backend",
+  "version": "1.0.0",
+  "description": "Backend for the chat RPG Twitch extension",
+  "main": "main.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "express": "^4.18.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monkeylig/Chat-RPG-Backend.git"
+  },
+  "keywords": [
+    "twitch"
+  ],
+  "author": "Justin Hardin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/monkeylig/Chat-RPG-Backend/issues"
+  },
+  "homepage": "https://github.com/monkeylig/Chat-RPG-Backend#readme"
 }

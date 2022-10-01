@@ -1,6 +1,13 @@
 const fs = require('fs/promises');
 const IBackendDataSource = require("./backend-data-source")
 
+/**
+ * Data Source structure
+ * {
+ *  starting_avatars: ['avatar-filename'(string), 'avatar-filename'(string), 'avatar-filename'(string)]
+ * }
+ */
+
 class FileSystemDataSource extends IBackendDataSource {
     static defaultDataSourceFileName = './data-source.json';
     dataSource;
@@ -25,10 +32,11 @@ class FileSystemDataSource extends IBackendDataSource {
         let fileHandle;
     
         try {
-            fileHandle = await fs.open(this.#dataSourcePath, 'r');
+            fileHandle = await fs.open(this.#dataSourcePath, 'a+');
             let fileContent = await fileHandle.readFile({encoding: 'UTF8'});
             if(fileContent != '')
             {
+                console.log("parcing data");
                 this.dataSource = JSON.parse(fileContent);
             }
         } catch(error) {
@@ -46,6 +54,17 @@ class FileSystemDataSource extends IBackendDataSource {
         if(!this.dataSource.hasOwnProperty("accounts"))
         {
             this.dataSource["accounts"] = [];
+        }
+    }
+
+    getStartingAvatars() {
+        const avatars = this.dataSource["starting_avatars"];
+
+        if(avatars){
+            return avatars;
+        }
+        else {
+            return {};
         }
     }
 

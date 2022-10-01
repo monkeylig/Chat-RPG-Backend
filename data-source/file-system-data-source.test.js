@@ -1,4 +1,5 @@
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const FileSystemDataSource = require('./file-system-data-source');
 
 async function getJSONFileContents(fileName) {
@@ -11,11 +12,44 @@ async function getJSONFileContents(fileName) {
         userData = JSON.parse(fileContent);
     } finally {
         await fileHandle?.close();
-        await fs.unlink(fileName);
     }
 
     return userData;
 }
+
+async function writeJSONObject(filename, obj) {
+    let fileHandle;
+    try {
+        fileHandle = await fs.open(filename, 'w');
+        await fileHandle.writeFile(JSON.stringify(obj));
+    } finally {
+        await fileHandle.close();
+    }
+}
+
+afterEach(async () => {
+    try {
+        await fs.unlink(FileSystemDataSource.defaultDataSourceFileName);
+    } catch(error) {
+    }
+  });
+  
+
+test('Testing initialization with custom filename', async () => {
+    const fileName = 'test-source.json';
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource(fileName);
+
+    testExistance = () => {
+        let fileHandle;
+        fileHandle = fsSync.openSync(fileName, 'r');
+        fsSync.closeSync(fileHandle);
+        fsSync.unlinkSync(fileName);
+    };
+
+    expect(testExistance).not.toThrow();
+
+});
 
 test('Testing adding a new account', async () => {
     const dataSource = new FileSystemDataSource();
@@ -85,4 +119,30 @@ test('Testing adding acconts with existing data', async () => {
     const userData = await getJSONFileContents(FileSystemDataSource.defaultDataSourceFileName);
 
     expect(userData["accounts"][2]).toStrictEqual(user3);
+});
+
+test('Testing getting avatars with none available', async () => {
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const avatars = dataSource.getStartingAvatars();
+
+    expect(avatars).toStrictEqual({});
+});
+
+test('Testing getting avatars', async () => {
+    
+    // Test datasource
+    goldAvatars = {
+        starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+    }
+
+    await writeJSONObject(FileSystemDataSource.defaultDataSourceFileName, goldAvatars);
+
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const avatars = dataSource.getStartingAvatars();
+
+    expect(avatars).toStrictEqual(goldAvatars.starting_avatars);
 });
