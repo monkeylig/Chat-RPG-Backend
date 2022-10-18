@@ -5,7 +5,7 @@ const fs = require('fs');
 const options = {
   hostname: 'localhost',
   port: 3000,
-  path: '/',
+  path: '/get_starting_avatars',
   method: 'GET',
   ca: fs.readFileSync('domain.crt'),
   rejectUnhauthorized : false
