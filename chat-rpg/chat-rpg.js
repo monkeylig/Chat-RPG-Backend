@@ -5,16 +5,16 @@ const chatrpg = {
         return avatars;
     },
 
-    async addNewPlayer(datasource, name, avatar) {
+    async addNewPlayer(datasource, name, avatar, twitchId) {
         const player = {
             name: name,
             avatar: avatar,
+            twichId: twitchId,
             level: 1,
             attack: 1,
             magic_attack: 1,
             defence: 1,
             health: 10
-
         }
 
         try {

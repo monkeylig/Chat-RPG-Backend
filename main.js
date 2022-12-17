@@ -14,6 +14,7 @@ function setStandardHeaders(res) {
 function startServer(dataSource) {
     console.log('starting server');
     const app = express();
+    app.use(express.json());
     const port = 3000;
 
     const options = {
@@ -32,6 +33,11 @@ function startServer(dataSource) {
         avatars = chatrpg.getStartingAvatars(dataSource);
         res.status(200);
         res.send(JSON.stringify(avatars));
+    });
+
+    app.put('/create_new_player', (req, res) => {
+        setStandardHeaders(res);
+        console.log(req.body);
     });
 
     let server = https.createServer(options, app);

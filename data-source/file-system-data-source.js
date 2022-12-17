@@ -5,6 +5,9 @@ const IBackendDataSource = require("./backend-data-source")
  * Data Source structure
  * {
  *  starting_avatars: ['avatar-filename'(string), 'avatar-filename'(string), 'avatar-filename'(string)]
+ *  accounts: [
+ *              account: {name, twitchId, avatar, level}
+ *            ]
  * }
  */
 
@@ -36,7 +39,6 @@ class FileSystemDataSource extends IBackendDataSource {
             let fileContent = await fileHandle.readFile({encoding: 'UTF8'});
             if(fileContent != '')
             {
-                console.log("parcing data");
                 this.dataSource = JSON.parse(fileContent);
             }
         } catch(error) {
