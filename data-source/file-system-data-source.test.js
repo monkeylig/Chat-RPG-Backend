@@ -33,7 +33,21 @@ afterEach(async () => {
     } catch(error) {
     }
   });
-  
+
+test('Testing initialization with default filename', async () => {
+    const fileName = FileSystemDataSource.defaultDataSourceFileName;
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    testExistance = () => {
+        let fileHandle;
+        fileHandle = fsSync.openSync(fileName, 'r');
+        fsSync.closeSync(fileHandle);
+        fsSync.unlinkSync(fileName);
+    };
+
+    expect(testExistance).not.toThrow();
+});
 
 test('Testing initialization with custom filename', async () => {
     const fileName = 'test-source.json';
@@ -51,7 +65,7 @@ test('Testing initialization with custom filename', async () => {
 
 });
 
-test('Testing adding a new account', async () => {
+test('Testing adding a new account (legacy)', async () => {
     const dataSource = new FileSystemDataSource();
     await dataSource.initializeDataSource();
     const user = {
@@ -66,7 +80,7 @@ test('Testing adding a new account', async () => {
 
 });
 
-test('Testing adding multiple accounts', async () => {
+test('Testing adding multiple accounts (legacy)', async () => {
     const dataSource = new FileSystemDataSource();
     await dataSource.initializeDataSource();
 
@@ -85,11 +99,12 @@ test('Testing adding multiple accounts', async () => {
 
     const userData = await getJSONFileContents(FileSystemDataSource.defaultDataSourceFileName);
 
+    expect(userData.accounts.length).toEqual(2);
     expect(userData["accounts"][0]).toStrictEqual(user1);
     expect(userData["accounts"][1]).toStrictEqual(user2);
 });
 
-test('Testing adding acconts with existing data', async () => {
+test('Testing adding accounts with existing data (legacy)', async () => {
     let dataSource = new FileSystemDataSource();
     await dataSource.initializeDataSource();
 
@@ -121,16 +136,16 @@ test('Testing adding acconts with existing data', async () => {
     expect(userData["accounts"][2]).toStrictEqual(user3);
 });
 
-test('Testing getting avatars with none available', async () => {
+test('Testing getting avatars with none available (legacy)', async () => {
     const dataSource = new FileSystemDataSource();
     await dataSource.initializeDataSource();
 
-    const avatars = dataSource.getStartingAvatars();
+    const avatars = await dataSource.getStartingAvatars();
 
     expect(avatars).toStrictEqual({});
 });
 
-test('Testing getting avatars', async () => {
+test('Testing getting avatars (legacy)', async () => {
     
     // Test datasource
     goldAvatars = {
@@ -142,7 +157,191 @@ test('Testing getting avatars', async () => {
     const dataSource = new FileSystemDataSource();
     await dataSource.initializeDataSource();
 
-    const avatars = dataSource.getStartingAvatars();
+    const avatars = await dataSource.getStartingAvatars();
 
     expect(avatars).toStrictEqual(goldAvatars.starting_avatars);
+});
+
+test('Testing getting empty collection', async () => {
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const avatars = await dataSource.getCollection('starting_avatars');
+
+    expect(avatars).toStrictEqual([]);
+});
+
+test('Testing getting populated collection', async () => {
+    
+    // Test datasource
+    goldAvatars = {
+        starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+    }
+
+    await writeJSONObject(FileSystemDataSource.defaultDataSourceFileName, goldAvatars);
+
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const avatars = await dataSource.getCollection('starting_avatars');
+
+    expect(avatars).toStrictEqual(goldAvatars.starting_avatars);
+});
+
+test('Testing adding a new document to collection', async () => {
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22
+    }; 
+
+    const newUser = await dataSource.addDocumentToCollection(user, 'accounts');
+
+    user._id = newUser._id;
+    
+    expect(newUser).toStrictEqual(user);
+
+});
+
+test('Testing adding multiple documents to collection', async () => {
+    const dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+
+    const userData = await getJSONFileContents(FileSystemDataSource.defaultDataSourceFileName);
+
+    expect(userData.accounts.length).toEqual(2);
+    expect(userData["accounts"][0]).toStrictEqual(user1);
+    expect(userData["accounts"][1]).toStrictEqual(user2);
+});
+
+test('Testing adding multiple documents to collection with custom filename', async () => {
+    const dataSource = new FileSystemDataSource();
+    const filename = './private-game.json';
+    await dataSource.initializeDataSource(filename);
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+
+    const userData = await getJSONFileContents(filename);
+
+    expect(userData.accounts.length).toEqual(2);
+    expect(userData["accounts"][0]).toStrictEqual(user1);
+    expect(userData["accounts"][1]).toStrictEqual(user2);
+
+    cleanup = () => {
+        fsSync.unlinkSync(filename);
+    };
+
+    expect(cleanup).not.toThrow();
+});
+
+test('Testing adding documents with existing data', async () => {
+    let dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+
+    dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const newUser = await dataSource.addDocumentToCollection(user3, 'accounts');
+
+    const userData = await getJSONFileContents(FileSystemDataSource.defaultDataSourceFileName);
+    expect(userData["accounts"][2]).toStrictEqual(user3);
+});
+
+test('Testing finding document in collection', async () => {
+    let dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+    await dataSource.addDocumentToCollection(user3, 'accounts');
+
+    const targetData = await dataSource.findDocumentInCollection('ochiva', 'name', 'accounts');
+
+    expect(targetData).toStrictEqual(user2);
+});
+
+test('Testing failing to find document in collection', async () => {
+    let dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+    await dataSource.addDocumentToCollection(user3, 'accounts');
+
+    const targetData = await dataSource.findDocumentInCollection('Ben', 'name', 'accounts');
+
+    expect(targetData).toStrictEqual({});
 });

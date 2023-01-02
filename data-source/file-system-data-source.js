@@ -6,40 +6,101 @@ const IBackendDataSource = require("./backend-data-source")
  * {
  *  starting_avatars: ['avatar-filename'(string), 'avatar-filename'(string), 'avatar-filename'(string)]
  *  accounts: [
- *              account: {name, twitchId, avatar, level}
+ *              {name, twitchId, avatar, level}
  *            ]
  * }
  */
+function genId() {
+    return Math.floor(Math.random() * 10000000);
+}
 
 class FileSystemDataSource extends IBackendDataSource {
     static defaultDataSourceFileName = './data-source.json';
-    dataSource;
 
     #dataSourcePath;
 
     constructor() {
         super();
-        this.dataSource = {};
+        this.#dataSourcePath = null;
     }
 
     async initializeDataSource(path)
     {
-        if(path === undefined)
-        {
-            this.#dataSourcePath = FileSystemDataSource.defaultDataSourceFileName;
+        await this.loadDataSource(path);
+    }
+
+    async addDocumentToCollection(document, collection) {
+        const dataSource = await this.loadDataSource();
+
+        await this.verifyCollection(dataSource, collection, false);
+
+        document._id = genId();
+        dataSource[collection].push(document);
+        await this.dumpDataSource(dataSource);
+
+        return document;
+    }
+
+    async getCollection(collection) {
+        const dataSource = await this.loadDataSource();
+
+        await this.verifyCollection(dataSource, collection);
+
+        return dataSource[collection];
+    }
+
+    async findDocumentInCollection(value, macher, collection) {
+        const dataSource = await this.loadDataSource();
+
+        await this.verifyCollection(dataSource, collection);
+
+        const collectionObj = dataSource[collection];
+        for(let i = 0; i < collectionObj.length; i++) {
+            if(collectionObj[i][macher] === value) {
+                return collectionObj[i];
+            }
+        }
+        return {};
+    }
+    //#region legacy interface
+    async getStartingAvatars() {
+        let dataSource = await this.loadDataSource();
+        const avatars = dataSource.starting_avatars;
+
+        if(avatars){
+            return avatars;
         }
         else {
-            this.#dataSourcePath = path;
+            return {};
+        }
+    }
+
+    async addAccount(obj) {
+        let dataSource = await this.loadDataSource();
+        dataSource.accounts.push(obj);
+        await this.dumpDataSource(dataSource);
+    }
+    //#endregion
+
+    async loadDataSource(path) {
+        if(!this.#dataSourcePath)
+        {
+            if(path === undefined) {
+                this.#dataSourcePath = FileSystemDataSource.defaultDataSourceFileName;
+            }
+            else {
+                this.#dataSourcePath = path;
+            }
         }
 
         let fileHandle;
-    
+        let dataSource = {};
         try {
             fileHandle = await fs.open(this.#dataSourcePath, 'a+');
             let fileContent = await fileHandle.readFile({encoding: 'UTF8'});
             if(fileContent != '')
             {
-                this.dataSource = JSON.parse(fileContent);
+                dataSource = JSON.parse(fileContent);
             }
         } catch(error) {
             if (error.code == 'ENOENT')
@@ -52,32 +113,32 @@ class FileSystemDataSource extends IBackendDataSource {
         } finally {
             await fileHandle?.close();
         }
-
-        if(!this.dataSource.hasOwnProperty("accounts"))
+        
+        if(!dataSource.hasOwnProperty("accounts"))
         {
-            this.dataSource["accounts"] = [];
+            dataSource["accounts"] = [];
         }
+
+        return dataSource;
     }
 
-    getStartingAvatars() {
-        const avatars = this.dataSource["starting_avatars"];
-
-        if(avatars){
-            return avatars;
-        }
-        else {
-            return {};
-        }
-    }
-
-    async addAccount(obj) {
-        this.dataSource["accounts"].push(obj);
+    async dumpDataSource(dataSource) {
         let fileHandle;
         try {
             fileHandle = await fs.open(this.#dataSourcePath, 'w');
-            await fileHandle.writeFile(JSON.stringify(this.dataSource));
+            await fileHandle.writeFile(JSON.stringify(dataSource));
         } finally {
             fileHandle.close();
+        }
+    }
+
+    async verifyCollection(dataSource, collection, dumpSource = true) {
+        if(!dataSource.hasOwnProperty(collection))
+        {
+            dataSource[collection] = [];
+            if(dumpSource) {
+                await this.dumpDataSource(dataSource);
+            }
         }
     }
 }
