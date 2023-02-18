@@ -56,7 +56,7 @@ test('Testing filtering helper', () => {
 
 });
 
-test.only('Testing update doc', () => {
+test('Test update doc set', () => {
     const hero = {
         name: 'echo',
         power: 'copy',
@@ -66,9 +66,9 @@ test.only('Testing update doc', () => {
     const datasource = new BackendDataSource();
 
     let updateDoc = {
-        set: [
-            ['name', 'tracer']
-        ]
+        $set: {
+            name: 'tracer'
+        }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
@@ -76,10 +76,10 @@ test.only('Testing update doc', () => {
     expect(hero.name).toEqual('tracer');
 
     updateDoc = {
-        set: [
-            ['name', 'sombra'],
-            ['power', 'hack']
-        ]
+        $set: {
+            name: 'sombra',
+            power: 'hack'
+        }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
@@ -88,20 +88,30 @@ test.only('Testing update doc', () => {
     expect(hero.power).toEqual('hack');
 
     updateDoc = {
-        set: [
-            ['skin', 'OW2']
-        ]
+        $set: {
+            skin: 'OW2'
+        }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
 
     expect(hero.hasOwnProperty('skin')).toBeTruthy();
     expect(hero.skin).toEqual('OW2');
+});
 
-    updateDoc = {
-        push: [
-            ['abilities', 'q']
-        ]
+test('Testing update doc push', () => {
+    const hero = {
+        name: 'echo',
+        power: 'copy',
+        abilities: ['e', 'shift']
+    }
+
+    const datasource = new BackendDataSource();
+
+    let updateDoc = {
+        $push: {
+            abilities: ['q']
+        }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
@@ -110,11 +120,10 @@ test.only('Testing update doc', () => {
     expect(hero.abilities[2]).toEqual('q');
 
     updateDoc = {
-        push: [
-            ['enemies', 'doomfist'],
-            ['enemies', 'winston'],
-            ['emotes', 'victory']
-        ]
+        $push: {
+            enemies: ['doomfist', 'winston'],
+            emotes: ['victory']
+        }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
@@ -126,15 +135,37 @@ test.only('Testing update doc', () => {
     expect(hero.enemies[0]).toEqual('doomfist');
     expect(hero.enemies[1]).toEqual('winston');
     expect(hero.emotes[0]).toEqual('victory');
+});
 
-    updateDoc = {
-        pull: {
+test('Testing update doc pull', () => {
+    const hero = {
+        name: 'echo',
+        power: 'copy',
+        abilities: ['e', 'shift'],
+        enemies: ['doomfist', 'winston', 'cassidy', 'widowmaker']
+    }
+
+    const datasource = new BackendDataSource();
+
+    let updateDoc = {
+        $pull: {
             enemies: ['doomfist']
         }
     }
 
     datasource.applyUpdateDoc(updateDoc, hero);
-    expect(hero.enemies.length).toEqual(1);
+
+    expect(hero.enemies.length).toEqual(3);
     expect(hero.enemies[0]).toEqual('winston');
 
+    updateDoc = {
+        $pull: {
+            enemies: ['widowmaker', 'cassidy']
+        }
+    }
+
+    datasource.applyUpdateDoc(updateDoc, hero);
+
+    expect(hero.enemies.length).toEqual(1);
+    expect(hero.enemies[0]).toEqual('winston');
 });

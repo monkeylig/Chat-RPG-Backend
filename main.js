@@ -8,8 +8,19 @@ const utility = require('./utility');
 
 const dataSourceFileName = 'chat-rpg-data-source.json';
 
+const Headers = {
+    Platform: 'chat-rpg-platform'
+}
+
 function setStandardHeaders(res) {
     res.set('Access-Control-Allow-Origin', '*');
+}
+
+function internalErrorCatch(req, res, error) {
+    res.status(500);
+    responce.message = error.message;
+    responce.errorCode = 0;
+    res.send(JSON.stringify(responce));
 }
 
 function startServer(dataSource) {
@@ -39,13 +50,21 @@ function startServer(dataSource) {
         });
     });
 
+    app.options('/create_new_player', (req, res) => {
+        setStandardHeaders(res);
+        res.set('Access-Control-Allow-Methods', '*');
+        res.set('Access-Control-Allow-Headers', '*');
+        res.status(200);
+        res.send('OK');
+    });
+
     app.put('/create_new_player', (req, res) => {
         setStandardHeaders(res);
         let responce = {message: ''};
 
         const payloadParams = [
             {name: 'name', type: 'string'},
-            {name: 'twitchId', type: 'string'},
+            {name: 'playerId', type: 'string'},
             {name: 'avatar', type: 'string'}
         ];
         
@@ -58,7 +77,16 @@ function startServer(dataSource) {
             return;
         }
 
-        chatrpg.addNewPlayer(dataSource, req.body.name, req.body.avatar, req.body.twitchId)
+        if(!req.query.hasOwnProperty('platform'))
+        {
+            res.status(400);
+            responce.message = 'missing query string "platform"';
+            responce.errorCode = 2;
+            res.send(JSON.stringify(responce));
+            return;
+        }
+
+        chatrpg.addNewPlayer(dataSource, req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
         .then(succeeded => {
             if(succeeded) {
                 res.status(200);
@@ -78,22 +106,69 @@ function startServer(dataSource) {
         });
     });
 
-    app.get('/get_player', (req,res) => {
+    app.get('/get_player', (req, res) => {
         setStandardHeaders(res);
-        if(!req.query.hasOwnProperty('twitchId'))
+        let responce = {message: ''};
+        
+        const payloadParams = [
+            {name: 'platform', type: 'string'},
+            {name: 'playerId', type: 'string'}
+        ];
+
+        if(!utility.validatePayloadParameters(req.query, payloadParams))
         {
             res.status(400);
-            responce.message = 'missing query string "twitchId"';
-            responce.errorCode = 0;
+            responce.message = 'missing query string keys';
+            responce.errorCode = 1;
             res.send(JSON.stringify(responce));
             return;
         }
 
-        chatrpg.findPlayerByTwitchId(dataSource, req.query.twitchId)
+        chatrpg.findPlayerById(dataSource, req.query.playerId, req.query.platform)
         .then(player => {
             res.status(200);
             res.send(JSON.stringify(player));
+        })
+        .catch(error => {
+            res.status(500);
+            responce.message = error.message;
+            responce.errorCode = 0;
+            res.send(JSON.stringify(responce));
         });
+    });
+
+    app.post('/join_game', (req, res) => {
+        setStandardHeaders(res);
+        let responce = {message: ''};
+
+        const queryParams = [
+            {name: 'playerId', type: 'string'},
+            {name: 'gameId', type: 'string'},
+        ];
+        
+        if(!utility.validatePayloadParameters(req.query, queryParams))
+        {
+            res.status(400);
+            responce.message = 'missing query string keys';
+            responce.errorCode = 1;
+            res.send(JSON.stringify(responce));
+            return;
+        }
+
+        if(!req.header(Headers.Platform)) {
+            res.status(400);
+            responce.message = 'missing platform header';
+            responce.errorCode = 1;
+            res.send(JSON.stringify(responce));
+            return;
+        }
+
+        chatrpg.joinGame(dataSource, req.query.playerId, req.query.gameId, req.header(Headers.Platform))
+        .then(gameState => {
+            res.status(200);
+            res.send(JSON.stringify(gameState));
+
+        }, (error) => {internalErrorCatch(req, res, error);});
     });
 
     let server = https.createServer(options, app);

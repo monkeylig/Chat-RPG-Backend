@@ -62,6 +62,21 @@ class FileSystemDataSource extends IBackendDataSource {
         }
         return {};
     }
+
+    async updateDocumentInCollection(filter, updateDoc, collection) {
+        const dataSource = await this.loadDataSource();
+        await this.verifyCollection(dataSource, collection);
+        const collectionObj = dataSource[collection];
+
+        const targetDocuments = this.filterCollectionArray(filter, collectionObj);
+
+        for(const target of targetDocuments) {
+            this.applyUpdateDoc(updateDoc, target);
+        }
+
+        await this.dumpDataSource(dataSource);
+    }
+
     //#region legacy interface
     async getStartingAvatars() {
         let dataSource = await this.loadDataSource();

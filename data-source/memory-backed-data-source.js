@@ -1,5 +1,5 @@
 const fs = require('fs/promises');
-const IBackendDataSource = require("./backend-data-source")
+const {IBackendDataSource, FieldValue} = require("./backend-data-source")
 
 /**
  * Data Source structure
@@ -34,6 +34,11 @@ class MemoryBackedDataSource extends IBackendDataSource {
         }
     }
 
+    collection(name) {
+        return new MemoryDataSourceCollectionRef(this.dataSource, name);
+    }
+
+    //#region gen 2
     async addDocumentToCollection(document, collection) {
         this.verifyCollection(collection);
 
@@ -61,12 +66,23 @@ class MemoryBackedDataSource extends IBackendDataSource {
         return {};
     }
 
+    async updateDocumentInCollection(filter, updateDoc, collection) {
+        this.verifyCollection(collection);
+
+        const collectionObj = this.dataSource[collection];
+        const targetDocuments = this.filterCollectionArray(filter, collectionObj);
+
+        for(const target of targetDocuments) {
+            this.applyUpdateDoc(updateDoc, target);
+        }
+    }
+
     verifyCollection(collection) {
         if(!this.dataSource.hasOwnProperty(collection)) {
             this.dataSource[collection] = [];
         }
     }
-
+    //#endregion
     //#region Legacy Interface
     async getStartingAvatars() {
         const avatars = this.dataSource["starting_avatars"];
@@ -81,6 +97,160 @@ class MemoryBackedDataSource extends IBackendDataSource {
         this.dataSource["accounts"].push(obj);
     }
     //#endregion
+}
+
+class MemoryDataSourceCollectionRef {
+
+    constructor(dataSource, collectionName) {
+        this.dataSource = dataSource;
+        this.collectionName = collectionName;
+    }
+    async add(object) {
+        this.verifyCollection();
+
+        const id = genId().toString();
+        this.dataSource[this.collectionName][id] = object;
+        return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
+    }
+
+    doc(path) {
+        this.verifyCollection();
+
+        if(!path) {
+            const id = genId().toString();
+            return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
+        }
+
+        return new MemoryDataSourceDocumentRef(path, this.dataSource[this.collectionName]);
+    }
+
+    where(field, opStr, value) {
+        if(!this.collectionExists()) {
+            return new MemoryDataSourceQuery(field, opStr, value, {});
+        }
+
+        return new MemoryDataSourceQuery(field, opStr, value, this.dataSource[this.collectionName]);
+    }
+
+    createDocument(object, id) {
+        const newObject = Object.assign({}, object);
+        if(id) {
+            newObject._id = id;    
+        }
+        else {
+            newObject._id = genId().toString();
+        }
+        return newObject;
+    }
+
+    
+    verifyCollection() {
+        if(!this.collectionExists()) {
+            this.dataSource[this.collectionName] = {};
+        }
+    }
+
+    collectionExists() {
+        return this.dataSource.hasOwnProperty(this.collectionName);
+    }
+}
+
+class MemoryDataSourceDocumentRef {
+    id;
+
+    constructor(id, collection) {
+
+        this.id = id;
+        this.collection = collection
+    }
+
+    async get() {
+        return new MemoryDataSourceDocumentSnapshot(this.collection[this.id]);
+    }
+
+    async set(object) {
+        this.collection[this.id] = object;
+    }
+
+    async update(object) {
+        for(const field in object) {
+            const dottedFields = field.split('.');
+
+            let leafObject = this.collection[this.id];
+            for(let i=0; i < dottedFields.length - 1; i++) {
+                leafObject = leafObject[dottedFields[i]];
+            }
+
+            const targetAttribute = dottedFields[dottedFields.length - 1];
+
+            if(object[field].hasOwnProperty('fieldType')) {
+                if(object[field].fieldType == FieldValue.Arraytype) {
+                    const array1 = leafObject[targetAttribute];
+                    const array2 = object[field].arrayElements;
+                    switch(object[field].arrayOp) {
+                        case FieldValue.UnionOp:
+                            leafObject[targetAttribute] = array1.concat(array2);
+                            break;
+                        case FieldValue.RemoveOp:
+                            leafObject[targetAttribute] = array1.filter(x => !array2.includes(x));
+                            break;
+                    }
+                }
+            }
+            else {
+                leafObject[dottedFields[dottedFields.length - 1]] = object[field];
+            }
+        }
+    }
+}
+
+class MemoryDataSourceDocumentSnapshot {
+    constructor(document) {
+        this.document = document;
+    }
+
+    data() {
+        return this.document;
+    }
+}
+
+class MemoryDataSourceQuery {
+    constructor(field, opStr, value, collection) {
+        this.field = field;
+        this.opStr = opStr;
+        this.value = value;
+        this.collection = collection;
+    }
+
+    async get() {
+        const queryResults = [];
+
+        for(const document in this.collection) {
+            switch(this.opStr) {
+                case '==':
+                    if(this.collection[document][this.field] == this.value){
+                        queryResults.push(await new MemoryDataSourceDocumentRef(document, this.collection).get());
+                    }
+                    break;
+            }
+        }
+        return new MemoryDataSourceQuerySnapShot(queryResults);
+    }
+}
+
+class MemoryDataSourceQuerySnapShot {
+    empty;
+
+    constructor(queryResults) {
+        this.queryResults = queryResults;
+        this.empty = queryResults.length == 0;
+    }
+
+    forEach(callback) {
+        this.queryResults.forEach(element => {
+            callback(element);
+        });
+    }
 }
 
 module.exports = MemoryBackedDataSource;

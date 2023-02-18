@@ -7,10 +7,11 @@ async function test_create_new_player() {
     const body = {
         name: 'avenger',
         avatar: 'goat.png',
-        twitchId: Math.floor(Math.random() * 10000).toString()
+        playerId: Math.floor(Math.random() * 10000).toString()
     };
 
-    await utility.backendCall(Endpoint, 'PUT', body).then(data => {
+    const url = Endpoint + '?platform=' + 'twitch';
+    await utility.backendCall(url, 'PUT', body).then(data => {
         const responce = JSON.parse(data);
         
         if(responce.message == 'OK') {
@@ -26,7 +27,7 @@ async function test_create_new_player() {
 
     const secondTest = Endpoint + " duplicate";
     // Testing if the service will reject a player that already exists
-    await utility.backendCall(Endpoint, 'PUT', body).then(data => {
+    await utility.backendCall(url, 'PUT', body).then(data => {
         utility.fail(secondTest);
     })
     .catch(error => {

@@ -1,16 +1,13 @@
 const https = require('https');
 
-function backendCall(path, method, payload = null) {
+function backendCall(path, method, payload = null, headers = {}) {
     const netPromise = new Promise((resolve, reject) => {
-        let headers = {};
         let body = '';
         if(payload)
         {
             body = JSON.stringify(payload);
-            headers = {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body),
-            };
+            headers['Content-Type'] = 'application/json';
+            headers['Content-Length'] = Buffer.byteLength(body);
         }
 
         const options = {

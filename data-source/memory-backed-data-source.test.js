@@ -1,4 +1,4 @@
-
+const {IBackendDataSource, FieldValue} = require("./backend-data-source");
 const MemoryBackedDataSource = require('./memory-backed-data-source');
 
 test('Test initialization with initial data', async () => {
@@ -32,6 +32,7 @@ test('Test initialization with initial data', async () => {
     expect(userData[2]).toStrictEqual(user3);
 });
 
+//#region legacy
 test('Testing adding a new account (legacy)', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
@@ -124,7 +125,9 @@ test('Testing getting avatars (legacy)', async () => {
 
     expect(avatars).toStrictEqual(goldAvatars.starting_avatars);
 });
+//#endregion
 
+//#region gen 2
 test('Testing adding a new document to collection', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
@@ -268,3 +271,210 @@ test('Testing failing to find document in collection', async () => {
 
     expect(targetData).toStrictEqual({});
 });
+
+test('Testing updating documents in a collection', async () => {
+    let dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+    await dataSource.addDocumentToCollection(user3, 'accounts');
+
+    let filter = {
+        level: 13
+    };
+
+    let updateDoc = {
+        $set: {
+            level: 14
+        }
+    };
+
+    await dataSource.updateDocumentInCollection(filter, updateDoc, 'accounts');
+
+    const targetData1 = await dataSource.findDocumentInCollection('ochiva', 'name', 'accounts');
+    const targetData2 = await dataSource.findDocumentInCollection('kriskyme', 'name', 'accounts');
+    
+    expect(targetData1.level).toEqual(14);
+    expect(targetData2.level).toEqual(14);
+
+    filter = {
+        name: 'jhard'
+    }
+
+    updateDoc = {
+        $set: {
+            level: 100
+        }
+    }
+
+    await dataSource.updateDocumentInCollection(filter, updateDoc, 'accounts');
+
+    const targetData3 = await dataSource.findDocumentInCollection('jhard', 'name', 'accounts');
+
+    expect(targetData3.level).toEqual(100);
+});
+
+//#endregion
+
+//#region gen 3
+test('Testing adding a new document and retrieving it', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user = {
+        name: 'jhard',
+        level: 22
+    }; 
+
+    const newPlayer = await dataSource.collection('players').add(user);
+
+    playerPacket = await newPlayer.get();
+    player = playerPacket.data();
+
+    expect(player).toStrictEqual(user);
+});
+
+test('Testing adding a multiple documents and retrieving them', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const newPlayer1 = await dataSource.collection('players').add(user1);
+    const newPlayer2 = await dataSource.collection('players').add(user2);
+
+    player1 = (await newPlayer1.get()).data();
+    player2 = (await newPlayer2.get()).data();
+
+    expect(player1).toStrictEqual(user1);
+    expect(player2).toStrictEqual(user2);
+});
+
+test('Testing getting empty collection', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    
+    const avatarCollection = dataSource.collection('random_collection');
+
+    const avatars = (await avatarCollection.doc('random_collection').get()).data();
+
+    expect(avatars).toBeFalsy();
+    
+});
+
+test('Testing finding document in collection', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    const playerCollection = dataSource.collection('players');
+    await playerCollection.add(user1);
+    await playerCollection.add(user2);
+    await playerCollection.add(user3);
+
+    let querySnapshot = await playerCollection.where("name", "==", 'jhard').get();
+
+    expect(querySnapshot.empty).toBeFalsy();
+
+    querySnapshot.forEach(documentSnapshot => {
+        expect(documentSnapshot.data()).toStrictEqual(user1);
+    });
+
+    querySnapshot = await playerCollection.where("name", "==", 'Ben').get();
+
+    expect(querySnapshot.empty).toBeTruthy();
+});
+
+test('Testing updating a document that does not exist', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22
+    }; 
+
+    await dataSource.collection('players').doc('newPlayer').set(user);
+
+    playerPacket = await dataSource.collection('players').doc('newPlayer').get();
+    player = playerPacket.data();
+
+    expect(player).toStrictEqual(user);
+});
+
+test('Testing updating existing documents', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    }; 
+
+    const playerRef = await dataSource.collection('players').add(user);
+
+    await playerRef.update({level: 100});
+
+    let player = (await playerRef.get()).data();
+
+    expect(player.level).toBe(100);
+
+    await playerRef.update({'items.potions': 10});
+
+    player = (await playerRef.get()).data();
+
+    expect(player.items.potions).toBe(10);
+
+    await playerRef.update({'abilities': FieldValue.arrayUnion('blast')});
+
+    player = (await playerRef.get()).data();
+
+    expect(player.abilities.includes('blast')).toBeTruthy();
+
+    await playerRef.update({'abilities': FieldValue.arrayRemove('block')});
+
+    player = (await playerRef.get()).data();
+
+    expect(player.abilities.includes('block')).toBeFalsy();
+});
+//#endregion

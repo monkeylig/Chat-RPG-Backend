@@ -132,3 +132,8 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Firebase
+emulator-export/
+
+# Local testing files
+sandbox.js

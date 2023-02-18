@@ -5,15 +5,29 @@ const Collections = {
 }
 
 const AccountFields = {
-    TwitchId: 'twitchId'
+    TwitchId: 'twitchId',
+    CurrentGameId: 'currentGameId'
 }
 
 const GameFields = {
     GameId: 'gameId'    
 }
 
+const Platforms = {
+    Twitch: 'twitch'
+}
+
 function isDataSourceObject(obj) {
     return obj.hasOwnProperty('_id');
+}
+
+function getPlatformIdProperty(platform) {
+    switch (platform) {
+        case Platforms.Twitch:
+            return AccountFields.TwitchId;
+    default:
+        return '';
+    }
 }
 
 const chatrpg = {
@@ -29,11 +43,10 @@ const chatrpg = {
         return avatars;
     },
 
-    async addNewPlayer(datasource, name, avatar, twitchId) {
+    async addNewPlayer(datasource, name, avatar, platformId, platform) {
         const player = {
             name: name,
             avatar: avatar,
-            twitchId: twitchId,
             level: 1,
             attack: 1,
             magic_attack: 1,
@@ -41,8 +54,11 @@ const chatrpg = {
             health: 10
         }
 
+        const platformIdProperty = getPlatformIdProperty(platform);
+        player[platformIdProperty] = platformId;
+
         try {
-            const existingPlayer = await datasource.findDocumentInCollection(twitchId, AccountFields.TwitchId, Collections.Accounts)
+            const existingPlayer = await datasource.findDocumentInCollection(platformId, platformIdProperty, Collections.Accounts)
             
             if(existingPlayer.hasOwnProperty(AccountFields.TwitchId))
             {
@@ -57,10 +73,10 @@ const chatrpg = {
         return true;
     },
 
-    async findPlayerByTwitchId(datasource, twitchId) {
+    async findPlayerById(datasource, twitchId, platform) {
         let player = null;
         try {
-            player = await datasource.findDocumentInCollection(twitchId, AccountFields.TwitchId, Collections.Accounts);
+            player = await datasource.findDocumentInCollection(twitchId, getPlatformIdProperty(platform), Collections.Accounts);
         } catch (error) {
             throw new Error('internal Error');
         }
@@ -99,15 +115,28 @@ const chatrpg = {
         return game;
     },
 
-    async joinTwitchGame(datasource, userTwitchId, gameId) {
+    async joinGame(datasource, userId, gameId, platform) {
         //Make sure the user exists
-        const player = await this.findPlayerByTwitchId(datasource, userTwitchId);
+        const player = await this.findPlayerById(datasource, userId, platform);
        
         if(!isDataSourceObject(player)) {
             throw new Error('player ID does not exist');
         }
 
-        const game = this.verifyGameExists(datasource, gameId);
+        const game = await this.verifyGameExists(datasource, gameId);
+
+        const filter = {};
+        filter[getPlatformIdProperty(platform)] = userId;
+
+        const updateDoc = {
+            $set: {}
+        };
+        updateDoc['$set'][AccountFields.CurrentGameId] = gameId;
+
+        await datasource.updateDocumentInCollection(filter, updateDoc, Collections.Accounts);
+        player[AccountFields.CurrentGameId] = gameId;
+
+        return {player: player, game: game};
         
     }
 };

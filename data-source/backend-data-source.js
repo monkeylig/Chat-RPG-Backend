@@ -4,6 +4,13 @@ class IBackendDataSource {
         console.log("backend initializeDataSource()");
     }
 
+    //#region Gen3 interface
+    collection(name) {
+        return new IBackendDataSourceCollectionRef();
+    }
+    //#endregion
+
+    //#region Gen2
     async addDocumentToCollection(document, collection) {
         console.log("backend addDocumentToCollection()");
     }
@@ -19,21 +26,21 @@ class IBackendDataSource {
     async updateDocumentInCollection(filter, updateDoc, collection) {
         /** updateDoc format
          * {
-         *  add: [
-         *      [fieldName, newValue],
-         *      [fieldName, newValue],
+         *  $set: {
+         *      fieldName: newValue,
+         *      fieldName: newValue,
          *      ...
-         *  ],
-         *  push: [
-         *      [fieldName, newValue],
-         *      [fieldName, newValue],
+         *  },
+         *  $push: {
+         *      fieldName: newValue,
+         *      fieldName: newValue,
          *      ...
-         *  ], 
+         *  }, 
          * }
          */
         console.log("backend updateDocumentInCollection()");
     }
-
+    //#endregion
     //#region datastore helper functions
     isPropertyMatch(filter, document) {
         for(const property in filter) {
@@ -56,28 +63,30 @@ class IBackendDataSource {
     }
 
     applyUpdateDoc(updateDoc, document) {
-        if(updateDoc.hasOwnProperty('set')) {
-            const setFields = updateDoc.set;
-            for(const field of setFields) {
-                document[field[0]] = field[1];
+        if(updateDoc.hasOwnProperty('$set')) {
+            const setFields = updateDoc['$set'];
+            for(const field in setFields) {
+                document[field] = setFields[field];
             }
         }
 
-        if(updateDoc.hasOwnProperty('push')) {
-            const pushFields = updateDoc.push;
-            for(const field of pushFields) {
-                if(!document.hasOwnProperty(field[0])) {
-                    document[field[0]] = [];
+        if(updateDoc.hasOwnProperty('$push')) {
+            const pushFields = updateDoc['$push'];
+            for(const field in pushFields) {
+                if(!document.hasOwnProperty(field)) {
+                    document[field] = [];
                 }
-                document[field[0]].push(field[1]);
+                for(const item of pushFields[field]) {
+                    document[field].push(item);
+                }
             }
         }
 
-        if(updateDoc.hasOwnProperty('pull')) {
-            for(const property in updateDoc.pull) {
+        if(updateDoc.hasOwnProperty('$pull')) {
+            for(const property in updateDoc['$pull']) {
                 for(let i = document[property].length - 1; i >= 0; i--) {
-                    for(let c = 0; c < updateDoc.pull[property].length; c++) {
-                        if(document[property][i] == updateDoc.pull[property][c]) {
+                    for(let c = 0; c < updateDoc['$pull'][property].length; c++) {
+                        if(document[property][i] == updateDoc['$pull'][property][c]) {
                             document[property].splice(i, 1);
                             break;
                         }
@@ -104,4 +113,76 @@ class IBackendDataSource {
 
 }
 
-module.exports = IBackendDataSource;
+class IBackendDataSourceCollectionRef {
+    async add(object) {
+        console.log("backend add()");
+        return new IBackendDataSourceDocumentRef();
+    }
+
+    doc(path) {
+        return new IBackendDataSourceDocumentRef();
+    }
+
+    where(field, opStr, value) {
+        return new IBackendDataSourceQuery();
+    }
+}
+
+class IBackendDataSourceDocumentRef {
+    id;
+    async get() {
+        console.log("backend get()");
+        return new IBackendDataSourceDocumentSnapshot();
+    }
+
+    async set(object) {
+        console.log("backend set()");
+    }
+
+    async update(object) {
+        console.log("backend update()");
+    }
+}
+
+class IBackendDataSourceDocumentSnapshot {
+    data() {}
+}
+
+class IBackendDataSourceQuery {
+    async get() {
+        console.log("backend query get()");
+        return new IBackendDataSourceQuerySnapShot();
+    }
+}
+
+class IBackendDataSourceQuerySnapShot {
+    empty;
+    forEach(callback){}
+}
+
+class FieldValue {
+    static Arraytype = "array";
+    static UnionOp = "union";
+    static RemoveOp = "remove";
+    fieldType;
+    arrayOp;
+    arrayElements;
+    
+    static arrayUnion(...elements) {
+        const fieldValue = new FieldValue();
+        fieldValue.fieldType = this.Arraytype;
+        fieldValue.arrayOp = this.UnionOp;
+        fieldValue.arrayElements = elements;
+        return fieldValue;
+    }
+
+    static arrayRemove(...elements) {
+        const fieldValue = new FieldValue();
+        fieldValue.fieldType = this.Arraytype;
+        fieldValue.arrayOp = this.RemoveOp;
+        fieldValue.arrayElements = elements;
+        return fieldValue;
+    }
+}
+
+module.exports = {IBackendDataSource, FieldValue};

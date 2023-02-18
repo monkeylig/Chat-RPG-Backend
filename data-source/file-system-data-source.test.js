@@ -345,3 +345,61 @@ test('Testing failing to find document in collection', async () => {
 
     expect(targetData).toStrictEqual({});
 });
+
+test('Testing updating documents in a collection', async () => {
+    let dataSource = new FileSystemDataSource();
+    await dataSource.initializeDataSource();
+
+    const user1 = {
+        name: 'jhard',
+        level: 22
+    };
+
+    const user2 = {
+        name: 'ochiva',
+        level: 13
+    };
+
+    const user3 = {
+        name: 'kriskyme',
+        level: 13
+    };
+
+    await dataSource.addDocumentToCollection(user1, 'accounts');
+    await dataSource.addDocumentToCollection(user2, 'accounts');
+    await dataSource.addDocumentToCollection(user3, 'accounts');
+
+    let filter = {
+        level: 13
+    };
+
+    let updateDoc = {
+        $set: {
+            level: 14
+        }
+    };
+
+    await dataSource.updateDocumentInCollection(filter, updateDoc, 'accounts');
+
+    const targetData1 = await dataSource.findDocumentInCollection('ochiva', 'name', 'accounts');
+    const targetData2 = await dataSource.findDocumentInCollection('kriskyme', 'name', 'accounts');
+    
+    expect(targetData1.level).toEqual(14);
+    expect(targetData2.level).toEqual(14);
+
+    filter = {
+        name: 'jhard'
+    }
+
+    updateDoc = {
+        $set: {
+            level: 100
+        }
+    }
+
+    await dataSource.updateDocumentInCollection(filter, updateDoc, 'accounts');
+
+    const targetData3 = await dataSource.findDocumentInCollection('jhard', 'name', 'accounts');
+
+    expect(targetData3.level).toEqual(100);
+});
