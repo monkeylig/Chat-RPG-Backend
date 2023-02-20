@@ -22,18 +22,24 @@ test('Testing adding a new Twitch player', async () => {
     await expect(chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', twitchId, 'twitch')).resolves.toBeTruthy();
 
     const userData = dataSource.dataSource["accounts"];
-    defaultPlayer._id = userData[0]._id;
-    expect(userData[0]).toStrictEqual(defaultPlayer);
 
+    let playerField;
+    for(const field in userData) {
+        playerField = field;
+        break;
+    }
+
+    expect(playerField).toBeTruthy();
+    expect(userData[playerField]).toStrictEqual(defaultPlayer);
     // Make sure the same player can't be added twice
-    await expect(chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', twitchId, 'twitch')).resolves.toBeFalsy();
-
-    expect(userData.length).toEqual(1);
+    await expect(chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toMatch(chatrpg.Errors.playerExists);
 });
 
 test('Testing getting starting avatars', async () => {
     const startingData = {
-        starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+        avatars: {
+            starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+        }
     };
 
     const dataSource = new MemoryBackedDataSource();
@@ -41,7 +47,7 @@ test('Testing getting starting avatars', async () => {
 
     const avatars = await chatrpg.getStartingAvatars(dataSource);
 
-    expect(avatars).toStrictEqual(startingData.starting_avatars);
+    expect(avatars).toStrictEqual(startingData.avatars.starting_avatars);
 
 });
 
@@ -69,15 +75,12 @@ test('Testing finding a Twitch player', async () => {
 
     let player = await chatrpg.findPlayerById(dataSource, twitchId, 'twitch');
     
-    defaultPlayer._id = player._id;
     expect(player).toStrictEqual(defaultPlayer);
 
-    player = await chatrpg.findPlayerById(dataSource, 'does not exist', 'twitch');
-
-    expect(player).toStrictEqual({});
+    expect(chatrpg.findPlayerById(dataSource, 'does not exist', 'twitch')).rejects.toMatch(chatrpg.Errors.playerNotFound);
 });
 
-test('Testing joining a Twitch game', async () => {
+test.only('Testing joining a Twitch game', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
 

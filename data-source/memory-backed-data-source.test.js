@@ -344,7 +344,9 @@ test('Testing adding a new document and retrieving it', async () => {
 
     const newPlayer = await dataSource.collection('players').add(user);
 
-    playerPacket = await newPlayer.get();
+    const playerPacket = await newPlayer.get();
+    expect(playerPacket.exists).toBeTruthy();
+
     player = playerPacket.data();
 
     expect(player).toStrictEqual(user);
@@ -366,8 +368,8 @@ test('Testing adding a multiple documents and retrieving them', async () => {
     const newPlayer1 = await dataSource.collection('players').add(user1);
     const newPlayer2 = await dataSource.collection('players').add(user2);
 
-    player1 = (await newPlayer1.get()).data();
-    player2 = (await newPlayer2.get()).data();
+    const player1 = (await newPlayer1.get()).data();
+    const player2 = (await newPlayer2.get()).data();
 
     expect(player1).toStrictEqual(user1);
     expect(player2).toStrictEqual(user2);
@@ -379,7 +381,10 @@ test('Testing getting empty collection', async () => {
     
     const avatarCollection = dataSource.collection('random_collection');
 
-    const avatars = (await avatarCollection.doc('random_collection').get()).data();
+    const randomSnap = await avatarCollection.doc('random_collection').get();
+    expect(randomSnap.exists).toBeFalsy();
+    
+    const avatars = randomSnap.data();
 
     expect(avatars).toBeFalsy();
     
@@ -438,6 +443,23 @@ test('Testing updating a document that does not exist', async () => {
     expect(player).toStrictEqual(user);
 });
 
+test('Testing adding a new document by future refrence', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22
+    }; 
+
+    const newPlayerRef = dataSource.collection('players').doc();
+    await newPlayerRef.set(user);
+
+    playerPacket = await newPlayerRef.get();
+    player = playerPacket.data();
+
+    expect(player).toStrictEqual(user);
+});
+
 test('Testing updating existing documents', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
@@ -476,5 +498,34 @@ test('Testing updating existing documents', async () => {
     player = (await playerRef.get()).data();
 
     expect(player.abilities.includes('block')).toBeFalsy();
+});
+
+test('testing creating new documents with transactions', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    };
+
+    const playersRef = dataSource.collection('players'); 
+    await dataSource.runTransaction(async (transaction) => {
+        const query = playersRef.where('name', '==', 'jhard');
+        const querySnapshot = await transaction.get(query);
+
+        if(querySnapshot.empty) {
+            const newPlayer = playersRef.doc();
+            transaction.create(newPlayer, user);
+        }
+    });
+
+    const querySnapshot = await playersRef.where('name', '==', 'jhard').get();
+
+    expect(querySnapshot.empty).toBeFalsy();
+    expect(querySnapshot.docs[0].data()).toStrictEqual(user);
 });
 //#endregion

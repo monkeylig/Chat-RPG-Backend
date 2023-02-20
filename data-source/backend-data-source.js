@@ -8,6 +8,10 @@ class IBackendDataSource {
     collection(name) {
         return new IBackendDataSourceCollectionRef();
     }
+
+    async runTransaction(transactionFunction) {
+        console.log("backend runTransaction()");
+    }
     //#endregion
 
     //#region Gen2
@@ -145,6 +149,7 @@ class IBackendDataSourceDocumentRef {
 }
 
 class IBackendDataSourceDocumentSnapshot {
+    exists;
     data() {}
 }
 
@@ -157,7 +162,13 @@ class IBackendDataSourceQuery {
 
 class IBackendDataSourceQuerySnapShot {
     empty;
+    docs;
     forEach(callback){}
+}
+
+class IBackendDataSourceTransaction {
+    async get(refOrQuery){}
+    create(documentRef, data){}
 }
 
 class FieldValue {

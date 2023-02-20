@@ -8,7 +8,7 @@ const {IBackendDataSource, FieldValue} = require("./backend-data-source")
  * }
  */
 function genId() {
-    return Math.floor(Math.random() * 10000000);
+    return 'id' + Math.floor(Math.random() * 10000000);
 }
 
 class MemoryBackedDataSource extends IBackendDataSource {
@@ -36,6 +36,10 @@ class MemoryBackedDataSource extends IBackendDataSource {
 
     collection(name) {
         return new MemoryDataSourceCollectionRef(this.dataSource, name);
+    }
+
+    async runTransaction(transactionFunction) {
+        return await transactionFunction(new MemoryDataSourceTransaction());
     }
 
     //#region gen 2
@@ -108,7 +112,7 @@ class MemoryDataSourceCollectionRef {
     async add(object) {
         this.verifyCollection();
 
-        const id = genId().toString();
+        const id = genId();
         this.dataSource[this.collectionName][id] = object;
         return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
     }
@@ -117,7 +121,7 @@ class MemoryDataSourceCollectionRef {
         this.verifyCollection();
 
         if(!path) {
-            const id = genId().toString();
+            const id = genId();
             return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
         }
 
@@ -138,7 +142,7 @@ class MemoryDataSourceCollectionRef {
             newObject._id = id;    
         }
         else {
-            newObject._id = genId().toString();
+            newObject._id = genId();
         }
         return newObject;
     }
@@ -207,6 +211,12 @@ class MemoryDataSourceDocumentRef {
 class MemoryDataSourceDocumentSnapshot {
     constructor(document) {
         this.document = document;
+        
+        if(document) {
+            this.exists = true;
+        } else {
+            this.exists = false;
+        }
     }
 
     data() {
@@ -242,14 +252,23 @@ class MemoryDataSourceQuerySnapShot {
     empty;
 
     constructor(queryResults) {
-        this.queryResults = queryResults;
+        this.docs = queryResults;
         this.empty = queryResults.length == 0;
     }
 
     forEach(callback) {
-        this.queryResults.forEach(element => {
+        this.docs.forEach(element => {
             callback(element);
         });
+    }
+}
+
+class MemoryDataSourceTransaction {
+    async get(refOrQuery) {
+        return await refOrQuery.get();
+    }
+    create(documentRef, data) {
+        documentRef.set(data);
     }
 }
 

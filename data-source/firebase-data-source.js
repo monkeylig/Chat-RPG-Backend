@@ -16,6 +16,12 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
         let col = getFirestore().collection(name);
         return new FirebaseDataSourceCollectionRef(col);
     }
+
+    async runTransaction(transactionFunction) {
+        return await getFirestore().runTransaction(async (t) => {
+            return await transactionFunction(new FirebaseDataSourceTransaction(t));
+        });
+    }
 }
 
 class FirebaseDataSourceCollectionRef {
@@ -30,7 +36,10 @@ class FirebaseDataSourceCollectionRef {
     }
 
     doc(path) {
-        return new FirebaseDataSourceDocumentRef(this.collectionRef.doc(path));
+        if(path) {
+            return new FirebaseDataSourceDocumentRef(this.collectionRef.doc(path));
+        }
+        return new FirebaseDataSourceDocumentRef(this.collectionRef.doc());
     }
 
     where(field, opStr, value) {
@@ -78,6 +87,7 @@ class FirebaseDataSourceDocumentRef {
 class FirebaseDataSourceDocumentSnapshot {
     constructor(snapshot) {
         this.snapshot = snapshot;
+        this.exists = snapshot.exists;
     }
     data() {
         return this.snapshot.data();
@@ -90,7 +100,6 @@ class FirebaseDataSourceQuery {
     }
 
     async get() {
-        console.log("backend query get()");
         return new FirebaseDataSourceQuerySnapShot(await this.query.get());
     }
 }
@@ -100,6 +109,7 @@ class FirebaseDataSourceQuerySnapShot {
     constructor(snapshot) {
         this.snapshot = snapshot;
         this.empty = snapshot.empty;
+        this.docs = snapshot.docs;
     }
 
     forEach(callback) {
@@ -108,5 +118,26 @@ class FirebaseDataSourceQuerySnapShot {
         })
     }
 }
+
+class FirebaseDataSourceTransaction {
+
+    constructor(transaction) {
+        this.transaction = transaction;
+    }
+
+    async get(refOrQuery) {
+        if(refOrQuery.hasOwnProperty('query')) {
+            return await this.transaction.get(refOrQuery.query);
+        }
+        else if(refOrQuery.hasOwnProperty('docRef')) {
+            return await this.transaction.get(refOrQuery.docRef);
+        }
+    }
+
+    create(documentRef, data) {
+        this.transaction.create(documentRef.docRef, data);
+    }
+}
+
 
 module.exports = FirebaseDataSource;

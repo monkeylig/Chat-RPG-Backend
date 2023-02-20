@@ -1,7 +1,11 @@
 const Collections = {
-    StartingAvatars: 'starting_avatars',
+    Avatars: 'avatars',
     Accounts: 'accounts',
     Games: 'games'
+}
+
+const AvatarFields = {
+    StartingAvatars: 'starting_avatars'
 }
 
 const AccountFields = {
@@ -32,15 +36,14 @@ function getPlatformIdProperty(platform) {
 
 const chatrpg = {
 
-    async getStartingAvatars(datasource) {
-        let avatars = [];
-        try {
-            avatars = await datasource.getCollection(Collections.StartingAvatars);
-        } catch (error) {
-            throw new Error('internal Error');
-        }
+    Errors: {
+        playerExists: 'player exists',
+        playerNotFound: 'player not found'
+    },
 
-        return avatars;
+    async getStartingAvatars(datasource) {
+        const avatars = await datasource.collection(Collections.Avatars).doc(AvatarFields.StartingAvatars).get();
+        return avatars.data();
     },
 
     async addNewPlayer(datasource, name, avatar, platformId, platform) {
@@ -56,32 +59,38 @@ const chatrpg = {
 
         const platformIdProperty = getPlatformIdProperty(platform);
         player[platformIdProperty] = platformId;
+        const playersRef = datasource.collection(Collections.Accounts);
 
-        try {
-            const existingPlayer = await datasource.findDocumentInCollection(platformId, platformIdProperty, Collections.Accounts)
-            
-            if(existingPlayer.hasOwnProperty(AccountFields.TwitchId))
-            {
-                return false;
+        const query = playersRef.where(platformIdProperty, '==', platformId);
+        const result = await datasource.runTransaction(async (transaction) => {
+            const playerQuery = await transaction.get(query);
+
+            if(!playerQuery.empty) {
+                throw new Error(this.Errors.playerExists);
             }
 
-            await datasource.addDocumentToCollection(player, Collections.Accounts);
-        } catch (error) {
-            throw new Error('internal Error');
+            const newPlayer = playersRef.doc();
+            transaction.create(newPlayer, player);
+        });
+
+        if(result == this.Errors.playerExists)
+        {
+            throw new Error(this.Errors.playerExists);
         }
 
         return true;
     },
 
-    async findPlayerById(datasource, twitchId, platform) {
-        let player = null;
-        try {
-            player = await datasource.findDocumentInCollection(twitchId, getPlatformIdProperty(platform), Collections.Accounts);
-        } catch (error) {
-            throw new Error('internal Error');
-        }
+    async findPlayerById(datasource, platformId, platform) {
+        const idProperty = getPlatformIdProperty(platform);
         
-        return player;
+        const playerQuerySnapShot = await datasource.collection(Collections.Accounts).where(idProperty, '==', platformId).get();
+        
+        if(playerQuerySnapShot.empty) {
+            throw new Error(this.Errors.playerNotFound);
+        }
+
+        return playerQuerySnapShot.docs[0].data();
     },
 
     async findGameById(datasource, gameId) {
@@ -117,26 +126,20 @@ const chatrpg = {
 
     async joinGame(datasource, userId, gameId, platform) {
         //Make sure the user exists
-        const player = await this.findPlayerById(datasource, userId, platform);
-       
-        if(!isDataSourceObject(player)) {
-            throw new Error('player ID does not exist');
-        }
+        /*const player = await this.findPlayerById(datasource, userId, platform);
 
-        const game = await this.verifyGameExists(datasource, gameId);
+        const gameRef = datasource.collection(Collections.Games).doc(gameId);
 
-        const filter = {};
-        filter[getPlatformIdProperty(platform)] = userId;
+        datasource.runTransaction(async (transaction) => {
+            const game = await transaction.get(gameRef);
 
-        const updateDoc = {
-            $set: {}
-        };
-        updateDoc['$set'][AccountFields.CurrentGameId] = gameId;
+            if(!game.exists) {
+                //TODO add game initialization code here
+                transaction.create(documentRef, data);
+            }
+        });
 
-        await datasource.updateDocumentInCollection(filter, updateDoc, Collections.Accounts);
-        player[AccountFields.CurrentGameId] = gameId;
-
-        return {player: player, game: game};
+        return {player: player, game: game};*/
         
     }
 };

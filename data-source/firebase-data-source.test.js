@@ -105,6 +105,22 @@ test('Testing updating a document that does not exist', async () => {
     expect(player).toStrictEqual(user);
 });
 
+test('Testing adding a new document by future refrence', async () => {
+    const dataSource = new FirebaseBackedDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22
+    }; 
+
+    const newPlayerRef = dataSource.collection('players').doc();
+    await newPlayerRef.set(user);
+
+    playerPacket = await newPlayerRef.get();
+    player = playerPacket.data();
+
+    expect(player).toStrictEqual(user);
+});
+
 test('Testing updating existing documents', async () => {
     const dataSource = new FirebaseBackedDataSource();
     const user = {
@@ -141,4 +157,32 @@ test('Testing updating existing documents', async () => {
     player = (await playerRef.get()).data();
 
     expect(player.abilities.includes('block')).toBeFalsy();
+});
+
+test('testing creating new documents with transactions', async () => {
+    const dataSource = new FirebaseBackedDataSource();
+    const user = {
+        name: 'Joker',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    };
+
+    const playersRef = dataSource.collection('players'); 
+    await dataSource.runTransaction(async (transaction) => {
+        const query = playersRef.where('name', '==', 'Joker');
+        const querySnapshot = await transaction.get(query);
+
+        if(querySnapshot.empty) {
+            const newPlayer = playersRef.doc();
+            transaction.create(newPlayer, user);
+        }
+    });
+
+    const querySnapshot = await playersRef.where('name', '==', 'Joker').get();
+
+    expect(querySnapshot.empty).toBeFalsy();
+    expect(querySnapshot.docs[0].data()).toStrictEqual(user);
 });
