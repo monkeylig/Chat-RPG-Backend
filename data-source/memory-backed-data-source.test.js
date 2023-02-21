@@ -333,7 +333,7 @@ test('Testing updating documents in a collection', async () => {
 //#endregion
 
 //#region gen 3
-test('Testing adding a new document and retrieving it', async () => {
+test.only('Testing adding a new document and retrieving it', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
 
@@ -346,6 +346,7 @@ test('Testing adding a new document and retrieving it', async () => {
 
     const playerPacket = await newPlayer.get();
     expect(playerPacket.exists).toBeTruthy();
+    expect(playerPacket.ref).toBe(newPlayer);
 
     player = playerPacket.data();
 

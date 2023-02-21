@@ -150,6 +150,7 @@ class IBackendDataSourceDocumentRef {
 
 class IBackendDataSourceDocumentSnapshot {
     exists;
+    ref;
     data() {}
 }
 

@@ -169,7 +169,7 @@ class MemoryDataSourceDocumentRef {
     }
 
     async get() {
-        return new MemoryDataSourceDocumentSnapshot(this.collection[this.id]);
+        return new MemoryDataSourceDocumentSnapshot(this.collection[this.id], this);
     }
 
     async set(object) {
@@ -209,9 +209,10 @@ class MemoryDataSourceDocumentRef {
 }
 
 class MemoryDataSourceDocumentSnapshot {
-    constructor(document) {
+    constructor(document, ref) {
         this.document = document;
-        
+        this.ref = ref;
+
         if(document) {
             this.exists = true;
         } else {

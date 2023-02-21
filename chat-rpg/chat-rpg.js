@@ -1,52 +1,45 @@
-const Collections = {
-    Avatars: 'avatars',
-    Accounts: 'accounts',
-    Games: 'games'
-}
 
-const AvatarFields = {
-    StartingAvatars: 'starting_avatars'
-}
+class ChatRPG {
+    #datasource;
 
-const AccountFields = {
-    TwitchId: 'twitchId',
-    CurrentGameId: 'currentGameId'
-}
-
-const GameFields = {
-    GameId: 'gameId'    
-}
-
-const Platforms = {
-    Twitch: 'twitch'
-}
-
-function isDataSourceObject(obj) {
-    return obj.hasOwnProperty('_id');
-}
-
-function getPlatformIdProperty(platform) {
-    switch (platform) {
-        case Platforms.Twitch:
-            return AccountFields.TwitchId;
-    default:
-        return '';
+    static Collections = {
+        Avatars: 'avatars',
+        Accounts: 'accounts',
+        Games: 'games'
     }
-}
+    
+    static AvatarFields = {
+        StartingAvatars: 'starting_avatars'
+    }
+    
+    static AccountFields = {
+        TwitchId: 'twitchId',
+        CurrentGameId: 'currentGameId'
+    }
+    
+    static GameFields = {
+        GameId: 'gameId'    
+    }
+    
+    static Platforms = {
+        Twitch: 'twitch'
+    }
 
-const chatrpg = {
-
-    Errors: {
+    static Errors = {
         playerExists: 'player exists',
         playerNotFound: 'player not found'
-    },
+    }
 
-    async getStartingAvatars(datasource) {
-        const avatars = await datasource.collection(Collections.Avatars).doc(AvatarFields.StartingAvatars).get();
+    constructor(datasource) {
+        this.#datasource = datasource;
+    }
+
+    async getStartingAvatars() {
+        const avatars = await this.#datasource.collection(ChatRPG.Collections.Avatars).doc(ChatRPG.AvatarFields.StartingAvatars).get();
         return avatars.data();
-    },
+    }
 
-    async addNewPlayer(datasource, name, avatar, platformId, platform) {
+    async addNewPlayer(name, avatar, platformId, platform) {
         const player = {
             name: name,
             avatar: avatar,
@@ -57,91 +50,81 @@ const chatrpg = {
             health: 10
         }
 
-        const platformIdProperty = getPlatformIdProperty(platform);
+        const platformIdProperty = this.#getPlatformIdProperty(platform);
         player[platformIdProperty] = platformId;
-        const playersRef = datasource.collection(Collections.Accounts);
+        const playersRef = this.#datasource.collection(ChatRPG.Collections.Accounts);
 
         const query = playersRef.where(platformIdProperty, '==', platformId);
-        const result = await datasource.runTransaction(async (transaction) => {
+        const result = await this.#datasource.runTransaction(async (transaction) => {
             const playerQuery = await transaction.get(query);
 
             if(!playerQuery.empty) {
-                throw new Error(this.Errors.playerExists);
+                throw new Error(ChatRPG.Errors.playerExists);
             }
 
             const newPlayer = playersRef.doc();
             transaction.create(newPlayer, player);
         });
 
-        if(result == this.Errors.playerExists)
+        if(result == ChatRPG.Errors.playerExists)
         {
-            throw new Error(this.Errors.playerExists);
+            throw new Error(ChatRPG.Errors.playerExists);
         }
 
         return true;
-    },
+    }
 
-    async findPlayerById(datasource, platformId, platform) {
-        const idProperty = getPlatformIdProperty(platform);
-        
-        const playerQuerySnapShot = await datasource.collection(Collections.Accounts).where(idProperty, '==', platformId).get();
-        
-        if(playerQuerySnapShot.empty) {
-            throw new Error(this.Errors.playerNotFound);
-        }
+    async findPlayerById(platformId, platform) {
+        return (await this.#findPlayer(platformId, platform)).data();
+    }
 
-        return playerQuerySnapShot.docs[0].data();
-    },
-
-    async findGameById(datasource, gameId) {
-        let game = null;
-        try {
-            game = await datasource.findDocumentInCollection(gameId, GameFields.GameId, Collections.Games)
-        } catch (error) {
-            throw new Error('internal Error');
-        }
-
-        return game;
-    },
-
-    async verifyGameExists(datasource, gameId) {
-        let game = await this.findGameById(datasource, gameId);
-
-        if(isDataSourceObject(game)) {
-            return game;
-        }
-
-        const newGame = {
-            gameId: gameId
-        };
-
-        try {
-            game = await datasource.addDocumentToCollection(newGame, Collections.Games)
-        } catch (error) {
-            throw new Error('internal Error');
-        }
-
-        return game;
-    },
-
-    async joinGame(datasource, userId, gameId, platform) {
+    async joinGame(userId, gameId, platform) {
         //Make sure the user exists
-        /*const player = await this.findPlayerById(datasource, userId, platform);
+        const player = await this.#findPlayer(userId, platform);
 
-        const gameRef = datasource.collection(Collections.Games).doc(gameId);
+        const gameRef = this.#datasource.collection(ChatRPG.Collections.Games).doc(gameId);
 
-        datasource.runTransaction(async (transaction) => {
+        //TODO add game initialization code here
+        let gameData = { mode: 'default' };
+        await this.#datasource.runTransaction(async (transaction) => {
             const game = await transaction.get(gameRef);
 
             if(!game.exists) {
-                //TODO add game initialization code here
-                transaction.create(documentRef, data);
+                transaction.create(gameRef, gameData);
+            }
+            else {
+                gameData = game.data();
             }
         });
 
-        return {player: player, game: game};*/
+        const updateData = {};
+        updateData[ChatRPG.AccountFields.CurrentGameId] = gameId;
+        await player.ref.update(updateData);
+        
+        gameData[ChatRPG.GameFields.GameId] = gameRef.id;
+        return gameData;
         
     }
-};
 
-module.exports = chatrpg;
+    async #findPlayer(platformId, platform) {
+        const idProperty = this.#getPlatformIdProperty(platform);
+        
+        const playerQuerySnapShot = await this.#datasource.collection(ChatRPG.Collections.Accounts).where(idProperty, '==', platformId).get();
+        
+        if(playerQuerySnapShot.empty) {
+            throw new Error(ChatRPG.Errors.playerNotFound);
+        }
+
+        return playerQuerySnapShot.docs[0];
+    }
+    #getPlatformIdProperty(platform) {
+        switch (platform) {
+            case ChatRPG.Platforms.Twitch:
+                return ChatRPG.AccountFields.TwitchId;
+        default:
+            return '';
+        }
+    }
+}
+
+module.exports = ChatRPG;
