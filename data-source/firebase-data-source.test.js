@@ -16,6 +16,9 @@ test('Testing adding a new document and retrieving it', async () => {
     const newPlayer = await dataSource.collection('players').add(user);
 
     playerPacket = await newPlayer.get();
+    expect(playerPacket.exists).toBeTruthy();
+    expect(playerPacket.ref).toBe(newPlayer);
+
     player = playerPacket.data();
 
     expect(player).toStrictEqual(user);
@@ -48,7 +51,10 @@ test('Testing getting empty collection', async () => {
     
     const avatarCollection = dataSource.collection('random_collection');
 
-    const avatars = (await avatarCollection.doc('random_collection').get()).data();
+    const randomSnap = await avatarCollection.doc('random_collection').get();
+    expect(randomSnap.exists).toBeFalsy();
+    
+    const avatars = randomSnap.data();
 
     expect(avatars).toBeFalsy();
     

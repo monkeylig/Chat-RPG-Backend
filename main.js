@@ -2,7 +2,7 @@ const https = require('https');
 const fs = require('fs');
 const express = require('express');
 
-const chatrpg = require('./chat-rpg/chat-rpg');
+const ChatRPG = require('./chat-rpg/chat-rpg');
 const FileSystemDataSource = require('./data-source/file-system-data-source');
 const utility = require('./utility');
 
@@ -25,10 +25,13 @@ function internalErrorCatch(req, res, error) {
 
 function startServer(dataSource) {
     console.log('starting server');
+
     const app = express();
     app.use(express.json());
     app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
     const port = 3000;
+
+    const chatrpg = new ChatRPG(dataSource);
 
     const options = {
         key: fs.readFileSync('yourdomain.key'),
@@ -44,7 +47,7 @@ function startServer(dataSource) {
     app.get('/get_starting_avatars', (req, res) => {
         setStandardHeaders(res);
         
-        chatrpg.getStartingAvatars(dataSource).then((avatars) => {
+        chatrpg.getStartingAvatars().then((avatars) => {
             res.status(200);
             res.send(JSON.stringify(avatars));
         });
@@ -86,7 +89,7 @@ function startServer(dataSource) {
             return;
         }
 
-        chatrpg.addNewPlayer(dataSource, req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
+        chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
         .then(succeeded => {
             if(succeeded) {
                 res.status(200);
@@ -124,7 +127,7 @@ function startServer(dataSource) {
             return;
         }
 
-        chatrpg.findPlayerById(dataSource, req.query.playerId, req.query.platform)
+        chatrpg.findPlayerById(req.query.playerId, req.query.platform)
         .then(player => {
             res.status(200);
             res.send(JSON.stringify(player));
@@ -163,7 +166,7 @@ function startServer(dataSource) {
             return;
         }
 
-        chatrpg.joinGame(dataSource, req.query.playerId, req.query.gameId, req.header(Headers.Platform))
+        chatrpg.joinGame(req.query.playerId, req.query.gameId, req.header(Headers.Platform))
         .then(gameState => {
             res.status(200);
             res.send(JSON.stringify(gameState));

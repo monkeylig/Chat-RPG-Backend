@@ -1,9 +1,10 @@
-const chatrpg = require('./chat-rpg');
+const ChatRPG = require('./chat-rpg');
 const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
 
 test('Testing adding a new Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
+    const chatrpg = new ChatRPG(dataSource);
 
     const name = 'jhard';
     const avatar = 'big-bad.png';
@@ -19,7 +20,7 @@ test('Testing adding a new Twitch player', async () => {
         health: 10
     };
 
-    await expect(chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', twitchId, 'twitch')).resolves.toBeTruthy();
+    await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).resolves.toBeTruthy();
 
     const userData = dataSource.dataSource["accounts"];
 
@@ -32,7 +33,7 @@ test('Testing adding a new Twitch player', async () => {
     expect(playerField).toBeTruthy();
     expect(userData[playerField]).toStrictEqual(defaultPlayer);
     // Make sure the same player can't be added twice
-    await expect(chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toMatch(chatrpg.Errors.playerExists);
+    await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPG.Errors.playerExists);
 });
 
 test('Testing getting starting avatars', async () => {
@@ -44,8 +45,9 @@ test('Testing getting starting avatars', async () => {
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource(startingData);
+    const chatrpg = new ChatRPG(dataSource);
 
-    const avatars = await chatrpg.getStartingAvatars(dataSource);
+    const avatars = await chatrpg.getStartingAvatars();
 
     expect(avatars).toStrictEqual(startingData.avatars.starting_avatars);
 
@@ -54,6 +56,7 @@ test('Testing getting starting avatars', async () => {
 test('Testing finding a Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
+    const chatrpg = new ChatRPG(dataSource);
 
     const name = 'ochiva';
     const avatar = 'mid-bad.png';
@@ -69,24 +72,24 @@ test('Testing finding a Twitch player', async () => {
         health: 10
     };
 
-    await chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', 'fr4wt4', 'twitch');
-    await chatrpg.addNewPlayer(dataSource, name, avatar, twitchId, 'twitch');
-    await chatrpg.addNewPlayer(dataSource, 'kris', 'super-bad.png', 'sfdz3', 'twitch');
+    await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    await chatrpg.addNewPlayer(name, avatar, twitchId, 'twitch');
+    await chatrpg.addNewPlayer('kris', 'super-bad.png', 'sfdz3', 'twitch');
 
-    let player = await chatrpg.findPlayerById(dataSource, twitchId, 'twitch');
+    let player = await chatrpg.findPlayerById(twitchId, 'twitch');
     
     expect(player).toStrictEqual(defaultPlayer);
 
-    expect(chatrpg.findPlayerById(dataSource, 'does not exist', 'twitch')).rejects.toMatch(chatrpg.Errors.playerNotFound);
+    expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toMatch(ChatRPG.Errors.playerNotFound);
 });
 
-test.only('Testing joining a Twitch game', async () => {
+test('Testing joining a Twitch game', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
+    const chatrpg = new ChatRPG(dataSource);
 
-    await chatrpg.addNewPlayer(dataSource, 'jhard', 'big-bad.png', 'fr4wt4', 'twitch');
-    const gameState = await chatrpg.joinGame(dataSource, 'fr4wt4', 'new game', 'twitch');
+    await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    const gameState = await chatrpg.joinGame('fr4wt4', 'new game', 'twitch');
 
-    expect(gameState.game.gameId).toEqual('new game');
-    expect(gameState.player.currentGameId).toEqual('new game');
+    expect(gameState.gameId).toEqual('new game');
 });
