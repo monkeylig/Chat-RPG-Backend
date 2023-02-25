@@ -2,11 +2,12 @@ const {IBackendDataSource, FieldValue} = require("./backend-data-source");
 const FirebaseBackedDataSource = require('./firebase-data-source');
 
 beforeAll(async () => {
+    process.env.FIRESTORE_EMULATOR_HOST = "localhost:9000"
     const dataSource = new FirebaseBackedDataSource();
     await dataSource.initializeDataSource();
   });
 
-test.only('Testing adding a new document and retrieving it', async () => {
+test('Testing adding a new document and retrieving it', async () => {
     const dataSource = new FirebaseBackedDataSource();
     const user = {
         name: 'jhard',

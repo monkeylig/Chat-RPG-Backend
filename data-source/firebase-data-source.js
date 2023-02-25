@@ -9,7 +9,7 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
     }
 
     async initializeDataSource() {
-        this.app = initializeApp({ projectId: "demo-test" });
+        initializeApp({ projectId: "demo-test" });
     }
 
     collection(name) {
