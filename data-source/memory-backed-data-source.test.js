@@ -333,7 +333,7 @@ test('Testing updating documents in a collection', async () => {
 //#endregion
 
 //#region gen 3
-test.only('Testing adding a new document and retrieving it', async () => {
+test('Testing adding a new document and retrieving it', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
 

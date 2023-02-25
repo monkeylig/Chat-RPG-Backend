@@ -9,7 +9,7 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
     }
 
     async initializeDataSource() {
-        initializeApp({ projectId: "demo-test" });
+        this.app = initializeApp({ projectId: "demo-test" });
     }
 
     collection(name) {
@@ -55,7 +55,7 @@ class FirebaseDataSourceDocumentRef {
 
     async get() {
         let doc = await this.docRef.get();
-        return new FirebaseDataSourceDocumentSnapshot(doc);
+        return new FirebaseDataSourceDocumentSnapshot(doc, this);
     }
 
     async set(object) {
@@ -85,9 +85,10 @@ class FirebaseDataSourceDocumentRef {
 }
 
 class FirebaseDataSourceDocumentSnapshot {
-    constructor(snapshot) {
+    constructor(snapshot, ref) {
         this.snapshot = snapshot;
         this.exists = snapshot.exists;
+        this.ref = ref;
     }
     data() {
         return this.snapshot.data();

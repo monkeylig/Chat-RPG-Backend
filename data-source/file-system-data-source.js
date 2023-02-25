@@ -1,5 +1,5 @@
 const fs = require('fs/promises');
-const IBackendDataSource = require("./backend-data-source")
+const {IBackendDataSource, FieldValue} = require("./backend-data-source")
 
 /**
  * Data Source structure

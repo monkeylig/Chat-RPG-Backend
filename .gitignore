@@ -136,4 +136,4 @@ dist
 emulator-export/
 
 # Local testing files
-sandbox.js
+sandbox.*

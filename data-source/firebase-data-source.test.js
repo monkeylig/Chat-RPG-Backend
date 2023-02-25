@@ -6,7 +6,7 @@ beforeAll(async () => {
     await dataSource.initializeDataSource();
   });
 
-test('Testing adding a new document and retrieving it', async () => {
+test.only('Testing adding a new document and retrieving it', async () => {
     const dataSource = new FirebaseBackedDataSource();
     const user = {
         name: 'jhard',

@@ -1,4 +1,4 @@
-const BackendDataSource = require('./backend-data-source');
+const {IBackendDataSource, FieldValue} = require('./backend-data-source');
 
 test('Testing filtering helper', () => {
     const collection = [
@@ -15,7 +15,7 @@ test('Testing filtering helper', () => {
             power: 'copy',
         }
     ]
-    const datasource = new BackendDataSource();
+    const datasource = new IBackendDataSource();
 
     let filter = {
         power: 'copy'
@@ -63,7 +63,7 @@ test('Test update doc set', () => {
         abilities: ['e', 'shift']
     }
 
-    const datasource = new BackendDataSource();
+    const datasource = new IBackendDataSource();
 
     let updateDoc = {
         $set: {
@@ -106,7 +106,7 @@ test('Testing update doc push', () => {
         abilities: ['e', 'shift']
     }
 
-    const datasource = new BackendDataSource();
+    const datasource = new IBackendDataSource();
 
     let updateDoc = {
         $push: {
@@ -145,7 +145,7 @@ test('Testing update doc pull', () => {
         enemies: ['doomfist', 'winston', 'cassidy', 'widowmaker']
     }
 
-    const datasource = new BackendDataSource();
+    const datasource = new IBackendDataSource();
 
     let updateDoc = {
         $pull: {

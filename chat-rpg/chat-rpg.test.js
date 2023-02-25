@@ -32,6 +32,7 @@ test('Testing adding a new Twitch player', async () => {
 
     expect(playerField).toBeTruthy();
     expect(userData[playerField]).toStrictEqual(defaultPlayer);
+
     // Make sure the same player can't be added twice
     await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPG.Errors.playerExists);
 });
@@ -39,7 +40,9 @@ test('Testing adding a new Twitch player', async () => {
 test('Testing getting starting avatars', async () => {
     const startingData = {
         avatars: {
-            starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+            starting_avatars: {
+                content: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
+            }
         }
     };
 
@@ -49,7 +52,7 @@ test('Testing getting starting avatars', async () => {
 
     const avatars = await chatrpg.getStartingAvatars();
 
-    expect(avatars).toStrictEqual(startingData.avatars.starting_avatars);
+    expect(avatars).toStrictEqual(startingData.avatars.starting_avatars.content);
 
 });
 
@@ -80,7 +83,7 @@ test('Testing finding a Twitch player', async () => {
     
     expect(player).toStrictEqual(defaultPlayer);
 
-    expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toMatch(ChatRPG.Errors.playerNotFound);
+    await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
 });
 
 test('Testing joining a Twitch game', async () => {
