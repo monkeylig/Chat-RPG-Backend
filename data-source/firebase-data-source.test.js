@@ -2,6 +2,7 @@ const {IBackendDataSource, FieldValue} = require("./backend-data-source");
 const FirebaseBackedDataSource = require('./firebase-data-source');
 
 beforeAll(async () => {
+    process.env.FIRESTORE_EMULATOR_HOST = "localhost:9000"
     const dataSource = new FirebaseBackedDataSource();
     await dataSource.initializeDataSource();
   });

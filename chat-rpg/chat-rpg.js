@@ -8,8 +8,12 @@ class ChatRPG {
         Games: 'games'
     }
     
-    static AvatarFields = {
+    static AvatarDocuments = {
         StartingAvatars: 'starting_avatars'
+    }
+
+    static AvatarFields = {
+        Content: 'content'
     }
     
     static AccountFields = {
@@ -18,7 +22,7 @@ class ChatRPG {
     }
     
     static GameFields = {
-        GameId: 'gameId'    
+        GameId: 'gameId'
     }
     
     static Platforms = {
@@ -35,8 +39,8 @@ class ChatRPG {
     }
 
     async getStartingAvatars() {
-        const avatars = await this.#datasource.collection(ChatRPG.Collections.Avatars).doc(ChatRPG.AvatarFields.StartingAvatars).get();
-        return avatars.data();
+        const avatars = await this.#datasource.collection(ChatRPG.Collections.Avatars).doc(ChatRPG.AvatarDocuments.StartingAvatars).get();
+        return avatars.data()[ChatRPG.AvatarFields.Content];
     }
 
     async addNewPlayer(name, avatar, platformId, platform) {

@@ -3,7 +3,7 @@ const fs = require('fs');
 const express = require('express');
 
 const ChatRPG = require('./chat-rpg/chat-rpg');
-const FileSystemDataSource = require('./data-source/file-system-data-source');
+const FirebaseDataSource = require('./data-source/firebase-data-source');
 const utility = require('./utility');
 
 const dataSourceFileName = 'chat-rpg-data-source.json';
@@ -95,17 +95,20 @@ function startServer(dataSource) {
                 res.status(200);
                 responce.message = "OK";
                 res.send(JSON.stringify(responce));
-            } else {
+            }
+        }).catch(error => {
+            if(error.message == ChatRPG.Errors.playerExists) {
                 res.status(400);
-                responce.message = "A player with the provided Twitch ID already exsists";
+                responce.message = "A player with the provided ID already exsists";
                 responce.errorCode = 2;
                 res.send(JSON.stringify(responce));
             }
-        }).catch(error => {
-            res.status(500);
-            responce.message = error.message;
-            responce.errorCode = 0;
-            res.send(JSON.stringify(responce));
+            else {
+                res.status(500);
+                responce.message = error.message;
+                responce.errorCode = 0;
+                res.send(JSON.stringify(responce));
+            }
         });
     });
 
@@ -182,7 +185,7 @@ function startServer(dataSource) {
 }
 
 async function initialization() {
-    const dataSource = new FileSystemDataSource();
+    const dataSource = new FirebaseDataSource();
     await dataSource.initializeDataSource(dataSourceFileName);
     return dataSource;
 }

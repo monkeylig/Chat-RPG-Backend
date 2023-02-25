@@ -36,6 +36,9 @@ async function test_create_new_player() {
                 if(responce.errorCode == 2) {
                     utility.pass(secondTest);
                 }
+                else {
+                    utility.fail(secondTest);        
+                }
         } else {
             utility.fail(secondTest);
         }

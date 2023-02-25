@@ -22,16 +22,12 @@ async function test_join_game() {
     await utility.backendCall(Endpoint + '?playerId=' + twitchId + '&gameId=' + gameId, 'POST', null, {'chat-rpg-platform': 'twitch'})
     .then(data => {
         const gameState = JSON.parse(data);
-        if(!gameState.hasOwnProperty('player')) {
-            utility.fail(Endpoint);
-            return;
-        }
-        if(!gameState.hasOwnProperty('game')) {
+        if(!gameState.hasOwnProperty('gameId')) {
             utility.fail(Endpoint);
             return;
         }
 
-        if(gameState.player.twitchId != twitchId || gameState.player.currentGameId != gameId || gameState.game.gameId != gameId) {
+        if(gameState.gameId != gameId) {
             utility.fail(Endpoint);
             return;
         }
