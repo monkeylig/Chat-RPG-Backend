@@ -10,24 +10,45 @@ async function test_join_game() {
         avatar: 'pig.png',
         playerId: twitchId
     };
-    data = await utility.backendCall('/create_new_player?platform=twitch', 'PUT', body);
+
+    let data;
+
+    try {
+        data = await utility.backendCall('/create_new_player?platform=twitch', 'PUT', body);
+    }
+    catch (error) {
+        utility.fail(Endpoint);
+    }
 
     const responce = JSON.parse(data);
 
-    if(responce.message != 'OK') {
-        utility.fail(Endpoint);
-        return;
-    }
-
-    await utility.backendCall(Endpoint + '?playerId=' + twitchId + '&gameId=' + gameId, 'POST', null, {'chat-rpg-platform': 'twitch'})
+    await utility.backendCall(Endpoint + '?playerId=' + responce.playerId + '&gameId=' + gameId, 'POST')
     .then(data => {
         const gameState = JSON.parse(data);
-        if(!gameState.hasOwnProperty('gameId')) {
+        if(!gameState.hasOwnProperty('gameId') || !gameState.hasOwnProperty('monsters')) {
             utility.fail(Endpoint);
             return;
         }
 
         if(gameState.gameId != gameId) {
+            utility.fail(Endpoint);
+            return;
+        }
+
+        if(gameState.monsters.length <= 0) {
+            utility.fail(Endpoint);
+            return;
+        }
+
+        let failed = false;
+        gameState.monsters.forEach(element => {
+            if(!element.hasOwnProperty('attackRating') || !element.hasOwnProperty('defenceRating') || !element.hasOwnProperty('magicRating')) {
+                failed = true;
+                return;
+            }
+        });
+
+        if(failed) {
             utility.fail(Endpoint);
             return;
         }

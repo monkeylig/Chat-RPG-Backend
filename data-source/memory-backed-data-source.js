@@ -173,7 +173,7 @@ class MemoryDataSourceDocumentRef {
     }
 
     async set(object) {
-        this.collection[this.id] = object;
+        this.collection[this.id] = Object.assign({}, object);
     }
 
     async update(object) {
@@ -221,7 +221,11 @@ class MemoryDataSourceDocumentSnapshot {
     }
 
     data() {
-        return this.document;
+        if (this.exists) {
+            return Object.assign({}, this.document);
+        }
+
+        return;
     }
 }
 

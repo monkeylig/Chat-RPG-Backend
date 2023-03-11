@@ -17,6 +17,7 @@ function setStandardHeaders(res) {
 }
 
 function internalErrorCatch(req, res, error) {
+    let responce = {message: ''};
     res.status(500);
     responce.message = error.message;
     responce.errorCode = 0;
@@ -90,12 +91,9 @@ function startServer(dataSource) {
         }
 
         chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
-        .then(succeeded => {
-            if(succeeded) {
+        .then(playerId => {
                 res.status(200);
-                responce.message = "OK";
-                res.send(JSON.stringify(responce));
-            }
+                res.send(JSON.stringify({playerId: playerId}));
         }).catch(error => {
             if(error.message == ChatRPG.Errors.playerExists) {
                 res.status(400);
@@ -136,10 +134,15 @@ function startServer(dataSource) {
             res.send(JSON.stringify(player));
         })
         .catch(error => {
-            res.status(500);
-            responce.message = error.message;
-            responce.errorCode = 0;
-            res.send(JSON.stringify(responce));
+            if(error.message == ChatRPG.Errors.playerNotFound) {
+                res.status(400);
+                responce.message = error.message;
+                responce.errorCode = 2;
+                res.send(JSON.stringify(responce));
+            }
+            else {
+                internalErrorCatch(req, res, error);
+            }
         });
     });
 
@@ -161,15 +164,7 @@ function startServer(dataSource) {
             return;
         }
 
-        if(!req.header(Headers.Platform)) {
-            res.status(400);
-            responce.message = 'missing platform header';
-            responce.errorCode = 1;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        chatrpg.joinGame(req.query.playerId, req.query.gameId, req.header(Headers.Platform))
+        chatrpg.joinGame(req.query.playerId, req.query.gameId)
         .then(gameState => {
             res.status(200);
             res.send(JSON.stringify(gameState));

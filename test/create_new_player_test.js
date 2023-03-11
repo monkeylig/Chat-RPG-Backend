@@ -14,7 +14,7 @@ async function test_create_new_player() {
     await utility.backendCall(url, 'PUT', body).then(data => {
         const responce = JSON.parse(data);
         
-        if(responce.message == 'OK') {
+        if(responce.hasOwnProperty('playerId') && typeof responce.playerId =='string' ) {
             utility.pass(Endpoint);
         }
         else {
