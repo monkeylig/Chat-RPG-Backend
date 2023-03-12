@@ -1,29 +1,8 @@
+const Schema = require("./datasource-schema");
+const GameModes = require("./game-modes");
 
 class ChatRPG {
     #datasource;
-
-    static Collections = {
-        Avatars: 'avatars',
-        Accounts: 'accounts',
-        Games: 'games'
-    }
-    
-    static AvatarDocuments = {
-        StartingAvatars: 'starting_avatars'
-    }
-
-    static AvatarFields = {
-        Content: 'content'
-    }
-    
-    static AccountFields = {
-        TwitchId: 'twitchId',
-        CurrentGameId: 'currentGameId'
-    }
-    
-    static GameFields = {
-        GameId: 'gameId'
-    }
     
     static Platforms = {
         Twitch: 'twitch'
@@ -39,8 +18,8 @@ class ChatRPG {
     }
 
     async getStartingAvatars() {
-        const avatars = await this.#datasource.collection(ChatRPG.Collections.Avatars).doc(ChatRPG.AvatarDocuments.StartingAvatars).get();
-        return avatars.data()[ChatRPG.AvatarFields.Content];
+        const avatars = await this.#datasource.collection(Schema.Collections.Avatars).doc(Schema.AvatarDocuments.StartingAvatars).get();
+        return avatars.data()[Schema.AvatarFields.Content];
     }
 
     async addNewPlayer(name, avatar, platformId, platform) {
@@ -56,7 +35,7 @@ class ChatRPG {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
         player[platformIdProperty] = platformId;
-        const playersRef = this.#datasource.collection(ChatRPG.Collections.Accounts);
+        const playersRef = this.#datasource.collection(Schema.Collections.Accounts);
 
         const query = playersRef.where(platformIdProperty, '==', platformId);
         const result = await this.#datasource.runTransaction(async (transaction) => {
@@ -68,52 +47,63 @@ class ChatRPG {
 
             const newPlayer = playersRef.doc();
             transaction.create(newPlayer, player);
+
+            return newPlayer.id;
         });
 
-        if(result == ChatRPG.Errors.playerExists)
-        {
-            throw new Error(ChatRPG.Errors.playerExists);
-        }
-
-        return true;
+        return result;
     }
 
-    async findPlayerById(platformId, platform) {
-        return (await this.#findPlayer(platformId, platform)).data();
+    async findPlayerById(id, platform) {
+        return (await this.#findPlayerbyPlatformId(id, platform)).data();
     }
 
-    async joinGame(userId, gameId, platform) {
+    async joinGame(playerId, gameId) {
         //Make sure the user exists
-        const player = await this.#findPlayer(userId, platform);
+        const player = await this.#findPlayer(playerId);
 
-        const gameRef = this.#datasource.collection(ChatRPG.Collections.Games).doc(gameId);
+        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
 
-        //TODO add game initialization code here
-        let gameData = { mode: 'default' };
-        await this.#datasource.runTransaction(async (transaction) => {
-            const game = await transaction.get(gameRef);
+        //TODO the host's game mode from the config
+
+        const gameData = await this.#datasource.runTransaction(async (transaction) => {
+             const game = await transaction.get(gameRef);
 
             if(!game.exists) {
+                const gameData = await GameModes.arena.createGame(this.#datasource);
+                gameData.monsters = this.#flattenObjectArray(gameData.monsters);
                 transaction.create(gameRef, gameData);
+
+                return gameData;
             }
-            else {
-                gameData = game.data();
-            }
+
+            return game.data();
         });
 
         const updateData = {};
-        updateData[ChatRPG.AccountFields.CurrentGameId] = gameId;
+        updateData[Schema.AccountFields.CurrentGameId] = gameId;
         await player.ref.update(updateData);
         
-        gameData[ChatRPG.GameFields.GameId] = gameRef.id;
+        gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
+        gameData[Schema.GameFields.GameId] = gameRef.id;
         return gameData;
         
     }
 
-    async #findPlayer(platformId, platform) {
+    async #findPlayer(id) {
+        const playerSnapShot = await this.#datasource.collection(Schema.Collections.Accounts).doc(id).get();
+        
+        if(!playerSnapShot.exists) {
+            throw new Error(ChatRPG.Errors.playerNotFound);
+        }
+
+        return playerSnapShot;
+    }
+
+    async #findPlayerbyPlatformId(platformId, platform) {
         const idProperty = this.#getPlatformIdProperty(platform);
         
-        const playerQuerySnapShot = await this.#datasource.collection(ChatRPG.Collections.Accounts).where(idProperty, '==', platformId).get();
+        const playerQuerySnapShot = await this.#datasource.collection(Schema.Collections.Accounts).where(idProperty, '==', platformId).get();
         
         if(playerQuerySnapShot.empty) {
             throw new Error(ChatRPG.Errors.playerNotFound);
@@ -121,13 +111,34 @@ class ChatRPG {
 
         return playerQuerySnapShot.docs[0];
     }
+
     #getPlatformIdProperty(platform) {
         switch (platform) {
             case ChatRPG.Platforms.Twitch:
-                return ChatRPG.AccountFields.TwitchId;
+                return Schema.AccountFields.TwitchId;
         default:
             return '';
         }
+    }
+
+    #flattenObjectArray(array) {
+        const newArray = [];
+
+        array.forEach(element => {
+            newArray.push(JSON.stringify(element));
+        });
+
+        return newArray;
+    }
+
+    #unflattenObjectArray(array) {
+        const newArray = [];
+
+        array.forEach(element => {
+            newArray.push(JSON.parse(element));
+        });
+
+        return newArray;
     }
 }
 

@@ -453,6 +453,8 @@ test('Testing adding a new document by future refrence', async () => {
     }; 
 
     const newPlayerRef = dataSource.collection('players').doc();
+    expect(newPlayerRef.id).toBeTruthy();
+
     await newPlayerRef.set(user);
 
     playerPacket = await newPlayerRef.get();

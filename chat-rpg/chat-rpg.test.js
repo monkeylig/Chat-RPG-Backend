@@ -87,12 +87,65 @@ test('Testing finding a Twitch player', async () => {
 });
 
 test('Testing joining a Twitch game', async () => {
-    const dataSource = new MemoryBackedDataSource();
+    let dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
-    const chatrpg = new ChatRPG(dataSource);
+    let chatrpg = new ChatRPG(dataSource);
 
-    await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
-    const gameState = await chatrpg.joinGame('fr4wt4', 'new game', 'twitch');
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
 
     expect(gameState.gameId).toEqual('new game');
+    expect(gameState.monsters.length).toBe(0);
+    let players = dataSource.dataSource.accounts;
+
+    for(player in players) {
+        expect(players[player].currentGameId).toBe('new game');
+    }
+
+    dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                attackRating: 0.5
+            },
+
+            eye_sack: {
+                monsterNumber: 1,
+                attackRating: 0.2
+            },
+
+            telemarketer: {
+                monsterNumber: 2,
+                attackRating: 0.7
+            }
+        }
+    });
+
+    // Test with multiple players
+    chatrpg = new ChatRPG(dataSource);
+    
+    playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'gert43', 'twitch');
+    let playerId2 = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+
+    gameState = await chatrpg.joinGame(playerId, 'new game2');
+    const oldMonsterCount = gameState.monsters.length;
+
+    expect(gameState.gameId).toEqual('new game2');
+    expect(gameState.monsters.length).toBeGreaterThan(0);
+    expect(gameState.monsters[0]).toHaveProperty("attack");
+    expect(gameState.monsters[0]).toHaveProperty("defence");
+
+    gameState = await chatrpg.joinGame(playerId2, 'new game2');
+
+    expect(gameState.gameId).toEqual('new game2');
+    expect(gameState.monsters.length).toBe(oldMonsterCount);
+    expect(gameState.monsters[0]).toHaveProperty("attack");
+    expect(gameState.monsters[0]).toHaveProperty("defence");
+
+    players = dataSource.dataSource.accounts;
+
+    for(player in players) {
+        expect(players[player].currentGameId).toBe('new game2');
+    }
 });

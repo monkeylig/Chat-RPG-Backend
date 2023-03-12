@@ -4,7 +4,9 @@
     "typescript": "^4.9.5"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "firebase_emulator": "firebase emulators:start --import=./emulator-export --project demo-test",
+    "firebase_export": "firebase emulators:export ./emulator-export --project demo-test"
   },
   "name": "chat-rpg-backend",
   "version": "1.0.0",

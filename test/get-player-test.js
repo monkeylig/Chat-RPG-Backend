@@ -9,13 +9,13 @@ async function test_get_player() {
         avatar: 'pig.png',
         playerId: twichId
     };
-    const data = await utility.backendCall('/create_new_player?platform=twitch', 'PUT', body);
 
-    const responce = JSON.parse(data);
-
-    if(responce.message != 'OK') {
+    let data;
+    try {
+        data = await utility.backendCall('/create_new_player?platform=twitch', 'PUT', body);
+    }
+    catch(error) {
         utility.fail(Endpoint);
-        return;
     }
 
     await utility.backendCall(Endpoint + '?playerId=' + twichId + '&platform=' + 'twitch', 'GET').then(data => {
