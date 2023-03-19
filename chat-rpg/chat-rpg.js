@@ -10,7 +10,10 @@ class ChatRPG {
 
     static Errors = {
         playerExists: 'player exists',
-        playerNotFound: 'player not found'
+        playerNotFound: 'player not found',
+        gameNotFound: "game not found",
+        monsterInstanceNotFound: "monster instance not found",
+        playerNotInGame: "Player not in game"
     }
 
     constructor(datasource) {
@@ -19,7 +22,13 @@ class ChatRPG {
 
     async getStartingAvatars() {
         const avatars = await this.#datasource.collection(Schema.Collections.Avatars).doc(Schema.AvatarDocuments.StartingAvatars).get();
-        return avatars.data()[Schema.AvatarFields.Content];
+        const avatarData = avatars.data();
+
+        if (avatarData) {
+            return avatarData[Schema.AvatarFields.Content];
+        }
+        
+        return [];
     }
 
     async addNewPlayer(name, avatar, platformId, platform) {
@@ -90,6 +99,48 @@ class ChatRPG {
         
     }
 
+    async startBattle(playerId, gameId, monsterId) {
+        const player = await this.#findPlayer(playerId);
+        const game = await this.#findGame(gameId);
+
+        const playerData = player.data();
+        if(playerData.currentGameId != game.ref.id) {
+            throw new Error(ChatRPG.Errors.playerNotInGame);
+        }
+
+        const monsters = this.#unflattenObjectArray(game.data().monsters);
+
+        let targetMonster;
+
+        monsters.forEach((monster) => {
+            if(monster.id == monsterId) {
+                targetMonster = monster;
+            }
+        });
+
+        if(!targetMonster) {
+            throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
+        }
+
+        const battle = {
+            player: {
+                name: playerData.name,
+                avatar: playerData.avatar,
+                health: playerData.health,
+                currentHealth: playerData.health
+            },
+            monster: targetMonster,
+            gameId: game.ref.id
+        };
+
+        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
+        battleRef.set(battle);
+
+        battle.id = battleRef.id;
+
+        return battle;
+    }
+
     async #findPlayer(id) {
         const playerSnapShot = await this.#datasource.collection(Schema.Collections.Accounts).doc(id).get();
         
@@ -98,6 +149,16 @@ class ChatRPG {
         }
 
         return playerSnapShot;
+    }
+
+    async #findGame(id) {
+        const gameSnapshot = await this.#datasource.collection(Schema.Collections.Games).doc(id).get();
+
+        if(!gameSnapshot.exists) {
+            throw new Error(ChatRPG.Errors.gameNotFound);
+        }
+
+        return gameSnapshot;
     }
 
     async #findPlayerbyPlatformId(platformId, platform) {

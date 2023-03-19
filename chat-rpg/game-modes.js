@@ -1,4 +1,5 @@
-const Schema = require("./datasource-schema")
+const utility = require("../utility");
+const Schema = require("./datasource-schema");
 
 const NumberOfMonsters = 1;
 const StatPointsPerLevel = 10;
@@ -14,7 +15,8 @@ function createMonsterInstance(monsterClass, level) {
         attack: monsterClass.attackRating * totalPoints,
         defence: monsterClass.defenceRating * totalPoints,
         magic: monsterClass.magicRating * totalPoints,
-        level: level
+        level: level,
+        id: utility.genId()
     }, monsterClass);
 
     return newMonster;

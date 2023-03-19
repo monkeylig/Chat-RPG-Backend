@@ -1,5 +1,6 @@
-const fs = require('fs/promises');
 const {IBackendDataSource, FieldValue} = require("./backend-data-source")
+
+const utility = require("../utility");
 
 /**
  * Data Source structure
@@ -7,9 +8,6 @@ const {IBackendDataSource, FieldValue} = require("./backend-data-source")
  *  starting_avatars: ['avatar-filename'(string), 'avatar-filename'(string), 'avatar-filename'(string)]
  * }
  */
-function genId() {
-    return 'id' + Math.floor(Math.random() * 10000000);
-}
 
 class MemoryBackedDataSource extends IBackendDataSource {
     dataSource;
@@ -46,7 +44,7 @@ class MemoryBackedDataSource extends IBackendDataSource {
     async addDocumentToCollection(document, collection) {
         this.verifyCollection(collection);
 
-        document._id = genId();
+        document._id = utility.genId();
         this.dataSource[collection].push(document);
 
         return document;
@@ -112,7 +110,7 @@ class MemoryDataSourceCollectionRef {
     async add(object) {
         this.verifyCollection();
 
-        const id = genId();
+        const id = utility.genId();
         this.dataSource[this.collectionName][id] = object;
         return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
     }
@@ -121,7 +119,7 @@ class MemoryDataSourceCollectionRef {
         this.verifyCollection();
 
         if(!path) {
-            const id = genId();
+            const id = utility.genId();
             return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
         }
 
@@ -142,7 +140,7 @@ class MemoryDataSourceCollectionRef {
             newObject._id = id;    
         }
         else {
-            newObject._id = genId();
+            newObject._id = utility.genId();
         }
         return newObject;
     }

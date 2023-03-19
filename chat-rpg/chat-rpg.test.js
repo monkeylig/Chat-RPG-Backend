@@ -1,6 +1,8 @@
 const ChatRPG = require('./chat-rpg');
 const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
 
+
+
 test('Testing adding a new Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
@@ -102,6 +104,7 @@ test('Testing joining a Twitch game', async () => {
         expect(players[player].currentGameId).toBe('new game');
     }
 
+    //Add monsters so that new games can be properly created
     dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
         monsters: {
@@ -148,4 +151,35 @@ test('Testing joining a Twitch game', async () => {
     for(player in players) {
         expect(players[player].currentGameId).toBe('new game2');
     }
+});
+
+test('Starting a battle', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                attackRating: 0.5
+            },
+
+            eye_sack: {
+                monsterNumber: 1,
+                attackRating: 0.2
+            },
+
+            telemarketer: {
+                monsterNumber: 2,
+                attackRating: 0.7
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
+    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+
+    expect(battleState).toBeTruthy();
 });

@@ -18,6 +18,7 @@ test('Area game creation', async () => {
     expect(arenaGame.monsters.length).toBe(GameModes.arena.NumberOfStartingMonsters);
     expect(arenaGame.monsters[0]).toHaveProperty("attack");
     expect(arenaGame.monsters[0]).toHaveProperty("defence");
+    expect(arenaGame.monsters[0]).toHaveProperty("id");
 
     datasource = new MemoryBackedDataSource();
     await datasource.initializeDataSource();

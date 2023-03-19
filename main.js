@@ -4,6 +4,7 @@ const express = require('express');
 
 const ChatRPG = require('./chat-rpg/chat-rpg');
 const FirebaseDataSource = require('./data-source/firebase-data-source');
+const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const utility = require('./utility');
 
 const dataSourceFileName = 'chat-rpg-data-source.json';
@@ -51,7 +52,8 @@ function startServer(dataSource) {
         chatrpg.getStartingAvatars().then((avatars) => {
             res.status(200);
             res.send(JSON.stringify(avatars));
-        });
+        })
+        .catch((error) => {internalErrorCatch(req, res, error);});
     });
 
     app.options('/create_new_player', (req, res) => {
@@ -172,6 +174,33 @@ function startServer(dataSource) {
         }, (error) => {internalErrorCatch(req, res, error);});
     });
 
+    app.post('/start_battle', (req, res) => {
+        setStandardHeaders(res);
+        let responce = {message: ''}
+
+        const queryParams = [
+            {name: 'playerId', type: 'string'},
+            {name: 'gameId', type: 'string'},
+            {name: 'monsterId', type: 'string'}
+        ];
+
+        if(!utility.validatePayloadParameters(req.query, queryParams))
+        {
+            res.status(400);
+            responce.message = 'missing query string keys';
+            responce.errorCode = 1;
+            res.send(JSON.stringify(responce));
+            return;
+        }
+
+        chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId)
+        .then(battleState => {
+            res.status(200);
+            res.send(JSON.stringify(battleState));
+        })
+        .catch(error => internalErrorCatch(req, res, error));
+    });
+
     let server = https.createServer(options, app);
 
     server.listen(port, () => {
@@ -180,8 +209,28 @@ function startServer(dataSource) {
 }
 
 async function initialization() {
-    const dataSource = new FirebaseDataSource();
-    await dataSource.initializeDataSource(dataSourceFileName);
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        avatars: {
+            starting_avatars: ["avatar1", "avatar2"]
+        },
+        monsters: {
+            monmon: {
+                name: 'Monmon',
+                monsterNumber: 0,
+                attackRating: 97,
+                defenceRating: 345,
+                magicRating: 74
+            },
+            bokumon: {
+                name: 'Bokumon',
+                monsterNumber: 1,
+                attackRating: 97,
+                defenceRating: 345,
+                magicRating: 74
+            }
+        }
+    });
     return dataSource;
 }
 

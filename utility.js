@@ -20,6 +20,10 @@ const utility = {
         }
 
         return true;
+    },
+
+    genId() {
+        return 'id' + Math.floor(Math.random() * 10000000);
     }
 }
 
