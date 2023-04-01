@@ -64,8 +64,9 @@ test('Testing getting empty collection', async () => {
 test('Testing finding document in collection', async () => {
     const dataSource = new FirebaseBackedDataSource();
 
+    const name = `jhard${Math.random() * 100}`;
     const user1 = {
-        name: 'jhard',
+        name: name,
         level: 22
     };
 
@@ -84,7 +85,7 @@ test('Testing finding document in collection', async () => {
     await playerCollection.add(user2);
     await playerCollection.add(user3);
 
-    let querySnapshot = await playerCollection.where("name", "==", 'jhard').get();
+    let querySnapshot = await playerCollection.where("name", "==", name).get();
 
     expect(querySnapshot.empty).toBeFalsy();
 

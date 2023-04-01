@@ -1,24 +1,26 @@
 const utility = require("../utility");
 const Schema = require("./datasource-schema");
+const chatRPGUtility = require('./utility');
 
 const NumberOfMonsters = 1;
-const StatPointsPerLevel = 10;
+const StatPointsPerLevel = 5;
 
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);
 }
 
 function createMonsterInstance(monsterClass, level) {
-    const totalPoints = StatPointsPerLevel * level;
 
     const newMonster = Object.assign({
-        attack: monsterClass.attackRating * totalPoints,
-        defence: monsterClass.defenceRating * totalPoints,
-        magic: monsterClass.magicRating * totalPoints,
-        level: level,
         id: utility.genId()
     }, monsterClass);
 
+    chatRPGUtility.setStatsAtLevel(newMonster, {
+        maxHealth: monsterClass.healthRating * StatPointsPerLevel,
+        attack: monsterClass.attackRating * StatPointsPerLevel,
+        defence: monsterClass.defenceRating * StatPointsPerLevel,
+        magic: monsterClass.magicRating * StatPointsPerLevel,
+    }, level);
     return newMonster;
 }
 

@@ -16,14 +16,19 @@ const Schema = {
     },
     
     AccountFields: {
-        TwitchId: 'twitchId',
+        //Id: 'id', optional
+        Name: 'name',
+        Avatar: 'avatar',
+        TwitchId: 'twitchId', //optional
         CurrentGameId: 'currentGameId',
         Health: 'health',
+        MaxHealth: 'maxHealth',
         Attack: 'attack',
         Defence: 'defence',
         Magic: 'magic',
         Weapon: 'weapon',
         Exp: 'exp',
+        Abilities: 'abilities',
         Level: 'level'
     },
     
@@ -38,28 +43,24 @@ const Schema = {
 
     BattleFields: {
         Player: 'player',
-        monster: 'monster'
+        Monster: 'monster',
+        GameId: 'gameId'
     },
 
     BattlePlayerFields: {
+        Id: 'id',
+        Name: 'name',
+        Avatar: 'avatar',
         MaxHealth: 'maxHealth',
         CurrentHealth: 'health',
         Attack: 'attack',
         Defence: 'defence',
         Magic: 'magic',
         Weapon: 'weapon',
+        Abilities: 'abilities',
         AbilityPoints: 'ap',
-        Level: 'level'
-    },
-
-    BattleMonsterFields: {
-        MaxHealth: 'maxHealth',
-        CurrentHealth: 'health',
-        Attack: 'attack',
-        Defence: 'defence',
-        Magic: 'magic',
-        AbilityPoints: 'ap',
-        Level: 'level'
+        Level: 'level',
+        StrikeLevel: 'strikeLevel'
     }
 }
 
