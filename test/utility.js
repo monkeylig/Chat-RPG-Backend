@@ -53,4 +53,8 @@ function pass(testName) {
     console.error(testName.padEnd(40) + " passed");
 }
 
-module.exports = {backendCall, pass, fail};
+function genId() {
+    return `id${Math.floor(Math.random() * 1000000).toString()}`;
+}
+
+module.exports = {backendCall, pass, fail, genId};

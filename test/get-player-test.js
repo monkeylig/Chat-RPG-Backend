@@ -3,7 +3,7 @@ const utility = require('./utility');
 const Endpoint = '/get_player';
 
 async function test_get_player() {
-    const twichId = Math.floor(Math.random() * 10000).toString();
+    const twichId = utility.genId();
     const body = {
         name: 'test player',
         avatar: 'pig.png',

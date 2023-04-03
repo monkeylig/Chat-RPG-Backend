@@ -3,8 +3,8 @@ const utility = require('./utility');
 const Endpoint = '/start_battle';
 
 async function test_start_battle() {
-    const twitchId = Math.floor(Math.random() * 10000).toString();
-    const gameId = Math.floor(Math.random() * 10000).toString();
+    const twitchId = utility.genId();
+    const gameId = utility.genId();
     const body = {
         name: 'test player',
         avatar: 'ape.png',
@@ -23,7 +23,7 @@ async function test_start_battle() {
         data = await utility.backendCall(Endpoint + '?playerId=' + playerData.playerId + '&gameId=' + gameId + '&monsterId=' + gameState.monsters[0].id, 'POST');
         const battleData = JSON.parse(data);
 
-        if (!battleData || !battleData.player || !battleData.monster) {
+        if (!battleData || !battleData.id || !battleData.player || !battleData.monster) {
             throw "Battle data malformed";
         }
     }
@@ -34,7 +34,7 @@ async function test_start_battle() {
 
 
 
-    utility.pass(Endpoint)
+    utility.pass(Endpoint);
 }
 
 module.exports = test_start_battle;

@@ -7,7 +7,7 @@ async function test_create_new_player() {
     const body = {
         name: 'avenger',
         avatar: 'goat.png',
-        playerId: Math.floor(Math.random() * 10000).toString()
+        playerId: utility.genId()
     };
 
     const url = Endpoint + '?platform=' + 'twitch';

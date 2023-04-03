@@ -1,0 +1,261 @@
+const ChatRPG = require('./../chat-rpg/chat-rpg');
+
+//#region Utilities
+function setStandardHeaders(res) {
+    res.set('Access-Control-Allow-Origin', '*');
+}
+
+function validatePayloadParameters(payload, params)
+{
+    if(!payload) {
+        payload = {};
+    }
+
+    for(let i = 0; i < params.length; i++) {
+        if(!payload.hasOwnProperty(params[i].name)) {
+            return false;
+        }
+
+        if(typeof payload[params[i].name] != params[i].type) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function internalErrorCatch(req, res, error) {
+    let responce = {
+        message: error.message,
+    };
+
+    switch(error.message) {
+        case ChatRPG.Errors.playerExists:
+            responce.errorCode = 1;
+            break;
+        case ChatRPG.Errors.playerNotFound:
+            responce.errorCode = 2;
+            break;
+        case ChatRPG.Errors.gameNotFound:
+            responce.errorCode = 3;
+            break;
+        case ChatRPG.Errors.monsterInstanceNotFound:
+            responce.errorCode = 4;
+            break;
+        case ChatRPG.Errors.playerNotInGame:
+            responce.errorCode = 5;
+            break;
+        case ChatRPG.Errors.battleNotFound:
+            responce.errorCode = 6;
+            break;
+        default:
+            responce.message = 'Internal Error';
+            responce.errorCode = 0;
+            break;
+    }
+    sendResponceObject(res, responce, 500);
+}
+
+function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 400) {
+    let responce = {
+        message: message,
+        errorCode: rpgErrorCode
+    };
+    sendResponceObject(res, responce, errorCode);
+}
+
+function sendResponceObject(res, message = {}, status = 200) {
+    res.status(status);
+    res.send(JSON.stringify(message));
+}
+//#endregion
+
+//#region Endpoints
+function welcome(req, res) {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.status(200);
+    res.send('Hello World!')
+}
+
+function get_starting_avatars(req, res, chatrpg) {
+    setStandardHeaders(res);    
+    chatrpg.getStartingAvatars().then((avatars) => {
+        res.status(200);
+        avatars = avatars ? avatars : [];
+        res.send(JSON.stringify(avatars));
+    })
+    .catch((error) => {internalErrorCatch(req, res, error);});
+}
+
+function create_new_player_options(req, res) {
+    setStandardHeaders(res);
+    res.set('Access-Control-Allow-Methods', '*');
+    res.set('Access-Control-Allow-Headers', '*');
+    res.status(200);
+    res.send('OK');
+}
+
+function create_new_player(req, res, chatrpg) {
+    setStandardHeaders(res);
+    let responce = {message: ''};
+
+    const payloadParams = [
+        {name: 'name', type: 'string'},
+        {name: 'playerId', type: 'string'},
+        {name: 'avatar', type: 'string'}
+    ];
+    
+    if(!validatePayloadParameters(req.body, payloadParams))
+    {
+        res.status(400);
+        responce.message = 'Data in payload malformed';
+        responce.errorCode = 1;
+        res.send(JSON.stringify(responce));
+        return;
+    }
+
+    if(!req.query.hasOwnProperty('platform'))
+    {
+        res.status(400);
+        responce.message = 'missing query string "platform"';
+        responce.errorCode = 2;
+        res.send(JSON.stringify(responce));
+        return;
+    }
+
+    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
+    .then(playerId => {
+            res.status(200);
+            res.send(JSON.stringify({playerId: playerId}));
+    }).catch(error => {
+        if(error.message == ChatRPG.Errors.playerExists) {
+            res.status(400);
+            responce.message = "A player with the provided ID already exsists";
+            responce.errorCode = 2;
+            res.send(JSON.stringify(responce));
+        }
+        else {
+            internalErrorCatch(req, res, error);
+        }
+    });
+}
+
+function get_player(req, res, chatrpg) {
+    setStandardHeaders(res);
+    let responce = {message: ''};
+    
+    const payloadParams = [
+        {name: 'platform', type: 'string'},
+        {name: 'playerId', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, payloadParams))
+    {
+        res.status(400);
+        responce.message = 'missing query string keys';
+        responce.errorCode = 1;
+        res.send(JSON.stringify(responce));
+        return;
+    }
+
+    chatrpg.findPlayerById(req.query.playerId, req.query.platform)
+    .then(player => {
+        res.status(200);
+        res.send(JSON.stringify(player));
+    })
+    .catch(error => {
+        if(error.message == ChatRPG.Errors.playerNotFound) {
+            res.status(400);
+            responce.message = error.message;
+            responce.errorCode = 2;
+            res.send(JSON.stringify(responce));
+        }
+        else {
+            internalErrorCatch(req, res, error);
+        }
+    });
+}
+
+function join_game(req, res, chatrpg) {
+    setStandardHeaders(res);
+    let responce = {message: ''};
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'gameId', type: 'string'},
+    ];
+    
+    if(!validatePayloadParameters(req.query, queryParams))
+    {
+        res.status(400);
+        responce.message = 'missing query string keys';
+        responce.errorCode = 1;
+        res.send(JSON.stringify(responce));
+        return;
+    }
+
+    chatrpg.joinGame(req.query.playerId, req.query.gameId)
+    .then(gameState => {
+        res.status(200);
+        res.send(JSON.stringify(gameState));
+
+    }, (error) => {internalErrorCatch(req, res, error);});
+}
+
+function start_battle(req, res, chatrpg) {
+    setStandardHeaders(res);
+    let responce = {message: ''};
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'gameId', type: 'string'},
+        {name: 'monsterId', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams))
+    {
+        res.status(400);
+        responce.message = 'missing query string keys';
+        responce.errorCode = 1;
+        res.send(JSON.stringify(responce));
+        return;
+    }
+
+    chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId)
+    .then(battleState => {
+        res.status(200);
+        res.send(JSON.stringify(battleState));
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function battle_action(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'battleId', type: 'string'},
+        {name: 'actionType', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.battleAction(req.query.battleId, {type: req.query.actionType})
+    .then(battleUpdate => {
+        sendResponceObject(res, battleUpdate);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+//#endregion
+
+module.exports = {
+    welcome,
+    get_starting_avatars,
+    create_new_player_options,
+    create_new_player,
+    get_player,
+    join_game,
+    start_battle,
+    battle_action
+};

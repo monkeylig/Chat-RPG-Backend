@@ -1,3 +1,5 @@
+const LISTEN_PORT = 3000;
+
 const https = require('https');
 const fs = require('fs');
 const express = require('express');
@@ -6,6 +8,7 @@ const ChatRPG = require('./chat-rpg/chat-rpg');
 const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const utility = require('./utility');
+const endpoints = require('./endpoints/endpoints');
 
 const dataSourceFileName = 'chat-rpg-data-source.json';
 
@@ -13,224 +16,38 @@ const Headers = {
     Platform: 'chat-rpg-platform'
 }
 
-function setStandardHeaders(res) {
-    res.set('Access-Control-Allow-Origin', '*');
-}
-
-function internalErrorCatch(req, res, error) {
-    let responce = {message: ''};
-    res.status(500);
-    responce.message = error.message;
-    responce.errorCode = 0;
-    res.send(JSON.stringify(responce));
-}
-
 function startServer(dataSource) {
     console.log('starting server');
 
     const app = express();
     app.use(express.json());
-    app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
-    const port = 3000;
+    app.use(express.urlencoded({ extended: true })) // for parsing query strings
 
     const chatrpg = new ChatRPG(dataSource);
+
+    app.get('/', endpoints.welcome);
+    app.get('/get_starting_avatars', (req, res) => endpoints.get_starting_avatars(req, res, chatrpg));
+    app.options('/create_new_player', endpoints.create_new_player_options);
+    app.put('/create_new_player', (req, res) => endpoints.create_new_player(req, res, chatrpg));
+    app.get('/get_player', (req, res) => endpoints.get_player(req, res, chatrpg));
+    app.post('/join_game', (req, res) => endpoints.join_game(req, res, chatrpg));
+    app.post('/start_battle', (req, res) => endpoints.start_battle(req, res, chatrpg));
+    app.post('/battle_action', (req, res) => endpoints.battle_action(req, res, chatrpg));
 
     const options = {
         key: fs.readFileSync('yourdomain.key'),
         cert: fs.readFileSync('domain.crt')
-      };
-
-    app.get('/', (req, res) => {
-        res.set('Access-Control-Allow-Origin', '*');
-        res.status(200);
-        res.send('Hello World!')
-    });
-
-    app.get('/get_starting_avatars', (req, res) => {
-        setStandardHeaders(res);
-        
-        chatrpg.getStartingAvatars().then((avatars) => {
-            res.status(200);
-            res.send(JSON.stringify(avatars));
-        })
-        .catch((error) => {internalErrorCatch(req, res, error);});
-    });
-
-    app.options('/create_new_player', (req, res) => {
-        setStandardHeaders(res);
-        res.set('Access-Control-Allow-Methods', '*');
-        res.set('Access-Control-Allow-Headers', '*');
-        res.status(200);
-        res.send('OK');
-    });
-
-    app.put('/create_new_player', (req, res) => {
-        setStandardHeaders(res);
-        let responce = {message: ''};
-
-        const payloadParams = [
-            {name: 'name', type: 'string'},
-            {name: 'playerId', type: 'string'},
-            {name: 'avatar', type: 'string'}
-        ];
-        
-        if(!utility.validatePayloadParameters(req.body, payloadParams))
-        {
-            res.status(400);
-            responce.message = 'Data in payload malformed';
-            responce.errorCode = 1;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        if(!req.query.hasOwnProperty('platform'))
-        {
-            res.status(400);
-            responce.message = 'missing query string "platform"';
-            responce.errorCode = 2;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
-        .then(playerId => {
-                res.status(200);
-                res.send(JSON.stringify({playerId: playerId}));
-        }).catch(error => {
-            if(error.message == ChatRPG.Errors.playerExists) {
-                res.status(400);
-                responce.message = "A player with the provided ID already exsists";
-                responce.errorCode = 2;
-                res.send(JSON.stringify(responce));
-            }
-            else {
-                res.status(500);
-                responce.message = error.message;
-                responce.errorCode = 0;
-                res.send(JSON.stringify(responce));
-            }
-        });
-    });
-
-    app.get('/get_player', (req, res) => {
-        setStandardHeaders(res);
-        let responce = {message: ''};
-        
-        const payloadParams = [
-            {name: 'platform', type: 'string'},
-            {name: 'playerId', type: 'string'}
-        ];
-
-        if(!utility.validatePayloadParameters(req.query, payloadParams))
-        {
-            res.status(400);
-            responce.message = 'missing query string keys';
-            responce.errorCode = 1;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        chatrpg.findPlayerById(req.query.playerId, req.query.platform)
-        .then(player => {
-            res.status(200);
-            res.send(JSON.stringify(player));
-        })
-        .catch(error => {
-            if(error.message == ChatRPG.Errors.playerNotFound) {
-                res.status(400);
-                responce.message = error.message;
-                responce.errorCode = 2;
-                res.send(JSON.stringify(responce));
-            }
-            else {
-                internalErrorCatch(req, res, error);
-            }
-        });
-    });
-
-    app.post('/join_game', (req, res) => {
-        setStandardHeaders(res);
-        let responce = {message: ''};
-
-        const queryParams = [
-            {name: 'playerId', type: 'string'},
-            {name: 'gameId', type: 'string'},
-        ];
-        
-        if(!utility.validatePayloadParameters(req.query, queryParams))
-        {
-            res.status(400);
-            responce.message = 'missing query string keys';
-            responce.errorCode = 1;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        chatrpg.joinGame(req.query.playerId, req.query.gameId)
-        .then(gameState => {
-            res.status(200);
-            res.send(JSON.stringify(gameState));
-
-        }, (error) => {internalErrorCatch(req, res, error);});
-    });
-
-    app.post('/start_battle', (req, res) => {
-        setStandardHeaders(res);
-        let responce = {message: ''}
-
-        const queryParams = [
-            {name: 'playerId', type: 'string'},
-            {name: 'gameId', type: 'string'},
-            {name: 'monsterId', type: 'string'}
-        ];
-
-        if(!utility.validatePayloadParameters(req.query, queryParams))
-        {
-            res.status(400);
-            responce.message = 'missing query string keys';
-            responce.errorCode = 1;
-            res.send(JSON.stringify(responce));
-            return;
-        }
-
-        chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId)
-        .then(battleState => {
-            res.status(200);
-            res.send(JSON.stringify(battleState));
-        })
-        .catch(error => internalErrorCatch(req, res, error));
-    });
-
+    };
     let server = https.createServer(options, app);
 
-    server.listen(port, () => {
-        console.log(`Server running at port ${port}`)
+    server.listen(LISTEN_PORT, () => {
+        console.log(`Server running at port ${LISTEN_PORT}`)
     });
 }
 
 async function initialization() {
     const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource({
-        avatars: {
-            starting_avatars: ["avatar1", "avatar2"]
-        },
-        monsters: {
-            monmon: {
-                name: 'Monmon',
-                monsterNumber: 0,
-                attackRating: 97,
-                defenceRating: 345,
-                magicRating: 74
-            },
-            bokumon: {
-                name: 'Bokumon',
-                monsterNumber: 1,
-                attackRating: 97,
-                defenceRating: 345,
-                magicRating: 74
-            }
-        }
-    });
+    await dataSource.initializeDataSource(utility.sampleData);
     return dataSource;
 }
 

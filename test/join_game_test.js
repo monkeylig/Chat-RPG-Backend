@@ -3,8 +3,8 @@ const utility = require('./utility');
 const Endpoint = '/join_game';
 
 async function test_join_game() {
-    const twitchId = Math.floor(Math.random() * 10000).toString();
-    const gameId = Math.floor(Math.random() * 10000).toString();
+    const twitchId = utility.genId();
+    const gameId = utility.genId();
     const body = {
         name: 'test player',
         avatar: 'pig.png',
