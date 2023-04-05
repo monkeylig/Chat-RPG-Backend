@@ -15,8 +15,8 @@ function validatePayloadParameters(payload, params)
         if(!payload.hasOwnProperty(params[i].name)) {
             return false;
         }
-
-        if(typeof payload[params[i].name] != params[i].type) {
+        const type = typeof payload[params[i].name];
+        if(typeof payload[params[i].name] != params[i].type || payload[params[i].name] == 'undefined') {
             return false;
         }
     }
@@ -27,32 +27,39 @@ function internalErrorCatch(req, res, error) {
     let responce = {
         message: error.message,
     };
+    let status = 500;
 
     switch(error.message) {
         case ChatRPG.Errors.playerExists:
             responce.errorCode = 1;
+            status = 400;
             break;
         case ChatRPG.Errors.playerNotFound:
             responce.errorCode = 2;
+            status = 404;
             break;
         case ChatRPG.Errors.gameNotFound:
             responce.errorCode = 3;
+            status = 404;
             break;
         case ChatRPG.Errors.monsterInstanceNotFound:
             responce.errorCode = 4;
+            status = 404;
             break;
         case ChatRPG.Errors.playerNotInGame:
             responce.errorCode = 5;
+            status = 400;
             break;
         case ChatRPG.Errors.battleNotFound:
             responce.errorCode = 6;
+            status = 404;
             break;
         default:
             responce.message = 'Internal Error';
             responce.errorCode = 0;
             break;
     }
-    sendResponceObject(res, responce, 500);
+    sendResponceObject(res, responce, status);
 }
 
 function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 400) {
@@ -203,7 +210,6 @@ function join_game(req, res, chatrpg) {
 
 function start_battle(req, res, chatrpg) {
     setStandardHeaders(res);
-    let responce = {message: ''};
 
     const queryParams = [
         {name: 'playerId', type: 'string'},
@@ -211,19 +217,14 @@ function start_battle(req, res, chatrpg) {
         {name: 'monsterId', type: 'string'}
     ];
 
-    if(!validatePayloadParameters(req.query, queryParams))
-    {
-        res.status(400);
-        responce.message = 'missing query string keys';
-        responce.errorCode = 1;
-        res.send(JSON.stringify(responce));
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
         return;
     }
 
     chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId)
     .then(battleState => {
-        res.status(200);
-        res.send(JSON.stringify(battleState));
+        sendResponceObject(res, battleState);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }

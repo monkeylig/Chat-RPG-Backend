@@ -71,7 +71,10 @@ class ChatRPG {
     }
 
     async findPlayerById(id, platform) {
-        return (await this.#findPlayerbyPlatformId(id, platform)).data();
+        const playerSnap = await this.#findPlayerbyPlatformId(id, platform);
+        const playerData = playerSnap.data();
+        playerData.id = playerSnap.ref.id;
+        return playerData;
     }
 
     async joinGame(playerId, gameId) {
@@ -101,7 +104,7 @@ class ChatRPG {
         await player.ref.update(updateData);
         
         gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
-        gameData[Schema.GameFields.GameId] = gameRef.id;
+        gameData.id = gameRef.id;
         return gameData;
         
     }
@@ -161,7 +164,8 @@ class ChatRPG {
                 ap: BATTLE_AP,
                 strikeLevel: 0
             },
-            gameId: game.ref.id
+            gameId: game.ref.id,
+            strikeAnim: chatRPGUtility.strikeAnim
         };
 
         const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();

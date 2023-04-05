@@ -11,6 +11,7 @@ function getExpToNextLevel(level) {
 }
 
 chatRPGUtility = {
+    strikeAnim: 'Hit-Yellow.png',
     defultWeapon: {
         name: 'Fists',
         baseDamage: 10,
@@ -27,11 +28,11 @@ chatRPGUtility = {
         }
     },
     setStatsAtLevel(player, growthObject, level) {
-        player.maxHealth = growthObject.maxHealth * level + 10 + level;
+        player.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
         player.health = player.maxHealth;
-        player.attack = growthObject.attack * level;
-        player.magic =  growthObject.magic * level;
-        player.defence = growthObject.defence * level;
+        player.attack = Math.floor(growthObject.attack * level);
+        player.magic =  Math.floor(growthObject.magic * level);
+        player.defence = Math.floor(growthObject.defence * level);
         player.level = level;
         player.exp = 0;
         player.expToNextLevel = getExpToNextLevel(player.level);

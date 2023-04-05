@@ -33,7 +33,7 @@ const Schema = {
     },
     
     GameFields: {
-        GameId: 'gameId'
+        GameId: 'id'
     },
 
     MonsterFields: {

@@ -87,6 +87,8 @@ test('Testing finding a Twitch player', async () => {
 
     let player = await chatrpg.findPlayerById(twitchId, 'twitch');
     
+    expect(player.id).toBeTruthy();
+    defaultPlayer.id = player.id;
     expect(player).toStrictEqual(defaultPlayer);
 
     await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
