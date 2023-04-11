@@ -11,7 +11,16 @@ function getExpToNextLevel(level) {
 }
 
 chatRPGUtility = {
-    strikeAnim: 'Hit-Yellow.png',
+    strikeAbility: {
+        anim: {
+            spriteSheet: 'Hit-Yellow.png',
+            frameWidth: 1024,
+            frameHeight: 1024,
+            frameCount: 16,
+            duration: 0.5,
+            positioning: 'opponent'
+        },
+    },
     defultWeapon: {
         name: 'Fists',
         baseDamage: 10,
