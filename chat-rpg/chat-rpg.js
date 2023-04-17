@@ -1,3 +1,4 @@
+const {IBackendDataSource, FieldValue} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
 const monsterAi = require("./monster-ai/monster-ai");
@@ -43,7 +44,7 @@ class ChatRPG {
             avatar: avatar,
             exp: 0,
             abilities: '',
-            weapon: chatRPGUtility.defultWeapon,
+            weapon: chatRPGUtility.defaultWeapon,
             currentGameId: 0
         };
 
@@ -89,6 +90,7 @@ class ChatRPG {
              const game = await transaction.get(gameRef);
 
             if(!game.exists) {
+                // TODO change this so that createGame() happens outside the transaction
                 const gameData = await GameModes.arena.createGame(this.#datasource);
                 gameData.monsters = this.#flattenObjectArray(gameData.monsters);
                 transaction.create(gameRef, gameData);
@@ -106,7 +108,14 @@ class ChatRPG {
         gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
         gameData.id = gameRef.id;
         return gameData;
-        
+    }
+
+    async getGame(gameId) {
+        const gameData = (await this.#findGame(gameId)).data();
+        gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
+        gameData.id = gameId;
+
+        return gameData;
     }
 
     async startBattle(playerId, gameId, monsterId) {
@@ -227,6 +236,34 @@ class ChatRPG {
                 result.winner = player.id;
                 result.expAward = expGain;
 
+                const gameSnap = await this.#findGame(battle.gameId);
+                const gameData = gameSnap.data();
+                const monsters = this.#unflattenObjectArray(gameData.monsters);
+
+                const searchMonster = (monsterArr, id) => {
+                    for(const monsterInstance of monsterArr) {
+                        if(monsterInstance.id == id) {
+                            return monsterInstance;
+                        }
+                    }
+                };
+                
+                // Skip transaction if it is unnessesary
+                if(searchMonster(monsters, monster.id)) {
+                    await this.#datasource.runTransaction(async (transaction) => {
+                        const transGameSnap = await transaction.get(gameSnap.ref);
+                        const transGameData = transGameSnap.data();
+                        transGameData.monsters = this.#unflattenObjectArray(transGameData.monsters);
+                        
+                        const transMonster = searchMonster(transGameData.monsters, monster.id)
+                        if(!transMonster) {
+                            return;
+                        }
+                        
+                        transaction.update(transGameSnap.ref, {monsters: FieldValue.arrayRemove(JSON.stringify(transMonster))});
+                    });
+                }
+
                 steps.push({
                     type: "battle_end",
                     description: `${monster.name} was defeated!`
@@ -269,7 +306,6 @@ class ChatRPG {
         // Damage step
         if(battleAction.damage != null) {
             const damageStep = {
-
                 actorId: srcPlayer.id
             };
 

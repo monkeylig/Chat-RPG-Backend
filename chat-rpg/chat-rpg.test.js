@@ -102,7 +102,7 @@ test('Testing joining a Twitch game', async () => {
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
 
-    expect(gameState.gameId).toEqual('new game');
+    expect(gameState.id).toEqual('new game');
     expect(gameState.monsters.length).toBe(0);
     let players = dataSource.dataSource.accounts;
 
@@ -140,14 +140,14 @@ test('Testing joining a Twitch game', async () => {
     gameState = await chatrpg.joinGame(playerId, 'new game2');
     const oldMonsterCount = gameState.monsters.length;
 
-    expect(gameState.gameId).toEqual('new game2');
+    expect(gameState.id).toEqual('new game2');
     expect(gameState.monsters.length).toBeGreaterThan(0);
     expect(gameState.monsters[0]).toHaveProperty("attack");
     expect(gameState.monsters[0]).toHaveProperty("defence");
 
     gameState = await chatrpg.joinGame(playerId2, 'new game2');
 
-    expect(gameState.gameId).toEqual('new game2');
+    expect(gameState.id).toEqual('new game2');
     expect(gameState.monsters.length).toBe(oldMonsterCount);
     expect(gameState.monsters[0]).toHaveProperty("attack");
     expect(gameState.monsters[0]).toHaveProperty("defence");
@@ -157,6 +157,39 @@ test('Testing joining a Twitch game', async () => {
     for(player in players) {
         expect(players[player].currentGameId).toBe('new game2');
     }
+});
+
+test('Getting a game update', async () => {
+    let dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                attackRating: 0.5
+            },
+
+            eye_sack: {
+                monsterNumber: 1,
+                attackRating: 0.2
+            },
+
+            telemarketer: {
+                monsterNumber: 2,
+                attackRating: 0.7
+            }
+        }
+    });
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    await chatrpg.joinGame(playerId, 'new game');
+
+    const gameUpdate = await chatrpg.getGame('new game');
+
+    expect(gameUpdate.id).toEqual('new game');
+    expect(gameUpdate.monsters.length).toBeGreaterThan(0);
+    expect(gameUpdate.monsters[0]).toHaveProperty("attack");
+    expect(gameUpdate.monsters[0]).toHaveProperty("defence");
 });
 
 test('Starting a battle', async () => {
@@ -188,7 +221,7 @@ test('Starting a battle', async () => {
 
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
     expect(battleState).toBeTruthy();
     expect(battleState.player).toBeTruthy();
@@ -230,7 +263,7 @@ test('Battle Actions: Strike', async () => {
 
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
     const playerHealth = battleState.player.health;
 
     const battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -286,7 +319,7 @@ test('Battle Actions: Strike Ability', async () => {
 
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -349,7 +382,7 @@ test('Magic Strike', async () => {
     dataSource.dataSource[Schema.Collections.Accounts][playerId].attack = 0;
     dataSource.dataSource[Schema.Collections.Accounts][playerId].magic = 10;
 
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.steps[0].type).toMatch('strike');
@@ -357,7 +390,7 @@ test('Magic Strike', async () => {
 
 });
 
-test('Defeating a monster', async () => {
+test.only('Defeating a monster', async () => {
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -387,10 +420,9 @@ test('Defeating a monster', async () => {
 
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -402,6 +434,11 @@ test('Defeating a monster', async () => {
     expect(battleUpdate.result.expAward).toBeTruthy();
     expect(battleUpdate.result.expAward).toBe(chatRPGUtility.getMonsterExpGain(battleUpdate.monster));
     expect(battleUpdate.player.level).toBe(2);
+
+    const gameUpdate = await chatrpg.getGame('new game');
+
+    expect(gameUpdate.monsters.includes(battleUpdate.monster.id)).toBeFalsy();
+
 });
 
 test('Player being defeated', async () => {
@@ -434,7 +471,7 @@ test('Player being defeated', async () => {
 
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.gameId, gameState.monsters[0].id);
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});

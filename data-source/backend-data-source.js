@@ -170,6 +170,7 @@ class IBackendDataSourceQuerySnapShot {
 class IBackendDataSourceTransaction {
     async get(refOrQuery){}
     create(documentRef, data){}
+    
 }
 
 class FieldValue {

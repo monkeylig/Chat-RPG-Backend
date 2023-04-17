@@ -25,12 +25,12 @@ async function test_join_game() {
     await utility.backendCall(Endpoint + '?playerId=' + responce.playerId + '&gameId=' + gameId, 'POST')
     .then(data => {
         const gameState = JSON.parse(data);
-        if(!gameState.hasOwnProperty('gameId') || !gameState.hasOwnProperty('monsters')) {
+        if(!gameState.hasOwnProperty('id') || !gameState.hasOwnProperty('monsters')) {
             utility.fail(Endpoint);
             return;
         }
 
-        if(gameState.gameId != gameId) {
+        if(gameState.id != gameId) {
             utility.fail(Endpoint);
             return;
         }

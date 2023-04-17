@@ -208,6 +208,25 @@ function join_game(req, res, chatrpg) {
     }, (error) => {internalErrorCatch(req, res, error);});
 }
 
+function get_game(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'gameId', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.getGame(req.query.gameId)
+    .then(gameUpdate => {
+        sendResponceObject(res, gameUpdate);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
 function start_battle(req, res, chatrpg) {
     setStandardHeaders(res);
 
@@ -257,6 +276,7 @@ module.exports = {
     create_new_player,
     get_player,
     join_game,
+    get_game,
     start_battle,
     battle_action
 };

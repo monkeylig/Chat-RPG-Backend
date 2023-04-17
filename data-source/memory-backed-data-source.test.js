@@ -503,7 +503,7 @@ test('Testing updating existing documents', async () => {
     expect(player.abilities.includes('block')).toBeFalsy();
 });
 
-test('testing creating new documents with transactions', async () => {
+test('Testing creating new documents with transactions', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
     const user = {
@@ -530,5 +530,33 @@ test('testing creating new documents with transactions', async () => {
 
     expect(querySnapshot.empty).toBeFalsy();
     expect(querySnapshot.docs[0].data()).toStrictEqual(user);
+});
+
+test.only('Updating arrays with transactions', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    }; 
+
+    const playerRef = await dataSource.collection('players').add(user);
+
+    await dataSource.runTransaction(async (transaction) => {
+        const playerSnap = await transaction.get(playerRef);
+
+        if(playerSnap.exists) {
+            await transaction.update(playerRef, {abilities: FieldValue.arrayRemove('block')});
+        }
+    });
+
+    const player = (await playerRef.get()).data();
+
+    expect(player.abilities.includes('block')).toBeFalsy();
 });
 //#endregion

@@ -2,6 +2,7 @@ test_create_new_player = require('./create_new_player_test');
 test_get_starting_avatars = require('./get_starting_avatars_test');
 test_get_player = require('./get-player-test');
 test_join_game = require('./join_game_test');
+test_get_game = require('./get_game_test');
 test_start_battle = require('./start_battle_test');
 test_battle_action = require('./battle_action_test');
 
@@ -15,6 +16,7 @@ async function RunSyncTests() {
     await test_join_game();
     await test_start_battle();
     await test_battle_action();
+    await test_get_game();
 }
 
 function RunAsyncTests() {
@@ -24,6 +26,7 @@ function RunAsyncTests() {
     test_join_game();
     test_start_battle();
     test_battle_action();
+    test_get_game();
 }
 
 async function Run() {

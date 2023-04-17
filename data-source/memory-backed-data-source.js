@@ -270,8 +270,15 @@ class MemoryDataSourceTransaction {
     async get(refOrQuery) {
         return await refOrQuery.get();
     }
+
     create(documentRef, data) {
         documentRef.set(data);
+        return this;
+    }
+
+    update(documentRef, updateObject) {
+        documentRef.update(updateObject);
+        return this;
     }
 }
 
