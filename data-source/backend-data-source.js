@@ -146,6 +146,10 @@ class IBackendDataSourceDocumentRef {
     async update(object) {
         console.log("backend update()");
     }
+
+    async delete() {
+        console.log("backend delete()");
+    }
 }
 
 class IBackendDataSourceDocumentSnapshot {
@@ -170,7 +174,7 @@ class IBackendDataSourceQuerySnapShot {
 class IBackendDataSourceTransaction {
     async get(refOrQuery){}
     create(documentRef, data){}
-    
+    update(documentRef, updateObject){}
 }
 
 class FieldValue {

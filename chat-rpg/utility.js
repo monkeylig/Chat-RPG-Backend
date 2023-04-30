@@ -10,7 +10,34 @@ function getExpToNextLevel(level) {
     return expFunc(level + 1) - expFunc(level);
 }
 
+function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(chatRPGUtility.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
+  }
+
+function flattenObjectArray(array) {
+    const newArray = [];
+
+    array.forEach(element => {
+        newArray.push(JSON.stringify(element));
+    });
+
+    return newArray;
+}
+
+function unflattenObjectArray(array) {
+    const newArray = [];
+
+    array.forEach(element => {
+        newArray.push(JSON.parse(element));
+    });
+
+    return newArray;
+}
+
 chatRPGUtility = {
+    random: Math.random,
     strikeAnim: {
         spriteSheet: 'Hit-Yellow.png',
         frameWidth: 1024,
@@ -72,7 +99,10 @@ chatRPGUtility = {
 
     getMonsterExpGain(monster) {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
-    }
+    },
+    getRandomIntInclusive,
+    flattenObjectArray,
+    unflattenObjectArray
 };
 
 module.exports = chatRPGUtility;

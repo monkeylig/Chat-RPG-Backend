@@ -204,6 +204,10 @@ class MemoryDataSourceDocumentRef {
             }
         }
     }
+
+    async delete() {
+        delete this.collection[this.id];    
+    }
 }
 
 class MemoryDataSourceDocumentSnapshot {
@@ -220,7 +224,7 @@ class MemoryDataSourceDocumentSnapshot {
 
     data() {
         if (this.exists) {
-            return Object.assign({}, this.document);
+            return JSON.parse(JSON.stringify(this.document));
         }
 
         return;

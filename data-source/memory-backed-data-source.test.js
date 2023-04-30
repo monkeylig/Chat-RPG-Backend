@@ -532,7 +532,7 @@ test('Testing creating new documents with transactions', async () => {
     expect(querySnapshot.docs[0].data()).toStrictEqual(user);
 });
 
-test.only('Updating arrays with transactions', async () => {
+test('Updating arrays with transactions', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
 
@@ -558,5 +558,29 @@ test.only('Updating arrays with transactions', async () => {
     const player = (await playerRef.get()).data();
 
     expect(player.abilities.includes('block')).toBeFalsy();
+});
+
+test('Deleting documents', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    }; 
+
+    const playerRef = await dataSource.collection('players').add(user);
+    let playerSnap = await playerRef.get();
+
+    expect(playerSnap.exists).toBeTruthy();
+
+    await playerRef.delete();
+    playerSnap = await playerRef.get();
+
+    expect(playerSnap.exists).toBeFalsy();
 });
 //#endregion

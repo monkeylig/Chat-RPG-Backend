@@ -3,6 +3,9 @@ const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
 const monsterAi = require("./monster-ai/monster-ai");
 const chatRPGUtility = require('./utility');
+const {Player} = require('./datastore-objects/agent');
+const Game = require('./datastore-objects/game');
+const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agent");
 
 const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 3;
@@ -39,42 +42,31 @@ class ChatRPG {
     }
 
     async addNewPlayer(name, avatar, platformId, platform) {
-        const player = {
-            name: name,
-            avatar: avatar,
-            exp: 0,
-            abilities: '',
-            weapon: chatRPGUtility.defaultWeapon,
-            currentGameId: 0
-        };
 
-        chatRPGUtility.setStatsAtLevel(player, player.weapon.statGrowth, 1);
+        const player = new Player({name, avatar});
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
-        player[platformIdProperty] = platformId;
+        player.setData(platformIdProperty, platformId);
+
         const playersRef = this.#datasource.collection(Schema.Collections.Accounts);
+        const querySnap = await playersRef.where(platformIdProperty, '==', platformId).get();
 
-        const query = playersRef.where(platformIdProperty, '==', platformId);
-        const result = await this.#datasource.runTransaction(async (transaction) => {
-            const playerQuery = await transaction.get(query);
+        if(!querySnap.empty) {
+            throw new Error(ChatRPG.Errors.playerExists);
+        }
 
-            if(!playerQuery.empty) {
-                throw new Error(ChatRPG.Errors.playerExists);
-            }
+        const newPlayer = playersRef.doc();
+        await newPlayer.set(player.getData());
 
-            const newPlayer = playersRef.doc();
-            transaction.create(newPlayer, player);
-
-            return newPlayer.id;
-        });
-
-        return result;
+        return newPlayer.id;
     }
 
     async findPlayerById(id, platform) {
         const playerSnap = await this.#findPlayerbyPlatformId(id, platform);
-        const playerData = playerSnap.data();
+        const player = new Player(playerSnap.data());
+        const playerData = player.getUnflattenedData();
         playerData.id = playerSnap.ref.id;
+
         return playerData;
     }
 
@@ -83,97 +75,61 @@ class ChatRPG {
         const player = await this.#findPlayer(playerId);
 
         const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
+        const gameSnap = await gameRef.get();
+        let game;
+        if(!gameSnap.exists) {
+            //TODO Use the host's game mode from the config
+            game = new Game();
+            game.resetData(await GameModes.arena.createGame(this.#datasource));
 
-        //TODO the host's game mode from the config
+            await this.#datasource.runTransaction(async (transaction) => {
+                const transGameSnap = await transaction.get(gameRef);
 
-        const gameData = await this.#datasource.runTransaction(async (transaction) => {
-             const game = await transaction.get(gameRef);
+               if(!transGameSnap.exists) {
+                   transaction.create(gameRef, game.getData());
+               }
+           });
+        }
+        else {
+            game = new Game(gameSnap.data());
+        }
 
-            if(!game.exists) {
-                // TODO change this so that createGame() happens outside the transaction
-                const gameData = await GameModes.arena.createGame(this.#datasource);
-                gameData.monsters = this.#flattenObjectArray(gameData.monsters);
-                transaction.create(gameRef, gameData);
+        await player.ref.update({ currentGameId: gameId });
 
-                return gameData;
-            }
-
-            return game.data();
-        });
-
-        const updateData = {};
-        updateData[Schema.AccountFields.CurrentGameId] = gameId;
-        await player.ref.update(updateData);
-        
-        gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
-        gameData.id = gameRef.id;
-        return gameData;
+        game.setData('id', gameRef.id);
+        return game.getUnflattenedData();
     }
 
     async getGame(gameId) {
-        const gameData = (await this.#findGame(gameId)).data();
-        gameData.monsters = this.#unflattenObjectArray(gameData.monsters);
-        gameData.id = gameId;
-
-        return gameData;
+        const game = new Game((await this.#findGame(gameId)).data());
+        game.setData('id', gameId);
+        return game.getUnflattenedData();
     }
 
     async startBattle(playerId, gameId, monsterId) {
-        const player = await this.#findPlayer(playerId);
-        const game = await this.#findGame(gameId);
+        const playerSnap = await this.#findPlayer(playerId);
+        const gameSnap = await this.#findGame(gameId);
+        const game = new Game(gameSnap.data());
 
-        const playerData = player.data();
-        if(playerData.currentGameId != game.ref.id) {
+        const playerData = playerSnap.data();
+        if(playerData.currentGameId != gameSnap.ref.id) {
             throw new Error(ChatRPG.Errors.playerNotInGame);
         }
 
-        const monsters = this.#unflattenObjectArray(game.data().monsters);
-
-        let targetMonster;
-
-        monsters.forEach((monster) => {
-            if(monster.id == monsterId) {
-                targetMonster = monster;
-            }
-        });
-
+        const targetMonster = game.findMonsterById(monsterId, false);
         if(!targetMonster) {
             throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
         }
 
+        playerData.id = playerSnap.ref.id;
+        const battlePlayer = new BattlePlayer(playerData);
+        targetMonster.id = monsterId;
+        const battleMonster = new BattleMonster(targetMonster);
+
         const battle = {
-            player: {
-                id: player.ref.id,
-                name: playerData.name,
-                avatar: playerData.avatar,
-                health: playerData.health,
-                maxHealth: playerData.maxHealth,
-                attack: playerData.attack,
-                defence: playerData.defence,
-                magic: playerData.magic,
-                weapon: playerData.weapon,
-                level: playerData.level,
-                exp: playerData.exp,
-                expToNextLevel: playerData.expToNextLevel,
-                ap: BATTLE_AP,
-                strikeLevel: 0
-            },
-            monster: {
-                id: targetMonster.id,
-                name: targetMonster.name,
-                avatar: targetMonster.avatar,
-                health: targetMonster.health,
-                maxHealth: targetMonster.maxHealth,
-                attack: targetMonster.attack,
-                defence: targetMonster.defence,
-                magic: targetMonster.magic,
-                weapon: targetMonster.weapon,
-                level: targetMonster.level,
-                expYield: targetMonster.expYield,
-                ap: BATTLE_AP,
-                strikeLevel: 0
-            },
-            gameId: game.ref.id,
+            player: battlePlayer.getData(),
+            monster: battleMonster.getData(),
+            gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim
         };
 
@@ -193,94 +149,125 @@ class ChatRPG {
         }
 
         const battle = battleSnap.data();
-        const player = battle.player;
-        const monster = battle.monster;
+        const battlePlayer = new BattlePlayer(battle.player);
+        const battlePlayerData = battlePlayer.getData();
+        const monster = new BattleMonster(battle.monster);
+        const monsterData = monster.getData()
         
         const monsterActionRequest = monsterAi.genericAi(battle);
 
         //Proccess battle actions
         //player action
-        const playerAction = this.#createBattleAction(actionRequest, player);
+        const playerAction = this.#createBattleAction(actionRequest, battlePlayerData);
         //monster action
-        const monsterAction = this.#createBattleAction(monsterActionRequest, monster);
+        const monsterAction = this.#createBattleAction(monsterActionRequest, monsterData);
 
         const steps = [];
         if(playerAction.speed > monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(player, playerAction, monster, monsterAction));
+            steps.push(...this.#executeActionPhase(battlePlayerData, playerAction, monsterData, monsterAction));
         }
         else if(playerAction.speed < monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(monster, monsterAction, player, playerAction));
+            steps.push(...this.#executeActionPhase(monsterData, monsterAction, battlePlayerData, playerAction));
         }
 
-        if(this.#isDefeated(player) || this.#isDefeated(monster)) {
+        if(battlePlayer.isDefeated() || monster.isDefeated()) {
             const result = {};
+            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
+            const player = new Player((await playerRef.get()).data());
 
-            if(this.#isDefeated(player) && this.#isDefeated(monster)) {
+            if(battlePlayer.isDefeated() && monster.isDefeated()) {
                 result.winner = null;
                 steps.push({
                     type: "battle_end",
                     description: "The battle ended in a draw."
                 });
             }
-            else if(this.#isDefeated(player)) {
-                result.winner = monster.id;
+            else if(battlePlayer.isDefeated()) {
+                result.winner = monsterData.id;
                 steps.push({
                     type: "battle_end",
-                    description: `${player.name} was defeated.`
+                    description: `${battlePlayerData.name} was defeated.`
                 });
             }
-            else if(this.#isDefeated(monster)) {
-                const expGain = chatRPGUtility.getMonsterExpGain(monster);
-                chatRPGUtility.addExpAndLevel(player, expGain, player.weapon.statGrowth);
+            else if(monster.isDefeated()) {
+                const expGain = monster.getExpGain();
+                battlePlayer.addExpAndLevel(expGain);
 
-                result.winner = player.id;
+                result.winner = battlePlayerData.id;
                 result.expAward = expGain;
-
-                const gameSnap = await this.#findGame(battle.gameId);
-                const gameData = gameSnap.data();
-                const monsters = this.#unflattenObjectArray(gameData.monsters);
-
-                const searchMonster = (monsterArr, id) => {
-                    for(const monsterInstance of monsterArr) {
-                        if(monsterInstance.id == id) {
-                            return monsterInstance;
-                        }
-                    }
+                result.drops = [];
+                const lastDrop = {
+                    weapons: []
                 };
+
+                // Compute the monster drops
+                const willDropWeapon = chatRPGUtility.getRandomIntInclusive(0, 1) && !player.hasWeapon(monsterData.weapon);
+
+                if(willDropWeapon) {
+                    const drop = {
+                        type: 'weapon',
+                        content: monsterData.weapon,
+                        bagFull: false
+                    };
+
+                    if(!player.addWeapon(monsterData.weapon)) {
+                        drop.bagFull = true;
+                        lastDrop.weapons.push(monsterData.weapon);
+                    }
+                    result.drops.push(drop);
+                }
+                
+                if(lastDrop.weapons.length) {
+                    player.setLastDrop(lastDrop);
+                }
+
+                // Remove battle fields and commit New Player data
+                delete battlePlayerData.strikeLevel;
+                delete battlePlayerData.ap;
+                const finalPlayerData = Object.assign(player.getData(), battlePlayerData);
+                await playerRef.set(finalPlayerData);
+                
+                // Remove the monster from the game
+                const gameSnap = await this.#findGame(battle.gameId);
+                const game = new Game(gameSnap.data());
                 
                 // Skip transaction if it is unnessesary
-                if(searchMonster(monsters, monster.id)) {
+                if(game.findMonsterById(monsterData.id, false)) {
                     await this.#datasource.runTransaction(async (transaction) => {
                         const transGameSnap = await transaction.get(gameSnap.ref);
-                        const transGameData = transGameSnap.data();
-                        transGameData.monsters = this.#unflattenObjectArray(transGameData.monsters);
+                        const transGame = new Game(transGameSnap.data());
                         
-                        const transMonster = searchMonster(transGameData.monsters, monster.id)
+                        const transMonster = transGame.findMonsterById(monsterData.id);
                         if(!transMonster) {
                             return;
                         }
                         
-                        transaction.update(transGameSnap.ref, {monsters: FieldValue.arrayRemove(JSON.stringify(transMonster))});
+                        transaction.update(transGameSnap.ref, {monsters: FieldValue.arrayRemove(transMonster)});
                     });
                 }
 
                 steps.push({
                     type: "battle_end",
-                    description: `${monster.name} was defeated!`
+                    description: `${monsterData.name} was defeated!`
                 });
             }
 
-            return await this.#updateAndReturnBattleStatus({player, monster, steps, result}, battleSnap.ref.id);
+            return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps, result}, true);
         }
 
-        return await this.#updateAndReturnBattleStatus({player, monster, steps}, battleSnap.ref.id);
+        return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps});
     }
 
-    async #updateAndReturnBattleStatus(battle, battleId) {
-        await this.#datasource.collection(Schema.Collections.Battles).doc(battleId).update({
-            player: battle.player,
-            monster: battle.monster
-        });
+    async #updateAndReturnBattleStatus(battleRef, battle, deleteBattle=false) {
+        if(!deleteBattle) {
+            await battleRef.update({
+                player: battle.player,
+                monster: battle.monster
+            });
+        }
+        else {
+            await battleRef.delete();
+        }
 
         return battle;
     }
@@ -396,26 +383,6 @@ class ChatRPG {
         default:
             return '';
         }
-    }
-
-    #flattenObjectArray(array) {
-        const newArray = [];
-
-        array.forEach(element => {
-            newArray.push(JSON.stringify(element));
-        });
-
-        return newArray;
-    }
-
-    #unflattenObjectArray(array) {
-        const newArray = [];
-
-        array.forEach(element => {
-            newArray.push(JSON.parse(element));
-        });
-
-        return newArray;
     }
 }
 

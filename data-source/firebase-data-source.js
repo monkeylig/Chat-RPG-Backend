@@ -63,7 +63,16 @@ class FirebaseDataSourceDocumentRef {
     }
 
     async update(object) {
-        const updateObj = object;
+
+        await this.docRef.update(FirebaseDataSourceDocumentRef.convertUpdateObject(object));
+    }
+
+    async delete() {
+        this.docRef.delete();
+    }
+
+    static convertUpdateObject(updateObject) {
+        const updateObj = updateObject;
 
         for(const prop in updateObj) {
             if(typeof updateObj[prop] == 'object' && updateObj[prop].hasOwnProperty('fieldType')) {
@@ -79,8 +88,7 @@ class FirebaseDataSourceDocumentRef {
                 }
             }
         }
-
-        await this.docRef.update(updateObj);
+        return updateObj;
     }
 }
 
@@ -128,15 +136,23 @@ class FirebaseDataSourceTransaction {
 
     async get(refOrQuery) {
         if(refOrQuery.hasOwnProperty('query')) {
-            return await this.transaction.get(refOrQuery.query);
+            const snapShot = await this.transaction.get(refOrQuery.query);
+            return new FirebaseDataSourceQuerySnapShot(snapShot);
         }
         else if(refOrQuery.hasOwnProperty('docRef')) {
-            return await this.transaction.get(refOrQuery.docRef);
+            const snapShot = await this.transaction.get(refOrQuery.docRef);
+            return new FirebaseDataSourceDocumentSnapshot(snapShot, new FirebaseDataSourceDocumentRef(snapShot.ref));
         }
     }
 
     create(documentRef, data) {
         this.transaction.create(documentRef.docRef, data);
+        return this;
+    }
+
+    update(documentRef, updateObject) {
+        this.transaction.update(documentRef.docRef, FirebaseDataSourceDocumentRef.convertUpdateObject(updateObject));
+        return this;
     }
 }
 

@@ -2,6 +2,8 @@ const ChatRPG = require('./chat-rpg');
 const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
 const chatRPGUtility = require('./utility');
 const Schema = require("./datasource-schema");
+const {Player} = require('./datastore-objects/agent');
+const seedrandom = require('seedrandom');
 
 
 
@@ -13,19 +15,11 @@ test('Testing adding a new Twitch player', async () => {
     const name = 'jhard';
     const avatar = 'big-bad.png';
     const twitchId = 'f048932ujr';
-    const defaultPlayer = {
-        name: name,
-        avatar: avatar,
-        twitchId: twitchId,
-        weapon: chatRPGUtility.defultWeapon,
-        exp: 0,
-        abilities: '',
-        currentGameId: 0
-    };
+    const defaultPlayer = new Player({name, avatar, twitchId});
 
-    chatRPGUtility.setStatsAtLevel(defaultPlayer, defaultPlayer.weapon.statGrowth, 1);
+    defaultPlayer.setStatsAtLevel(1);
 
-    await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).resolves.toBeTruthy();
+    await expect(chatrpg.addNewPlayer(name, avatar, twitchId, 'twitch')).resolves.toBeTruthy();
 
     const userData = dataSource.dataSource["accounts"];
 
@@ -36,7 +30,7 @@ test('Testing adding a new Twitch player', async () => {
     }
 
     expect(playerField).toBeTruthy();
-    expect(userData[playerField]).toStrictEqual(defaultPlayer);
+    expect(userData[playerField]).toStrictEqual(defaultPlayer.getData());
 
     // Make sure the same player can't be added twice
     await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPG.Errors.playerExists);
@@ -69,17 +63,9 @@ test('Testing finding a Twitch player', async () => {
     const name = 'ochiva';
     const avatar = 'mid-bad.png';
     const twitchId = 'hdyer';
-    const defaultPlayer = {
-        name: name,
-        avatar: avatar,
-        twitchId: twitchId,
-        weapon: chatRPGUtility.defultWeapon,
-        exp: 0,
-        abilities: '',
-        currentGameId: 0
-    };
+    const defaultPlayer = new Player({name, avatar, twitchId});
 
-    chatRPGUtility.setStatsAtLevel(defaultPlayer, defaultPlayer.weapon.statGrowth, 1);
+    defaultPlayer.setStatsAtLevel(1);
 
     await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     await chatrpg.addNewPlayer(name, avatar, twitchId, 'twitch');
@@ -88,8 +74,8 @@ test('Testing finding a Twitch player', async () => {
     let player = await chatrpg.findPlayerById(twitchId, 'twitch');
     
     expect(player.id).toBeTruthy();
-    defaultPlayer.id = player.id;
-    expect(player).toStrictEqual(defaultPlayer);
+    defaultPlayer.setData('id', player.id);
+    expect(player).toStrictEqual(defaultPlayer.getData());
 
     await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
 });
@@ -157,6 +143,9 @@ test('Testing joining a Twitch game', async () => {
     for(player in players) {
         expect(players[player].currentGameId).toBe('new game2');
     }
+
+    const gameData = (await dataSource.collection(Schema.Collections.Games).doc('new game2').get()).data();
+    expect(typeof gameData.monsters[0]).toMatch('string');
 });
 
 test('Getting a game update', async () => {
@@ -190,6 +179,9 @@ test('Getting a game update', async () => {
     expect(gameUpdate.monsters.length).toBeGreaterThan(0);
     expect(gameUpdate.monsters[0]).toHaveProperty("attack");
     expect(gameUpdate.monsters[0]).toHaveProperty("defence");
+
+    const gameData = (await dataSource.collection(Schema.Collections.Games).doc('new game').get()).data();
+    expect(typeof gameData.monsters[0]).toMatch('string');
 });
 
 test('Starting a battle', async () => {
@@ -390,7 +382,7 @@ test('Magic Strike', async () => {
 
 });
 
-test.only('Defeating a monster', async () => {
+test('Defeating a monster', async () => {
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -439,6 +431,12 @@ test.only('Defeating a monster', async () => {
 
     expect(gameUpdate.monsters.includes(battleUpdate.monster.id)).toBeFalsy();
 
+    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+
+    expect(player.level).toBe(2);
+
+    await expect(chatrpg.battleAction(battleState.id, {type: 'strike'})).rejects.toThrow(ChatRPG.Errors.battleNotFound);
+
 });
 
 test('Player being defeated', async () => {
@@ -484,4 +482,167 @@ test('Player being defeated', async () => {
     expect(battleUpdate.player.health).toBe(0);
     expect(battleUpdate.result).toBeTruthy();
     expect(battleUpdate.result.winner).toMatch(battleState.monster.id);
+});
+
+test('Monster Drops', async () => {
+    chatRPGUtility.random = seedrandom('Chat RPG!');
+
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.1,
+                magicRating: 0.2,
+                expYield: 36,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+
+    expect(battleUpdate.result.drops.length).toBeGreaterThan(0);
+    expect(battleUpdate.result.drops[0].type).toMatch('weapon');
+    expect(battleUpdate.result.drops[0].content.name).toMatch(battleUpdate.monster.weapon.name);
+
+    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+
+    expect(player.bag.weapons.length).toBeGreaterThan(0);
+    expect(player.bag.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
+
+    const playerData = (await dataSource.collection(Schema.Collections.Accounts).doc(playerId).get()).data();
+    expect(typeof playerData.bag.weapons[0]).toMatch('string');
+});
+
+test('Monster Drops with bag full', async () => {
+    chatRPGUtility.random = seedrandom('Chat RPG!');
+    const defaultPlayer = new Player({name: 'jhard', avatar: 'big-bad.png', twitchId: 'fr4wt4'});
+    const fillerWeapon = {
+        baseDamage: 10,
+        name: "bat",
+        speed: 1,
+        strikeAbility: {
+            baseDamage: 20,
+            name: "swing"
+        }
+    };
+
+    while(defaultPlayer.addWeapon(fillerWeapon)){}
+
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            testPlayer: defaultPlayer.getData()
+        }, 
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.1,
+                magicRating: 0.2,
+                expYield: 36,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let gameState = await chatrpg.joinGame('testPlayer', 'new game');
+    let battleState = await chatrpg.startBattle('testPlayer', gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+
+    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+    expect(player.lastDrops.weapons.length).toBeGreaterThan(0);
+    expect(player.lastDrops.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
+
+    const playerData = (await dataSource.collection(Schema.Collections.Accounts).doc('testPlayer').get()).data();
+    expect(typeof playerData.lastDrops.weapons[0]).toMatch('string');
+});
+
+test('Monster does not drop weapon', async () => {
+    chatRPGUtility.random = seedrandom('Where\'s my loot?!');
+
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.1,
+                magicRating: 0.2,
+                expYield: 36,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate;
+    do {
+        battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    } while(!battleUpdate.result)
+
+    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+    expect(player.bag.weapons.length).toBe(0);
+    expect(player.lastDrops.weapons.length).toBe(0);
+
+    for(const drop of battleUpdate.result.drops) {
+        expect(drop.type).not.toMatch('weapon');
+    }
 });

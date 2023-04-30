@@ -170,7 +170,7 @@ test('Testing updating existing documents', async () => {
 test('testing creating new documents with transactions', async () => {
     const dataSource = new FirebaseBackedDataSource();
     const user = {
-        name: 'Joker',
+        name: 'Jokerr',
         level: 22,
         items: {
             potions: 3
@@ -180,7 +180,7 @@ test('testing creating new documents with transactions', async () => {
 
     const playersRef = dataSource.collection('players'); 
     await dataSource.runTransaction(async (transaction) => {
-        const query = playersRef.where('name', '==', 'Joker');
+        const query = playersRef.where('name', '==', 'Jokerr');
         const querySnapshot = await transaction.get(query);
 
         if(querySnapshot.empty) {
@@ -189,8 +189,58 @@ test('testing creating new documents with transactions', async () => {
         }
     });
 
-    const querySnapshot = await playersRef.where('name', '==', 'Joker').get();
+    const querySnapshot = await playersRef.where('name', '==', 'Jokerr').get();
 
     expect(querySnapshot.empty).toBeFalsy();
     expect(querySnapshot.docs[0].data()).toStrictEqual(user);
+});
+
+test('Updating arrays with transactions', async () => {
+    const dataSource = new FirebaseBackedDataSource();
+
+    const user = {
+        name: 'jake',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    }; 
+
+    const playerRef = await dataSource.collection('players').add(user);
+
+    await dataSource.runTransaction(async (transaction) => {
+        const playerSnap = await transaction.get(playerRef);
+
+        if(playerSnap.exists) {
+            await transaction.update(playerSnap.ref, {abilities: FieldValue.arrayRemove('block')});
+        }
+    });
+
+    const player = (await playerRef.get()).data();
+
+    expect(player.abilities.includes('block')).toBeFalsy();
+});
+
+test('Deleting documents', async () => {
+    const dataSource = new FirebaseBackedDataSource();
+
+    const user = {
+        name: 'gerr',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    }; 
+
+    const playerRef = await dataSource.collection('players').add(user);
+    let playerSnap = await playerRef.get();
+
+    expect(playerSnap.exists).toBeTruthy();
+
+    await playerRef.delete();
+    playerSnap = await playerRef.get();
+
+    expect(playerSnap.exists).toBeFalsy();
 });
