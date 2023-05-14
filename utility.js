@@ -1,6 +1,8 @@
+const { v4: uuidv4 } = require('uuid');
+
 const utility = {
     genId() {
-        return 'id' + Math.floor(Math.random() * 10000000);
+        return uuidv4();
     },
     sampleData: {
         avatars: {
@@ -43,6 +45,22 @@ const utility = {
                         name: "Big Swing",
                         basedamage: 50
                     }
+                }
+            }
+        },
+        accounts: {
+            testPlayer1: {
+                bag: {
+                    weapons: [
+                        '{"name": "Glock19", "id": "weapon1"}'
+                    ]
+                }
+            },
+            testPlayer2: {
+                bag: {
+                    weapons: [
+                        '{"name": "Glock19", "id": "weapon1"}'
+                    ]
                 }
             }
         }

@@ -1,5 +1,6 @@
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
+const utility = require("../../utility");
 
 function expFunc(level) {
     if (level == 1) {
@@ -62,6 +63,7 @@ class Agent extends DatastoreObject {
             name: 'Fists',
             baseDamage: 10,
             speed: 3,
+            icon: 'fist.png',
             strikeAbility: {
                 name: 'Heavy Strike',
                 baseDamage: 30
@@ -140,6 +142,7 @@ class Player extends Agent {
             return false;
         }
 
+        weapon.id = utility.genId();
         weapons.push(weapon);
         return true;
     }
@@ -154,26 +157,76 @@ class Player extends Agent {
         return false;
     }
 
+    findWeaponById(weaponId, flatten=true) {
+        const weapon = this.datastoreObject.bag.weapons.find(element => element.id === weaponId);
+
+        if(!weapon) {
+            return;
+        }
+
+        return flatten ? JSON.stringify(weapon) : weapon;
+    }
+
+    equipWeapon(weapon) {
+        this.datastoreObject.weapon = weapon;
+    }
+
+    dropWeapon(weaponId) {
+        const weaponIndex = this.datastoreObject.bag.weapons.findIndex(element => element.id === weaponId);
+
+        if(weaponIndex === -1) {
+            return;
+        }
+
+        let currentWeapon = this.datastoreObject.weapon;
+
+        if(currentWeapon.id === weaponId) {
+            currentWeapon = chatRPGUtility.defaultWeapon;
+        }
+
+        this.datastoreObject.bag.weapons.splice(weaponIndex, 1);
+    }
+
     setLastDrop(lastDrop) {
         this.datastoreObject.lastDrops = lastDrop;
+    }
+
+    isWeaponEquipped(weaponId) {
+        return this.datastoreObject.weapon.id === weaponId
     }
 }
 
 class Monster extends Agent {
     static EXP_MODIFIER = 6;
+    static STAT_POINTS_PER_LEVEL = 5;
+
     constructor(objectData) {
         super(objectData);
     }
 
-    constructNewObject(agent) {
-        super.constructNewObject(agent);
-        agent.expYield = 0;
-        agent.id = 0;
+    constructNewObject(monster) {
+        super.constructNewObject(monster);
+        monster.expYield = 0;
+        monster.id = 0;
+        monster.attackRating = 0;
+        monster.magicRating = 0;
+        monster.defenceRating = 0;
+        monster.healthRating = 0;
     }
 
     getExpGain() {
         const monster = this.datastoreObject;
         return Math.round(monster.expYield * monster.level/7 * Monster.EXP_MODIFIER);
+    }
+
+    setStatsAtLevel(level) {
+        const monster = this.datastoreObject;
+        setStatsAtLevel(monster, {
+            maxHealth: monster.healthRating * Monster.STAT_POINTS_PER_LEVEL,
+            attack: monster.attackRating * Monster.STAT_POINTS_PER_LEVEL,
+            defence: monster.defenceRating * Monster.STAT_POINTS_PER_LEVEL,
+            magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
+        }, level);
     }
 }
 

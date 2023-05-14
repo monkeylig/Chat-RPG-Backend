@@ -54,6 +54,9 @@ function internalErrorCatch(req, res, error) {
             responce.errorCode = 6;
             status = 404;
             break;
+        case ChatRPG.Errors.weaponNotInBag:
+            responce.errorCode = 7;
+            status = 404;
         default:
             responce.message = 'Internal Error';
             responce.errorCode = 0;
@@ -150,12 +153,15 @@ function get_player(req, res, chatrpg) {
     setStandardHeaders(res);
     let responce = {message: ''};
     
-    const payloadParams = [
-        {name: 'platform', type: 'string'},
+    const queryParams = [
         {name: 'playerId', type: 'string'}
     ];
 
-    if(!validatePayloadParameters(req.query, payloadParams))
+    if(req.query.platform) {
+        queryParams.push({name: 'platform', type: 'string'});
+    }
+
+    if(!validatePayloadParameters(req.query, queryParams))
     {
         res.status(400);
         responce.message = 'missing query string keys';
@@ -267,6 +273,46 @@ function battle_action(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+function equip_weapon(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'weaponId', type: 'string'}
+    ]
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.equipWeapon(req.query.playerId, req.query.weaponId)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function drop_weapon(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'weaponId', type: 'string'}
+    ]
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.dropWeapon(req.query.playerId, req.query.weaponId)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -278,5 +324,7 @@ module.exports = {
     join_game,
     get_game,
     start_battle,
-    battle_action
+    battle_action,
+    equip_weapon,
+    drop_weapon
 };

@@ -17,6 +17,8 @@ async function test_start_battle() {
     try {
         let data = await utility.backendCall('/create_new_player?platform=twitch', 'PUT', body);
         playerData = JSON.parse(data);
+        //testing regression with asynchronous call to creating a game and fighting a monster
+        utility.backendCall('/join_game'  + '?playerId=' + playerData.playerId + '&gameId=' + gameId, 'POST');
         data = await utility.backendCall('/join_game'  + '?playerId=' + playerData.playerId + '&gameId=' + gameId, 'POST');
         gameState = JSON.parse(data);
 

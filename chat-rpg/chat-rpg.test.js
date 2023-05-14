@@ -262,13 +262,17 @@ test('Battle Actions: Strike', async () => {
 
     expect(battleUpdate).toBeTruthy();
     expect(battleUpdate.steps).toBeTruthy();
-    expect(battleUpdate.steps.length).toBe(2);
-    expect(battleUpdate.steps[0].type).toMatch('strike');
-    expect(battleUpdate.steps[0].actorId).toMatch(playerId);
+    expect(battleUpdate.steps.length).toBe(4);
+
+    expect(battleUpdate.steps[0].type).toMatch('info');
     expect(battleUpdate.steps[0].description).toMatch(/strikes/);
-    expect(battleUpdate.steps[1].type).toMatch('strike');
-    expect(battleUpdate.steps[1].actorId).toMatch(gameState.monsters[0].id);
-    expect(battleUpdate.steps[1].description).toMatch(/strikes/);
+    expect(battleUpdate.steps[1].type).toMatch('damage');
+    expect(battleUpdate.steps[1].actorId).toMatch(playerId);
+
+    expect(battleUpdate.steps[2].type).toMatch('info');
+    expect(battleUpdate.steps[2].description).toMatch(/strikes/);
+    expect(battleUpdate.steps[3].type).toMatch('damage');
+    expect(battleUpdate.steps[3].actorId).toMatch(gameState.monsters[0].id);
 
     const playerLevel = battleUpdate.player.level;
     const playerBaseDamage = battleUpdate.player.weapon.baseDamage;
@@ -276,9 +280,9 @@ test('Battle Actions: Strike', async () => {
     const playerDefence = battleUpdate.player.defence;
     const monster = gameState.monsters[0];
     let expectedDamage = Math.floor(((2 * playerLevel / 5 + 2) * playerBaseDamage * playerAttack / monster.defence) / 50 + 2);
-    expect(battleUpdate.steps[0].damage).toBe(expectedDamage);
-    expectedDamage = Math.floor(((2 * monster.level / 5 + 2) * monster.weapon.baseDamage * monster.attack / playerDefence) / 50 + 2);
     expect(battleUpdate.steps[1].damage).toBe(expectedDamage);
+    expectedDamage = Math.floor(((2 * monster.level / 5 + 2) * monster.weapon.baseDamage * monster.attack / playerDefence) / 50 + 2);
+    expect(battleUpdate.steps[3].damage).toBe(expectedDamage);
     expect(battleUpdate.player.health).toBe(playerHealth - expectedDamage);
 });
 
@@ -317,8 +321,8 @@ test('Battle Actions: Strike Ability', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.steps[0].type).toMatch('strike');
     expect(battleUpdate.steps[0].description).toMatch(/Heavy Strike/);
+    expect(battleUpdate.steps[1].type).toMatch('damage');
 });
 
 
@@ -377,8 +381,8 @@ test('Magic Strike', async () => {
     let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.steps[0].type).toMatch('strike');
-    expect(battleUpdate.steps[0].damage).toBeGreaterThan(2);
+    expect(battleUpdate.steps[1].type).toMatch('damage');
+    expect(battleUpdate.steps[1].damage).toBeGreaterThan(2);
 
 });
 
@@ -645,4 +649,72 @@ test('Monster does not drop weapon', async () => {
     for(const drop of battleUpdate.result.drops) {
         expect(drop.type).not.toMatch('weapon');
     }
+});
+
+test('Equip weapon', async () => {
+    let player = new Player();
+    let playerData = player.getData();
+    playerData.bag.weapons.push({name: 'sword', id: 'weapon1'});
+    
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    playerData = await chatrpg.equipWeapon('player1', 'weapon1');
+
+    expect(playerData.weapon).toBeTruthy();
+    expect(playerData.weapon.name).toMatch('sword');
+    expect(playerData.weapon.id).toMatch('weapon1');
+
+    playerData = dataSource.dataSource.accounts.player1;
+
+    expect(playerData.weapon).toBeTruthy();
+    expect(playerData.weapon.name).toMatch('sword');
+    expect(playerData.weapon.id).toMatch('weapon1');
+});
+
+test('Player drop weapon', async () => {
+    let player = new Player();
+    let playerData = player.getData();
+    playerData.bag.weapons.push({name: 'sword', id: 'weapon1'});
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    playerData = await chatrpg.dropWeapon('player1', 'weapon1');
+
+    expect(playerData.bag.weapons.length).toBe(0);
+});
+
+test('Player drop weapon while equipped', async () => {
+    let player = new Player();
+    let playerData = player.getData();
+    const weapon = {name: 'sword', id: 'weapon1'};
+    playerData.bag.weapons.push(weapon);
+    playerData.weapon = weapon;
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    playerData = await chatrpg.dropWeapon('player1', 'weapon1');
+
+    expect(playerData.bag.weapons.length).toBe(0);
+    expect(playerData.weapon.name).toMatch(chatRPGUtility.defaultWeapon.name);
 });

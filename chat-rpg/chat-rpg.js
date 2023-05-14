@@ -1,4 +1,4 @@
-const {IBackendDataSource, FieldValue} = require("../data-source/backend-data-source");
+const {FieldValue} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
 const monsterAi = require("./monster-ai/monster-ai");
@@ -6,6 +6,8 @@ const chatRPGUtility = require('./utility');
 const {Player} = require('./datastore-objects/agent');
 const Game = require('./datastore-objects/game');
 const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agent");
+const BattleSteps = require('./battle-steps');
+const AbilityFunctions = require('./ability-functions/ability-functions');
 
 const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 3;
@@ -20,10 +22,11 @@ class ChatRPG {
     static Errors = {
         playerExists: 'player exists',
         playerNotFound: 'player not found',
-        gameNotFound: "game not found",
-        monsterInstanceNotFound: "monster instance not found",
-        playerNotInGame: "Player not in game",
-        battleNotFound: "Battle not found"
+        gameNotFound: 'game not found',
+        monsterInstanceNotFound: 'monster instance not found',
+        playerNotInGame: 'Player not in game',
+        battleNotFound: 'Battle not found',
+        weaponNotInBag: 'Weapon not in bag'
     }
 
     constructor(datasource) {
@@ -62,7 +65,14 @@ class ChatRPG {
     }
 
     async findPlayerById(id, platform) {
-        const playerSnap = await this.#findPlayerbyPlatformId(id, platform);
+        let playerSnap;
+        if(platform) {
+            playerSnap = await this.#findPlayerbyPlatformId(id, platform);
+        }
+        else {
+            playerSnap = await this.#findPlayer(id);
+        }
+    
         const player = new Player(playerSnap.data());
         const playerData = player.getUnflattenedData();
         playerData.id = playerSnap.ref.id;
@@ -79,16 +89,18 @@ class ChatRPG {
         let game;
         if(!gameSnap.exists) {
             //TODO Use the host's game mode from the config
-            game = new Game();
-            game.resetData(await GameModes.arena.createGame(this.#datasource));
+            game = await GameModes.arena.createGame(this.#datasource)
 
-            await this.#datasource.runTransaction(async (transaction) => {
+            const gameData = await this.#datasource.runTransaction(async (transaction) => {
                 const transGameSnap = await transaction.get(gameRef);
-
-               if(!transGameSnap.exists) {
-                   transaction.create(gameRef, game.getData());
+                if(!transGameSnap.exists) {
+                    const transGameData = game.getData();
+                    transaction.create(gameRef, transGameData);
+                    return transGameData;
                }
+               return transGameSnap.data();
            });
+           game = new Game(gameData);
         }
         else {
             game = new Game(gameSnap.data());
@@ -258,6 +270,53 @@ class ChatRPG {
         return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps});
     }
 
+    async equipWeapon(playerId, weaponId) {
+
+        const playSnap = await this.#findPlayer(playerId);
+        const player = new Player(playSnap.data());
+
+        const weaponData = player.findWeaponById(weaponId, false);
+
+        if(!weaponData) {
+            throw ChatRPG.Errors.weaponNotInBag;
+        }
+
+        await playSnap.ref.update({weapon: weaponData});
+
+        player.equipWeapon(weaponData);
+        return player.getUnflattenedData();
+    }
+
+    async dropWeapon(playerId, weaponId) {
+
+        let player;
+        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
+        await this.#datasource.runTransaction(async (transaction) => {
+            const playerSnap = await transaction.get(playerRef);
+
+            if(!playerSnap.exists) {
+                throw ChatRPG.Errors.playerNotFound;
+            }
+
+            player = new Player(playerSnap.data());
+
+            const weaponData = player.findWeaponById(weaponId);
+            if(!weaponData) {
+                throw ChatRPG.Errors.weaponNotInBag;
+            }
+
+            transaction.update(playerRef, {'bag.weapons': FieldValue.arrayRemove(weaponData)});
+
+            if(player.isWeaponEquipped(weaponId)) {
+                transaction.update(playerRef, {weapon: chatRPGUtility.defaultWeapon});
+            }
+
+        });
+
+        player.dropWeapon(weaponId);
+        return player.getData();
+    }
+
     async #updateAndReturnBattleStatus(battleRef, battle, deleteBattle=false) {
         if(!deleteBattle) {
             await battleRef.update({
@@ -291,44 +350,25 @@ class ChatRPG {
     #applyAction(battleAction, srcPlayer, targetPlayer) {
         const steps = [];
         // Damage step
-        if(battleAction.damage != null) {
-            const damageStep = {
-                actorId: srcPlayer.id
-            };
-
-            if(battleAction.name == 'strike') {
-                damageStep.type = 'strike';
-                srcPlayer.strikeLevel += 1;
-                const modifier = srcPlayer.weapon.modifier ? srcPlayer.weapon.modifier : 'attack';
-                
-                if(srcPlayer.strikeLevel == STRIKE_ABILITY_TRIGGER) {
-                    damageStep.description = `${srcPlayer.name} used ${srcPlayer.weapon.strikeAbility.name}!`;
-                    srcPlayer.strikeLevel = 0;
-
-                    damageStep.damage = this.#calculateDamage(srcPlayer, targetPlayer, srcPlayer.weapon.strikeAbility.baseDamage, modifier);
-                }
-                else {
-                    damageStep.description = `${srcPlayer.name} strikes ${targetPlayer.name}!`;
-                    damageStep.damage = this.#calculateDamage(srcPlayer, targetPlayer, srcPlayer.weapon.baseDamage, modifier);
-                }
+        if(battleAction.name == 'strike') {
+            srcPlayer.strikeLevel += 1;
+            
+            if(srcPlayer.strikeLevel == STRIKE_ABILITY_TRIGGER) {
+                srcPlayer.strikeLevel = 0;
+                const infoStep = BattleSteps.info(`${srcPlayer.name} used ${srcPlayer.weapon.strikeAbility.name}!`);
+                const standardSteps = AbilityFunctions.standardSteps(srcPlayer.weapon.strikeAbility, srcPlayer, targetPlayer);
+                steps.push(infoStep);
+                steps.push(...standardSteps);
             }
-
-            steps.push(damageStep);
-            //Apply damage step
-            targetPlayer.health -= Math.min(damageStep.damage, targetPlayer.health);
+            else {
+                const infoStep = BattleSteps.info(`${srcPlayer.name} strikes ${targetPlayer.name}!`);
+                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.weapon.baseDamage);
+                steps.push(infoStep);
+                steps.push(damageStep);
+            }
         }
 
         return steps;
-    }
-
-    #calculateDamage(srcPlayer, targetPlayer, baseDamage, modifier) {
-        // make sure we don't devide by 0
-        let defence = 1;
-        if(targetPlayer.defence) {
-            defence = targetPlayer.defence;
-        }
-
-        return Math.floor(((2 * srcPlayer.level / 5 + 2) * baseDamage * srcPlayer[modifier] / defence) / 50 + 2);
     }
 
     #createBattleAction(actionRequest, player) {

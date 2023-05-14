@@ -34,6 +34,8 @@ function startServer(dataSource) {
     app.get('/get_game', (req, res) => endpoints.get_game(req, res, chatrpg))
     app.post('/start_battle', (req, res) => endpoints.start_battle(req, res, chatrpg));
     app.post('/battle_action', (req, res) => endpoints.battle_action(req, res, chatrpg));
+    app.post('/equip_weapon', (req, res) => endpoints.equip_weapon(req, res, chatrpg));
+    app.post('/drop_weapon', (req, res) => endpoints.drop_weapon(req, res, chatrpg));
 
     const options = {
         key: fs.readFileSync('yourdomain.key'),
@@ -47,11 +49,12 @@ function startServer(dataSource) {
 }
 
 async function initialization() {
-    /*const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource(utility.sampleData);*/
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource(utility.sampleData);
 
-    const dataSource = new FirebaseDataSource();
-    await dataSource.initializeDataSource();
+    /*const dataSource = new FirebaseDataSource();
+    await dataSource.initializeDataSource();*/
+
     return dataSource;
 }
 

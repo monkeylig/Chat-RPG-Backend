@@ -1,27 +1,11 @@
-const utility = require("../utility");
 const Schema = require("./datasource-schema");
-const chatRPGUtility = require('./utility');
+const MonsterClass = require('./datastore-objects/monster-class')
+const Game = require('./datastore-objects/game');
 
 const NumberOfMonsters = 1;
-const StatPointsPerLevel = 5;
 
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);
-}
-
-function createMonsterInstance(monsterClass, level) {
-
-    const newMonster = Object.assign({
-        id: utility.genId()
-    }, monsterClass);
-
-    chatRPGUtility.setStatsAtLevel(newMonster, {
-        maxHealth: monsterClass.healthRating * StatPointsPerLevel,
-        attack: monsterClass.attackRating * StatPointsPerLevel,
-        defence: monsterClass.defenceRating * StatPointsPerLevel,
-        magic: monsterClass.magicRating * StatPointsPerLevel,
-    }, level);
-    return newMonster;
 }
 
 const GameModes = {
@@ -38,18 +22,15 @@ const GameModes = {
                     continue;
                 }
 
-                monstersClasses.push(querySnapshot.docs[0].data());
+                monstersClasses.push(new MonsterClass(querySnapshot.docs[0].data()));
             }
 
-            const arenaGame = {
-                mode: this.name,
-                monsters: []
-            };
+            const arenaGame = new Game({mode: this.name});
 
-            for(monsterClass of monstersClasses) {
-                arenaGame.monsters.push(createMonsterInstance(monsterClass, 1));
-            }
-
+            monstersClasses.forEach(monsterClass => {
+                arenaGame.addMonster(monsterClass.createMonsterInstance(1));
+            })
+            
             return arenaGame;
         }
     }

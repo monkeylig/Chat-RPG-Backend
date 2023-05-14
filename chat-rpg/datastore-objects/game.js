@@ -8,8 +8,9 @@ class Game extends DatastoreObject {
         this.datastoreObject.monsters = chatRPGUtility.unflattenObjectArray(this.datastoreObject.monsters);
     }
 
-    constructNewObject() {
-        this.datastoreObject.monsters = [];
+    constructNewObject(game) {
+        game.monsters = [];
+        game.mode = '';
     }
 
     getData() {
@@ -28,6 +29,10 @@ class Game extends DatastoreObject {
                 return flatten ? JSON.stringify(monster) : monster;
             }
         }
+    }
+
+    addMonster(monster) {
+        this.datastoreObject.monsters.push(monster.getData());
     }
 }
 
