@@ -175,7 +175,7 @@ class ChatRPG {
         const monsterAction = this.#createBattleAction(monsterActionRequest, monsterData);
 
         const steps = [];
-        if(playerAction.speed > monsterAction.speed) {
+        if(playerAction.speed >= monsterAction.speed) {
             steps.push(...this.#executeActionPhase(battlePlayerData, playerAction, monsterData, monsterAction));
         }
         else if(playerAction.speed < monsterAction.speed) {
@@ -314,7 +314,7 @@ class ChatRPG {
         });
 
         player.dropWeapon(weaponId);
-        return player.getData();
+        return player.getUnflattenedData();
     }
 
     async #updateAndReturnBattleStatus(battleRef, battle, deleteBattle=false) {
@@ -362,6 +362,8 @@ class ChatRPG {
             }
             else {
                 const infoStep = BattleSteps.info(`${srcPlayer.name} strikes ${targetPlayer.name}!`);
+                infoStep.action = 'strike';
+                infoStep.actorId = srcPlayer.id;
                 const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.weapon.baseDamage);
                 steps.push(infoStep);
                 steps.push(damageStep);

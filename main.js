@@ -49,11 +49,11 @@ function startServer(dataSource) {
 }
 
 async function initialization() {
-    const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource(utility.sampleData);
+    /*const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource(utility.sampleData);*/
 
-    /*const dataSource = new FirebaseDataSource();
-    await dataSource.initializeDataSource();*/
+    const dataSource = new FirebaseDataSource();
+    await dataSource.initializeDataSource();
 
     return dataSource;
 }

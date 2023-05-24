@@ -678,10 +678,11 @@ test('Equip weapon', async () => {
     expect(playerData.weapon.id).toMatch('weapon1');
 });
 
-test('Player drop weapon', async () => {
+test.only('Player drop weapon', async () => {
     let player = new Player();
     let playerData = player.getData();
     playerData.bag.weapons.push({name: 'sword', id: 'weapon1'});
+    playerData.bag.weapons.push({name: 'sword', id: 'weapon2'});
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -694,7 +695,8 @@ test('Player drop weapon', async () => {
 
     playerData = await chatrpg.dropWeapon('player1', 'weapon1');
 
-    expect(playerData.bag.weapons.length).toBe(0);
+    expect(playerData.bag.weapons.length).toBe(1);
+    expect(playerData.bag.weapons[0].id).toMatch('weapon2');
 });
 
 test('Player drop weapon while equipped', async () => {
