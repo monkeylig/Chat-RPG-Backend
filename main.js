@@ -36,6 +36,7 @@ function startServer(dataSource) {
     app.post('/battle_action', (req, res) => endpoints.battle_action(req, res, chatrpg));
     app.post('/equip_weapon', (req, res) => endpoints.equip_weapon(req, res, chatrpg));
     app.post('/drop_weapon', (req, res) => endpoints.drop_weapon(req, res, chatrpg));
+    app.post('/equip_ability', (req, res) => endpoints.equip_ability(req, res, chatrpg));
 
     const options = {
         key: fs.readFileSync('yourdomain.key'),

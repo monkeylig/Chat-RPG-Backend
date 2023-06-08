@@ -4,6 +4,9 @@ const utility = {
     genId() {
         return uuidv4();
     },
+    deepCopy(object) {
+        return JSON.parse(JSON.stringify(object));
+    },
     sampleData: {
         avatars: {
             starting_avatars: { 
@@ -50,17 +53,37 @@ const utility = {
         },
         accounts: {
             testPlayer1: {
+                abilities: [],
                 bag: {
                     weapons: [
                         '{"name": "Glock19", "id": "weapon1"}'
-                    ]
+                    ],
+                    books: [
+                        JSON.stringify({
+                            name: "Test Book 1",
+                            abilities: [
+                                {
+                                    name: "Big Bang",
+                                    damage: 50
+                                },
+                                {
+                                    name: "Super Blast",
+                                    damage: 70
+                                }
+                            ]
+                        })
+                    ],
+                    items: []
                 }
             },
             testPlayer2: {
+                abilities: [],
                 bag: {
                     weapons: [
                         '{"name": "Glock19", "id": "weapon1"}'
-                    ]
+                    ],
+                    books: [],
+                    items: []
                 }
             }
         }

@@ -26,7 +26,12 @@ class ChatRPG {
         monsterInstanceNotFound: 'monster instance not found',
         playerNotInGame: 'Player not in game',
         battleNotFound: 'Battle not found',
-        weaponNotInBag: 'Weapon not in bag'
+        weaponNotInBag: 'Weapon not in bag',
+        bookNotInBag: 'Book not in bag',
+        badAbilityBookIndex: 'Ability book index out of range',
+        abilityNotFound: 'Ability not found',
+        itemNotinBag: 'Item not in bag',
+        abilitiesFull: 'Player ability slots are full'
     }
 
     constructor(datasource) {
@@ -162,9 +167,9 @@ class ChatRPG {
 
         const battle = battleSnap.data();
         const battlePlayer = new BattlePlayer(battle.player);
-        const battlePlayerData = battlePlayer.getData();
+        const battlePlayerData = battlePlayer.datastoreObject;
         const monster = new BattleMonster(battle.monster);
-        const monsterData = monster.getData()
+        const monsterData = monster.datastoreObject;
         
         const monsterActionRequest = monsterAi.genericAi(battle);
 
@@ -175,6 +180,7 @@ class ChatRPG {
         const monsterAction = this.#createBattleAction(monsterActionRequest, monsterData);
 
         const steps = [];
+
         if(playerAction.speed >= monsterAction.speed) {
             steps.push(...this.#executeActionPhase(battlePlayerData, playerAction, monsterData, monsterAction));
         }
@@ -182,10 +188,24 @@ class ChatRPG {
             steps.push(...this.#executeActionPhase(monsterData, monsterAction, battlePlayerData, playerAction));
         }
 
+        const result = {};
+        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
+        const player = new Player((await playerRef.get()).data());
+
+        if(playerAction.name === 'escape') {
+            result.winner = null;
+            steps.push({
+                type: "battle_end",
+                description: `${battlePlayerData.name} escaped.`
+            });
+
+            player.mergeBattlePlayer(battlePlayer);
+            await playerRef.set(player.getData());
+
+            return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps, result}, true);
+        }
+
         if(battlePlayer.isDefeated() || monster.isDefeated()) {
-            const result = {};
-            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
-            const player = new Player((await playerRef.get()).data());
 
             if(battlePlayer.isDefeated() && monster.isDefeated()) {
                 result.winner = null;
@@ -213,7 +233,7 @@ class ChatRPG {
                 };
 
                 // Compute the monster drops
-                const willDropWeapon = chatRPGUtility.getRandomIntInclusive(0, 1) && !player.hasWeapon(monsterData.weapon);
+                const willDropWeapon = chatRPGUtility.random() < monsterData.weaponDropRate && !player.hasWeapon(monsterData.weapon);
 
                 if(willDropWeapon) {
                     const drop = {
@@ -233,11 +253,8 @@ class ChatRPG {
                     player.setLastDrop(lastDrop);
                 }
 
-                // Remove battle fields and commit New Player data
-                delete battlePlayerData.strikeLevel;
-                delete battlePlayerData.ap;
-                const finalPlayerData = Object.assign(player.getData(), battlePlayerData);
-                await playerRef.set(finalPlayerData);
+                player.mergeBattlePlayer(battlePlayer);
+                await playerRef.set(player.getData());
                 
                 // Remove the monster from the game
                 const gameSnap = await this.#findGame(battle.gameId);
@@ -317,6 +334,80 @@ class ChatRPG {
         return player.getUnflattenedData();
     }
 
+    async equipAbility(playerId, abilityBookName, abilityIndex, replacedAbilityName) {
+
+        let player;
+        let ability;
+
+        await this.#datasource.runTransaction(async (transaction) => {
+            const playerSnap = await this.#findPlayer(playerId);
+            const playerData = playerSnap.data();
+            player = new Player(playerData);
+            const book = player.findBookByName(abilityBookName, false);
+
+            if(!book) {
+                throw ChatRPG.Errors.bookNotInBag;
+            }
+
+            if(abilityIndex >= book.abilities.length || abilityIndex < 0) {
+                throw ChatRPG.Errors.badAbilityBookIndex;
+            }
+
+            ability = book.abilities[abilityIndex];
+
+            let flatAbility;
+
+            if(replacedAbilityName) {
+                flatAbility = player.findAbilityByName(replacedAbilityName);
+
+                if(!flatAbility) {
+                    throw ChatRPG.Errors.abilityNotFound;
+                }
+            }
+            else if(!player.hasOpenAbilitySlot()) {
+                throw ChatRPG.Errors.abilitiesFull;
+            }
+
+            if(flatAbility) {
+                transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(flatAbility)});
+            }
+            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(JSON.stringify(ability))});
+        });
+
+        player.equipAbility(ability, replacedAbilityName);
+        return player.getUnflattenedData();
+    }
+
+    async dropBook(playerId, abilityBookName) {
+        const playerSnap = await this.#findPlayer(playerId);
+        const player = new Player(playerSnap.data());
+        const book = player.findBookByName(abilityBookName);
+
+        if(!book) {
+            throw ChatRPG.Errors.bookNotInBag;
+        }
+
+        await playerSnap.ref.update({'bag.books': FieldValue.arrayRemove(book)});
+
+        player.dropBook(abilityBookName);
+        return player.getUnflattenedData();
+    }
+
+    async dropItem(playerId, itemName) {
+        const playerSnap = await this.#findPlayer(playerId);
+        const player = new Player(playerSnap.data());
+        const item = player.findItemByName(itemName);
+
+        if(!item) {
+            throw ChatRPG.Errors.itemNotinBag;
+        }
+
+        await playerSnap.ref.update({'bag.items': FieldValue.arrayRemove(item)});
+
+        player.dropItem(itemName);
+        return player.getUnflattenedData();
+    }
+
     async #updateAndReturnBattleStatus(battleRef, battle, deleteBattle=false) {
         if(!deleteBattle) {
             await battleRef.update({
@@ -380,6 +471,11 @@ class ChatRPG {
                 name: 'strike',
                 speed: player.weapon.speed,
                 damage: player.weapon.baseDamage
+            }
+        }
+        else if(actionRequest.type === 'escape') {
+            playerBattleAction = {
+                name: 'escape',
             }
         }
 

@@ -1,3 +1,4 @@
+
 const EXP_MODIFIER = 6;
 
 function expFunc(level) {
@@ -34,6 +35,16 @@ function unflattenObjectArray(array) {
     });
 
     return newArray;
+}
+
+function findInObjectArray(arr, matcher, matchValue, flatten=true) {
+    const item = arr.find(element => element[matcher] === matchValue);
+
+    if(!item) {
+        return;
+    }
+
+    return flatten ? JSON.stringify(item) : item;
 }
 
 chatRPGUtility = {
@@ -102,7 +113,8 @@ chatRPGUtility = {
     },
     getRandomIntInclusive,
     flattenObjectArray,
-    unflattenObjectArray
+    unflattenObjectArray,
+    findInObjectArray
 };
 
 module.exports = chatRPGUtility;

@@ -53,12 +53,14 @@ class Agent extends DatastoreObject {
 
     constructor(objectData) {
         super(objectData);
+        const abilities = this.datastoreObject.abilities;
+        this.datastoreObject.abilities = chatRPGUtility.unflattenObjectArray(abilities);
     }
 
     constructNewObject(agent) {
         agent.name = 'Unknown';
         agent.avatar = 'unknown.png';
-        agent.abilities = '';
+        agent.abilities = [];
         agent.weapon = {
             name: 'Fists',
             baseDamage: 10,
@@ -99,15 +101,32 @@ class Agent extends DatastoreObject {
     isDefeated() {
         return this.datastoreObject.health <= 0;
     }
+
+    getData() {
+        const newData = JSON.parse(JSON.stringify(this.datastoreObject));
+        newData.abilities = chatRPGUtility.flattenObjectArray(newData.abilities);
+        return newData;
+    }
+
+    getUnflattenedData() {
+        return this.datastoreObject;
+    }
 }
 
 class Player extends Agent {
     static MAXWEAPONS = 10;
+    static MAXABILITIES = 3;
     constructor(objectData) {
         super(objectData);
 
         const weapons = this.datastoreObject.bag.weapons;
         this.datastoreObject.bag.weapons = chatRPGUtility.unflattenObjectArray(weapons);
+
+        const books = this.datastoreObject.bag.books;
+        this.datastoreObject.bag.books = chatRPGUtility.unflattenObjectArray(books);
+
+        const items = this.datastoreObject.bag.items;
+        this.datastoreObject.bag.items = chatRPGUtility.unflattenObjectArray(items);
 
         const lastDropWeapons = this.datastoreObject.lastDrops.weapons;
         this.datastoreObject.lastDrops.weapons = chatRPGUtility.unflattenObjectArray(lastDropWeapons);
@@ -117,8 +136,35 @@ class Player extends Agent {
         super.constructNewObject(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
+        agent.abilities = [];
         agent.bag = {
-            weapons: []
+            weapons: [],
+            books: [JSON.stringify(
+                {
+                    name: 'Test Book 1',
+                    icon: "tome_azure.png",
+                    abilities: [
+                        {
+                            name: 'Big Bang',
+                            damage: 50
+                        },
+                        {
+                            name: 'Super Blast',
+                            damage: 70
+                        }
+                    ]
+                })
+            ],
+            items: [
+                JSON.stringify({
+                    name: 'potion',
+                    count: 5
+                }),
+                JSON.stringify({
+                    name: 'Phenix Down',
+                    count: 5
+                }),
+            ]
         }
         agent.lastDrops = {
             weapons: []
@@ -126,8 +172,10 @@ class Player extends Agent {
     }
 
     getData() {
-        const newData = Object.assign({}, this.datastoreObject);
+        const newData = JSON.parse(JSON.stringify(this.datastoreObject));
         newData.bag.weapons = chatRPGUtility.flattenObjectArray(newData.bag.weapons);
+        newData.bag.books = chatRPGUtility.flattenObjectArray(newData.bag.books);
+        newData.bag.items = chatRPGUtility.flattenObjectArray(newData.bag.items);
         newData.lastDrops.weapons = chatRPGUtility.flattenObjectArray(newData.lastDrops.weapons);
         return newData;
     }
@@ -194,6 +242,87 @@ class Player extends Agent {
     isWeaponEquipped(weaponId) {
         return this.datastoreObject.weapon.id === weaponId
     }
+
+    findBookByName(name, flatten=true) {
+        const book = this.datastoreObject.bag.books.find(element => element.name === name);
+
+        if(!book) {
+            return;
+        }
+
+        return flatten ? JSON.stringify(book) : book;
+    }
+
+    findAbilityByName(name, flatten=true) {
+        const ability = this.datastoreObject.abilities.find(element => element.name == name);
+
+        if(!ability) {
+            return;
+        }
+
+        return flatten ? JSON.stringify(ability) : ability;
+    }
+
+    equipAbility(ability, replacedAbilityName)
+    {
+        const abilities = this.datastoreObject.abilities;
+        let abilityIndex;
+
+        if(replacedAbilityName) {
+            abilityIndex = abilities.findIndex(element => element.name === replacedAbilityName)
+
+            if(abilityIndex === -1) {
+                return;
+            }
+
+            abilities[abilityIndex] = ability;
+        }
+        else if (this.hasOpenAbilitySlot()) {
+            abilities.push(ability);
+        }
+    }
+
+    hasOpenAbilitySlot() {
+        return this.datastoreObject.abilities.length < Player.MAXABILITIES;
+    }
+
+    dropBook(bookName) {
+        const bookIndex = this.datastoreObject.bag.books.findIndex(element => element.name === bookName);
+
+        if(bookIndex === -1) {
+            return;
+        }
+
+        this.datastoreObject.bag.books.splice(bookIndex, 1);
+    }
+
+    findItemByName(itemName, flatten) {
+        return chatRPGUtility.findInObjectArray(this.datastoreObject.bag.items, 'name', itemName, flatten);
+    }
+
+    dropItem(itemName) {
+        const itemIndex = this.datastoreObject.bag.items.findIndex(element => element.name === itemName);
+
+        if(itemIndex === -1) {
+            return;
+        }
+
+        this.datastoreObject.bag.items.splice(itemIndex, 1);
+    }
+
+    mergeBattlePlayer(battlePlayer) {
+        const thisPlayerData = this.datastoreObject;
+        const battlePlayerData = battlePlayer.datastoreObject;
+
+        thisPlayerData.maxHealth = battlePlayerData.maxHealth;
+        thisPlayerData.health = battlePlayerData.health;
+        thisPlayerData.attack = battlePlayerData.attack;
+        thisPlayerData.magic =  battlePlayerData.magic;
+        thisPlayerData.defence = battlePlayerData.defence;
+        thisPlayerData.level = battlePlayerData.level;
+        thisPlayerData.exp = battlePlayerData.exp;
+        thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
+    }
 }
 
 class Monster extends Agent {
@@ -212,6 +341,7 @@ class Monster extends Agent {
         monster.magicRating = 0;
         monster.defenceRating = 0;
         monster.healthRating = 0;
+        monster.weaponDropRate = 0.5;
     }
 
     getExpGain() {

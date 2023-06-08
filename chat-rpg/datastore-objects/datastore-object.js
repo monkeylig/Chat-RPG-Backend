@@ -1,3 +1,5 @@
+const utility = require("../../utility");
+
 class DatastoreObject {
     datastoreObject;
     constructor(objectData) {
@@ -6,6 +8,7 @@ class DatastoreObject {
             this.constructNewObject(this.datastoreObject);
         }
         else {
+            objectData = utility.deepCopy(objectData);
             this.constructNewObject(this.datastoreObject);
             for(const property in this.datastoreObject) {
                 if(objectData.hasOwnProperty(property)) {

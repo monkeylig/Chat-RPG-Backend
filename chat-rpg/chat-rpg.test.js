@@ -73,9 +73,9 @@ test('Testing finding a Twitch player', async () => {
 
     let player = await chatrpg.findPlayerById(twitchId, 'twitch');
     
-    expect(player.id).toBeTruthy();
+    expect(player.id).toBeDefined();
     defaultPlayer.setData('id', player.id);
-    expect(player).toStrictEqual(defaultPlayer.getData());
+    expect(player).toStrictEqual(defaultPlayer.datastoreObject);
 
     await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
 });
@@ -222,6 +222,7 @@ test('Starting a battle', async () => {
     expect(battleState.gameId).toBe('new game');
     expect(battleState.monster.id).toBe(gameState.monsters[0].id);
     expect(battleState.monster.id).not.toBe(gameState.monsters[1].id);
+    expect(battleState.monster.weaponDropRate).toBe(0.5);
     expect(battleState.monster.health).toBeTruthy();
     expect(battleState.monster.maxHealth).toBeTruthy();
 });
@@ -489,7 +490,7 @@ test('Player being defeated', async () => {
 });
 
 test('Monster Drops', async () => {
-    chatRPGUtility.random = seedrandom('Chat RPG!');
+    chatRPGUtility.random = seedrandom('Welcome!');
 
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -542,7 +543,7 @@ test('Monster Drops', async () => {
 });
 
 test('Monster Drops with bag full', async () => {
-    chatRPGUtility.random = seedrandom('Chat RPG!');
+    chatRPGUtility.random = seedrandom('Welcome!');
     const defaultPlayer = new Player({name: 'jhard', avatar: 'big-bad.png', twitchId: 'fr4wt4'});
     const fillerWeapon = {
         baseDamage: 10,
@@ -604,7 +605,7 @@ test('Monster Drops with bag full', async () => {
 });
 
 test('Monster does not drop weapon', async () => {
-    chatRPGUtility.random = seedrandom('Where\'s my loot?!');
+    chatRPGUtility.random = seedrandom('Chat RPG!');
 
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -653,8 +654,8 @@ test('Monster does not drop weapon', async () => {
 
 test('Equip weapon', async () => {
     let player = new Player();
-    let playerData = player.getData();
-    playerData.bag.weapons.push({name: 'sword', id: 'weapon1'});
+    player.addWeapon({name: 'sword'});
+    const weaponId = player.datastoreObject.bag.weapons[0].id;
     
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -665,24 +666,22 @@ test('Equip weapon', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    playerData = await chatrpg.equipWeapon('player1', 'weapon1');
+    let playerData = await chatrpg.equipWeapon('player1', weaponId);
 
     expect(playerData.weapon).toBeTruthy();
     expect(playerData.weapon.name).toMatch('sword');
-    expect(playerData.weapon.id).toMatch('weapon1');
 
     playerData = dataSource.dataSource.accounts.player1;
 
     expect(playerData.weapon).toBeTruthy();
     expect(playerData.weapon.name).toMatch('sword');
-    expect(playerData.weapon.id).toMatch('weapon1');
 });
 
-test.only('Player drop weapon', async () => {
+test('Player drop weapon', async () => {
     let player = new Player();
-    let playerData = player.getData();
-    playerData.bag.weapons.push({name: 'sword', id: 'weapon1'});
-    playerData.bag.weapons.push({name: 'sword', id: 'weapon2'});
+    player.addWeapon({name: 'sword'});
+    player.addWeapon({name: 'sword2'});
+    const weaponId = player.datastoreObject.bag.weapons[0].id;
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -693,18 +692,17 @@ test.only('Player drop weapon', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    playerData = await chatrpg.dropWeapon('player1', 'weapon1');
+    let playerData = await chatrpg.dropWeapon('player1', weaponId);
 
     expect(playerData.bag.weapons.length).toBe(1);
-    expect(playerData.bag.weapons[0].id).toMatch('weapon2');
+    expect(playerData.bag.weapons[0].name).toMatch('sword2');
 });
 
 test('Player drop weapon while equipped', async () => {
     let player = new Player();
-    let playerData = player.getData();
     const weapon = {name: 'sword', id: 'weapon1'};
-    playerData.bag.weapons.push(weapon);
-    playerData.weapon = weapon;
+    player.addWeapon(weapon);
+    const weaponId = player.datastoreObject.bag.weapons[0].id;
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -715,8 +713,145 @@ test('Player drop weapon while equipped', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    playerData = await chatrpg.dropWeapon('player1', 'weapon1');
+    let playerData = await chatrpg.dropWeapon('player1', weaponId);
 
     expect(playerData.bag.weapons.length).toBe(0);
     expect(playerData.weapon.name).toMatch(chatRPGUtility.defaultWeapon.name);
+});
+
+test('Equip Ability', async () => {
+    let player = new Player();
+    player.datastoreObject.bag.books = [
+        {
+            name: 'Test Book 1',
+            abilities: [
+                {
+                    name: 'Big Bang',
+                    damage: 50
+                },
+                {
+                    name: 'Super Blast',
+                    damage: 70
+                },
+                {
+                    name: 'Big hit',
+                    damage: 70
+                },
+                {
+                    name: 'Scratch',
+                    damage: 70
+                }
+            ]
+        }
+    ];
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 0);
+    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[0]);
+    
+    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 1);
+    expect(playerData.abilities[1]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[1]);
+
+    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 2);
+    expect(playerData.abilities[2]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[2]);
+
+    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 3, 'Big Bang');
+    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[3]);
+});
+
+test('Drop Book', async () => {
+    let player = new Player();
+    player.datastoreObject.bag.books = [
+        {
+            name: 'Test Book 1',
+            abilities: [
+                {
+                    name: 'Scratch',
+                    damage: 70
+                }
+            ]
+        }
+    ];
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerData = await chatrpg.dropBook('player1', 'Test Book 1');
+    expect(playerData.bag.books.length).toBe(0);
+});
+
+test('Drop Item', async () => {
+    let player = new Player();
+    player.datastoreObject.bag.items = [
+        {
+            name: 'Potion',
+            count: 3
+        }
+    ];
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerData = await chatrpg.dropItem('player1', 'Potion');
+    expect(playerData.bag.items.length).toBe(0);
+});
+
+test('Escape from battle', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.4,
+                magicRating: 0.2,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
+    let playerOldHealth = battleState.player.health;
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'escape'});
+    expect(battleUpdate.result).toBeDefined();
+    expect(battleUpdate.result.winner).toBeNull();
+
+    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+    expect(player.health).toBeLessThan(playerOldHealth);
 });

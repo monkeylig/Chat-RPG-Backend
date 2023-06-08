@@ -61,6 +61,21 @@ const Schema = {
         AbilityPoints: 'ap',
         Level: 'level',
         StrikeLevel: 'strikeLevel'
+    },
+
+    BookObjects: {
+        name: '', //(string) name of the book
+        abilities: {}, //(ability objects) abilities inside the book
+    },
+
+    AbilityObjects: {
+        name: '', //(string) Name of ability
+        damage: 0 //(number) Base damage of the ability
+    },
+
+    ItemObjects: {
+        name: '', //(string) name of item
+        count: 0, //(numer) the number of copies of the item
     }
 }
 

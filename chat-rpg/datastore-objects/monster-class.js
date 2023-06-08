@@ -19,6 +19,7 @@ class MonsterClass extends DatastoreObject {
         monster.monsterNumber = 0;
         monster.name = '';
         monster.weapon = {};
+        monster.weaponDropRate = 0.5;
     }
 
     createMonsterInstance(level) {

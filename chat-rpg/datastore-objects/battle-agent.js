@@ -18,10 +18,15 @@ class BattleAgent extends Agent {
 class BattlePlayer extends BattleAgent {
     constructor(objectData) {
         super(objectData)
+
+        delete this.datastoreObject.bag.weapons;
+        delete this.datastoreObject.bag.books;
     }
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
+        agent.bag = {};
+
     }
 }
 
@@ -32,6 +37,7 @@ class BattleMonster extends Monster {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
+        agent.weaponDropRate = 0.5;
     }
 }
 

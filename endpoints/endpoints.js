@@ -25,11 +25,11 @@ function validatePayloadParameters(payload, params)
 
 function internalErrorCatch(req, res, error) {
     let responce = {
-        message: error.message,
+        message: error,
     };
     let status = 500;
 
-    switch(error.message) {
+    switch(error) {
         case ChatRPG.Errors.playerExists:
             responce.errorCode = 1;
             status = 400;
@@ -57,6 +57,11 @@ function internalErrorCatch(req, res, error) {
         case ChatRPG.Errors.weaponNotInBag:
             responce.errorCode = 7;
             status = 404;
+            break;
+        case ChatRPG.Errors.abilitiesFull:
+            responce.errorCode = 12;
+            status = 400;
+            break;
         default:
             responce.message = 'Internal Error';
             responce.errorCode = 0;
@@ -300,7 +305,7 @@ function drop_weapon(req, res, chatrpg) {
     const queryParams = [
         {name: 'playerId', type: 'string'},
         {name: 'weaponId', type: 'string'}
-    ]
+    ];
 
     if(!validatePayloadParameters(req.query, queryParams)) {
         sendError(res, "Query parameters are malformed");
@@ -312,6 +317,31 @@ function drop_weapon(req, res, chatrpg) {
         sendResponceObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
+}
+
+function equip_ability(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'abilityBookName', type: 'string'},
+        {name: 'abilityIndex', type: 'string'},
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.equipAbility(req.query.playerId, req.query.abilityBookName, Number(req.query.abilityIndex), req.query.replacedAbilityName)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function drop_item() {
+    
 }
 //#endregion
 
@@ -326,5 +356,6 @@ module.exports = {
     start_battle,
     battle_action,
     equip_weapon,
-    drop_weapon
+    drop_weapon,
+    equip_ability
 };

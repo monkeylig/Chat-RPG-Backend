@@ -14,7 +14,7 @@ function backendCall(path, method, payload = null, headers = {}) {
             host: 'localhost',
             port: 3000,
             method: method,
-            path: path,
+            path: encodeURI(path),
             headers: headers
         };
 
