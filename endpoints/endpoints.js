@@ -340,8 +340,44 @@ function equip_ability(req, res, chatrpg) {
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function drop_item() {
-    
+function drop_book(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'abilityBookName', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.dropBook(req.query.playerId, req.query.abilityBookName)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function drop_item(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'itemName', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.dropItem(req.query.playerId, req.query.itemName)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
 }
 //#endregion
 
@@ -357,5 +393,7 @@ module.exports = {
     battle_action,
     equip_weapon,
     drop_weapon,
-    equip_ability
+    equip_ability,
+    drop_book,
+    drop_item
 };
