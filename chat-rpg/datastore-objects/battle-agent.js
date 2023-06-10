@@ -11,7 +11,7 @@ const BattleAgent = {
     },
 
     onStrike(datastoreObject) {
-        if(datastoreObject.strikeLevel < datastoreObject.strikeLevel) {
+        if(datastoreObject.strikeLevel < STRIKE_ABILITY_TRIGGER) {
             datastoreObject.strikeLevel += 1;
             if(datastoreObject.ap < BATTLE_AP) {
                 datastoreObject.ap += 1;

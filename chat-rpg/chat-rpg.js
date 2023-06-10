@@ -209,7 +209,7 @@ class ChatRPG {
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
         const player = new Player((await playerRef.get()).data());
 
-        if(playerAction.name === 'escape') {
+        if(playerAction.type === 'escape') {
             result.winner = null;
             steps.push({
                 type: "battle_end",

@@ -227,7 +227,7 @@ test('Starting a battle', async () => {
     expect(battleState.monster.maxHealth).toBeTruthy();
 });
 
-test.only('Starting a battle with a monster thats does not exist', async () => {
+test('Starting a battle with a monster thats does not exist', async () => {
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -957,16 +957,16 @@ test('Equip Ability', async () => {
     let chatrpg = new ChatRPG(dataSource);
 
     let playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 0);
-    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[0]);
+    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[0].ability);
     
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 1);
-    expect(playerData.abilities[1]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[1]);
+    expect(playerData.abilities[1]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[1].ability);
 
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 2);
-    expect(playerData.abilities[2]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[2]);
+    expect(playerData.abilities[2]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[2].ability);
 
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 3, 'Big Bang');
-    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[3]);
+    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[3].ability);
 });
 
 test('Drop Book', async () => {

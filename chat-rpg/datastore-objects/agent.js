@@ -381,7 +381,7 @@ class Player extends Agent {
         thisPlayerData.level = battlePlayerData.level;
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
-        thisPlayerData.bag = battlePlayerData.bag;
+        thisPlayerData.bag.items = battlePlayerData.bag.items;
     }
 
     OnMonsterDefeated() {
