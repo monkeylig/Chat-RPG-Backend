@@ -6,8 +6,12 @@ const chatRPGUtility = require('./utility');
 const {Player} = require('./datastore-objects/agent');
 const Game = require('./datastore-objects/game');
 const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agent");
+const Ability = require('./datastore-objects/ability');
+const Item = require('./datastore-objects/item');
 const BattleSteps = require('./battle-steps');
-const AbilityFunctions = require('./ability-functions/ability-functions');
+const AbilityFunctions = require('./equippable-functions/ability-functions');
+const ItemFunctions = require('./equippable-functions/item-functions');
+const MonsterClass = require("./datastore-objects/monster-class");
 
 const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 3;
@@ -31,7 +35,11 @@ class ChatRPG {
         badAbilityBookIndex: 'Ability book index out of range',
         abilityNotFound: 'Ability not found',
         itemNotinBag: 'Item not in bag',
-        abilitiesFull: 'Player ability slots are full'
+        abilitiesFull: 'Player ability slots are full',
+        abilityRequirementNotMet: 'The requirements to equip this ability were not met',
+        abilityNotEquipped: 'This ability is not equipped',
+        itemNotEquipped: 'This item is not equipped',
+        notEnoughAp: 'Not enough ap to use this ability'
     }
 
     constructor(datasource) {
@@ -123,7 +131,7 @@ class ChatRPG {
         return game.getUnflattenedData();
     }
 
-    async startBattle(playerId, gameId, monsterId) {
+    async startBattle(playerId, gameId, monsterId, fallbackMonster) {
         const playerSnap = await this.#findPlayer(playerId);
         const gameSnap = await this.#findGame(gameId);
         const game = new Game(gameSnap.data());
@@ -133,13 +141,21 @@ class ChatRPG {
             throw new Error(ChatRPG.Errors.playerNotInGame);
         }
 
-        const targetMonster = game.findMonsterById(monsterId, false);
+        let targetMonster = game.findMonsterById(monsterId, false);
         if(!targetMonster) {
-            throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
+            if(fallbackMonster) {
+                const monsterRef = await this.#datasource.collection('monsters').doc(fallbackMonster.class).get();
+                const monsterClass = new MonsterClass(monsterRef.data());
+                targetMonster = monsterClass.createMonsterInstance(fallbackMonster.level);
+            }
+            else {
+                throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
+            }
         }
 
-        playerData.id = playerSnap.ref.id;
-        const battlePlayer = new BattlePlayer(playerData);
+        const player = new Player(playerData);
+        player.datastoreObject.id = playerSnap.ref.id;
+        const battlePlayer = new BattlePlayer(player.datastoreObject);
         targetMonster.id = monsterId;
         const battleMonster = new BattleMonster(targetMonster);
 
@@ -147,7 +163,8 @@ class ChatRPG {
             player: battlePlayer.getData(),
             monster: battleMonster.getData(),
             gameId: gameSnap.ref.id,
-            strikeAnim: chatRPGUtility.strikeAnim
+            strikeAnim: chatRPGUtility.strikeAnim,
+            environment: {}
         };
 
         const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
@@ -175,17 +192,17 @@ class ChatRPG {
 
         //Proccess battle actions
         //player action
-        const playerAction = this.#createBattleAction(actionRequest, battlePlayerData);
+        const playerAction = this.#createBattleAction(actionRequest, battlePlayer);
         //monster action
-        const monsterAction = this.#createBattleAction(monsterActionRequest, monsterData);
+        const monsterAction = this.#createBattleAction(monsterActionRequest, monster);
 
         const steps = [];
 
         if(playerAction.speed >= monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(battlePlayerData, playerAction, monsterData, monsterAction));
+            steps.push(...this.#executeActionPhase(battlePlayer, playerAction, monster, monsterAction, battle));
         }
         else if(playerAction.speed < monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(monsterData, monsterAction, battlePlayerData, playerAction));
+            steps.push(...this.#executeActionPhase(monster, monsterAction, battlePlayer, playerAction, battle));
         }
 
         const result = {};
@@ -202,7 +219,8 @@ class ChatRPG {
             player.mergeBattlePlayer(battlePlayer);
             await playerRef.set(player.getData());
 
-            return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps, result}, true);
+            await battleSnap.ref.delete();
+            return {player: battlePlayerData, monster: monsterData, steps, result};
         }
 
         if(battlePlayer.isDefeated() || monster.isDefeated()) {
@@ -254,6 +272,7 @@ class ChatRPG {
                 }
 
                 player.mergeBattlePlayer(battlePlayer);
+                player.OnMonsterDefeated();
                 await playerRef.set(player.getData());
                 
                 // Remove the monster from the game
@@ -281,10 +300,15 @@ class ChatRPG {
                 });
             }
 
-            return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps, result}, true);
+            await battleSnap.ref.delete();
+            return {player: battlePlayerData, monster: monsterData, steps, result};
         }
 
-        return await this.#updateAndReturnBattleStatus(battleSnap.ref, {player: battlePlayerData, monster: monsterData, steps});
+        battle.player = battlePlayerData;
+        battle.monster = monsterData;
+        await battleSnap.ref.set(battle);
+
+        return {player: battlePlayerData, monster: monsterData, steps};
     }
 
     async equipWeapon(playerId, weaponId) {
@@ -295,7 +319,7 @@ class ChatRPG {
         const weaponData = player.findWeaponById(weaponId, false);
 
         if(!weaponData) {
-            throw ChatRPG.Errors.weaponNotInBag;
+            throw new ChatRPG.Errors.weaponNotInBag;
         }
 
         await playSnap.ref.update({weapon: weaponData});
@@ -312,14 +336,14 @@ class ChatRPG {
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
-                throw ChatRPG.Errors.playerNotFound;
+                throw new ChatRPG.Errors.playerNotFound;
             }
 
             player = new Player(playerSnap.data());
 
             const weaponData = player.findWeaponById(weaponId);
             if(!weaponData) {
-                throw ChatRPG.Errors.weaponNotInBag;
+                throw new ChatRPG.Errors.weaponNotInBag;
             }
 
             transaction.update(playerRef, {'bag.weapons': FieldValue.arrayRemove(weaponData)});
@@ -336,45 +360,47 @@ class ChatRPG {
 
     async equipAbility(playerId, abilityBookName, abilityIndex, replacedAbilityName) {
 
-        let player;
-        let ability;
+        const playerSnap = await this.#findPlayer(playerId);
+        const playerData = playerSnap.data();
+        const player = new Player(playerData);
+        const book = player.findBookByName(abilityBookName, false);
+
+        if(!book) {
+            throw new Error(ChatRPG.Errors.bookNotInBag);
+        }
+
+        if(abilityIndex >= book.abilities.length || abilityIndex < 0) {
+            throw new Error(ChatRPG.Errors.badAbilityBookIndex);
+        }
+
+        if(!player.abilityRequirementMet(book, abilityIndex)) {
+            throw new Error(ChatRPG.Errors.abilityRequirementNotMet);
+        }
+
+        const abilityBookEntry = book.abilities[abilityIndex];
+
+        let flatAbility;
+
+        if(replacedAbilityName) {
+            flatAbility = player.findAbilityByName(replacedAbilityName);
+
+            if(!flatAbility) {
+                throw new Error(ChatRPG.Errors.abilityNotFound);
+            }
+        }
+        else if(!player.hasOpenAbilitySlot()) {
+            throw new Error(ChatRPG.Errors.abilitiesFull);
+        }
 
         await this.#datasource.runTransaction(async (transaction) => {
-            const playerSnap = await this.#findPlayer(playerId);
-            const playerData = playerSnap.data();
-            player = new Player(playerData);
-            const book = player.findBookByName(abilityBookName, false);
-
-            if(!book) {
-                throw ChatRPG.Errors.bookNotInBag;
-            }
-
-            if(abilityIndex >= book.abilities.length || abilityIndex < 0) {
-                throw ChatRPG.Errors.badAbilityBookIndex;
-            }
-
-            ability = book.abilities[abilityIndex];
-
-            let flatAbility;
-
-            if(replacedAbilityName) {
-                flatAbility = player.findAbilityByName(replacedAbilityName);
-
-                if(!flatAbility) {
-                    throw ChatRPG.Errors.abilityNotFound;
-                }
-            }
-            else if(!player.hasOpenAbilitySlot()) {
-                throw ChatRPG.Errors.abilitiesFull;
-            }
 
             if(flatAbility) {
                 transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(flatAbility)});
             }
-            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(JSON.stringify(ability))});
+            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(JSON.stringify(abilityBookEntry.ability))});
         });
 
-        player.equipAbility(ability, replacedAbilityName);
+        player.equipAbility(abilityBookEntry.ability, replacedAbilityName);
         return player.getUnflattenedData();
     }
 
@@ -384,7 +410,7 @@ class ChatRPG {
         const book = player.findBookByName(abilityBookName);
 
         if(!book) {
-            throw ChatRPG.Errors.bookNotInBag;
+            throw new ChatRPG.Errors.bookNotInBag;
         }
 
         await playerSnap.ref.update({'bag.books': FieldValue.arrayRemove(book)});
@@ -399,7 +425,7 @@ class ChatRPG {
         const item = player.findItemByName(itemName);
 
         if(!item) {
-            throw ChatRPG.Errors.itemNotinBag;
+            throw new ChatRPG.Errors.itemNotinBag;
         }
 
         await playerSnap.ref.update({'bag.items': FieldValue.arrayRemove(item)});
@@ -408,75 +434,125 @@ class ChatRPG {
         return player.getUnflattenedData();
     }
 
-    async #updateAndReturnBattleStatus(battleRef, battle, deleteBattle=false) {
-        if(!deleteBattle) {
-            await battleRef.update({
-                player: battle.player,
-                monster: battle.monster
-            });
-        }
-        else {
-            await battleRef.delete();
-        }
-
-        return battle;
-    }
-
-    #executeActionPhase(firstPlayer, firstAction, secondPlayer, secondAction) {
+    #executeActionPhase(firstPlayer, firstAction, secondPlayer, secondAction, battle) {
         const steps = [];
-        steps.push(...this.#applyAction(firstAction, firstPlayer, secondPlayer));
-        if(this.#isDefeated(firstPlayer) || this.#isDefeated(secondPlayer)) {
+        steps.push(...this.#applyAction(firstAction, firstPlayer, secondPlayer, battle));
+        if(firstPlayer.isDefeated() || secondPlayer.isDefeated()) {
             return steps;    
         }
 
-        steps.push(...this.#applyAction(secondAction, secondPlayer, firstPlayer));
+        steps.push(...this.#applyAction(secondAction, secondPlayer, firstPlayer, battle));
 
         return steps;
     }
 
-    #isDefeated(player) {
-        return player.health <= 0;
-    }
-
-    #applyAction(battleAction, srcPlayer, targetPlayer) {
+    #applyAction(battleAction, srcPlayer, targetPlayer, battle) {
         const steps = [];
+        const srcPlayerData = srcPlayer.datastoreObject;
+        const targetPlayerData = targetPlayer.datastoreObject;
         // Damage step
-        if(battleAction.name == 'strike') {
-            srcPlayer.strikeLevel += 1;
+        if(battleAction.type === 'strike') {
+            srcPlayer.onStrike();
             
-            if(srcPlayer.strikeLevel == STRIKE_ABILITY_TRIGGER) {
-                srcPlayer.strikeLevel = 0;
-                const infoStep = BattleSteps.info(`${srcPlayer.name} used ${srcPlayer.weapon.strikeAbility.name}!`);
-                const standardSteps = AbilityFunctions.standardSteps(srcPlayer.weapon.strikeAbility, srcPlayer, targetPlayer);
-                steps.push(infoStep);
-                steps.push(...standardSteps);
+            if(srcPlayer.strikeAbilityReady()) {
+                srcPlayerData.strikeLevel = 0;
+                const abilitySteps = this.#createAbilitySteps(srcPlayerData.weapon.strikeAbility, srcPlayerData, targetPlayerData, battle);
+                steps.push(...abilitySteps);
             }
             else {
-                const infoStep = BattleSteps.info(`${srcPlayer.name} strikes ${targetPlayer.name}!`);
-                infoStep.action = 'strike';
-                infoStep.actorId = srcPlayer.id;
-                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.weapon.baseDamage);
+                const infoStep = BattleSteps.info(`${srcPlayerData.name} strikes ${targetPlayerData.name}!`, 'strike', srcPlayerData.id);
+                const damageStep = BattleSteps.damage(srcPlayerData, targetPlayerData, srcPlayerData.weapon.baseDamage);
                 steps.push(infoStep);
                 steps.push(damageStep);
             }
         }
 
+        else if(battleAction.type === 'ability') {
+            steps.push(...this.#createAbilitySteps(battleAction.ability, srcPlayerData, targetPlayerData, battle));
+            srcPlayer.onAbilityUsed(battleAction.ability);
+        }
+
+        else if(battleAction.type === 'item') {
+            const itemData = battleAction.item.datastoreObject;
+            const infoStep = BattleSteps.info(`${srcPlayerData.name} used ${itemData.name}!`, 'item', srcPlayerData.id);
+            const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayerData, targetPlayerData);
+            const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayerData, targetPlayerData, {});
+            srcPlayer.onItemUsed(battleAction.item);
+
+            steps.push(infoStep);
+            if(standardSteps) {
+                steps.push(...standardSteps);
+            }
+            if(itemSteps) {
+                steps.push(...itemSteps);
+            }
+        }
+
         return steps;
     }
 
-    #createBattleAction(actionRequest, player) {
+    #createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
+        const steps = [];
+        const infoStep = BattleSteps.info(`${srcPlayer.name} used ${ability.name}!`, 'ability', srcPlayer.id);
+        const standardSteps = AbilityFunctions.standardSteps(ability, srcPlayer, targetPlayer);
+        const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
+
+        steps.push(infoStep);
+        if(standardSteps) {
+            steps.push(...standardSteps);
+        }
+        if(abilitySteps) {
+            steps.push(...abilitySteps);
+        }
+        return steps;
+    }
+
+    #createBattleAction(actionRequest, battlePlayer) {
+        const playerData = battlePlayer.datastoreObject;
         let playerBattleAction;
-        if(actionRequest.type == 'strike') {
+        if(actionRequest.type === 'strike') {
             playerBattleAction = {
-                name: 'strike',
-                speed: player.weapon.speed,
-                damage: player.weapon.baseDamage
+                type: 'strike',
+                speed: playerData.weapon.speed
             }
         }
         else if(actionRequest.type === 'escape') {
             playerBattleAction = {
-                name: 'escape',
+                type: 'escape',
             }
+        }
+
+        else if(actionRequest.type === 'ability') {
+            const ability = new Ability(battlePlayer.findAbilityByName(actionRequest.abilityName, false));
+            const abilityData = ability.datastoreObject;
+            if(!ability) {
+                throw new Error(ChatRPG.Errors.abilityNotEquipped);
+            }
+
+            if(playerData.ap < abilityData.apCost) {
+                throw new Error(ChatRPG.Errors.notEnoughAp);
+            }
+
+            playerBattleAction = {
+                type: 'ability',
+                ability: abilityData,
+                speed: abilityData.speed
+            }
+        }
+
+        else if(actionRequest.type === 'item') {
+            const itemData = battlePlayer.findItemByName(actionRequest.itemName, false);
+            if(!itemData) {
+                throw new Error(ChatRPG.Errors.itemNotEquipped);
+            }
+            const item = new Item(itemData);
+
+            playerBattleAction = {
+                type: 'item',
+                item: item,
+                speed: 10000
+            }
+
         }
 
         return playerBattleAction;

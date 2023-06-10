@@ -25,7 +25,7 @@ function validatePayloadParameters(payload, params)
 
 function internalErrorCatch(req, res, error) {
     let responce = {
-        message: error,
+        message: error.message,
     };
     let status = 500;
 
@@ -252,7 +252,19 @@ function start_battle(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId)
+    if(req.body.hasOwnProperty('fallbackMonster')) {
+        const fallbackMonsterParams = [
+            {name: 'monsterClass', type: 'string'},
+            {name: 'level', type: 'number'}
+        ];
+
+        if(!validatePayloadParameters(req.body.fallbackMonster, queryParams)) {
+            sendError(res, "Fallback monster parameters are malformed");
+            return;
+        }
+    }
+
+    chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId, req.body.fallbackMonster)
     .then(battleState => {
         sendResponceObject(res, battleState);
     })

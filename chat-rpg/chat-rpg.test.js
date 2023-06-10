@@ -227,6 +227,48 @@ test('Starting a battle', async () => {
     expect(battleState.monster.maxHealth).toBeTruthy();
 });
 
+test.only('Starting a battle with a monster thats does not exist', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                healthRating: 0.5,
+                attackRating: 0.5
+            },
+
+            eye_sack: {
+                monsterNumber: 1,
+                healthRating: 0.5,
+                attackRating: 0.2
+            },
+
+            telemarketer: {
+                monsterNumber: 2,
+                healthRating: 0.5,
+                attackRating: 0.7
+            }
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
+    let gameState = await chatrpg.joinGame(playerId, 'new game');
+    let battleState = await chatrpg.startBattle(playerId, gameState.id, 'No such monster', {monsterClass: 'telemarketer', level: 3});
+
+    expect(battleState).toBeTruthy();
+    expect(battleState.player).toBeTruthy();
+    expect(battleState.player.id).toMatch(playerId);
+    expect(battleState.monster).toBeTruthy();
+    expect(battleState.gameId).toBe('new game');
+    expect(battleState.monster.id).toBe('No such monster');
+    expect(battleState.monster.id).not.toBe(gameState.monsters[1].id);
+    expect(battleState.monster.health).toBeTruthy();
+    expect(battleState.monster.maxHealth).toBeTruthy();
+});
+
 test('Battle Actions: Strike', async () => {
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -387,6 +429,143 @@ test('Magic Strike', async () => {
 
 });
 
+test('Battle Actions: Ability', async () => {
+    let player = new Player();
+    player.datastoreObject.abilities = [
+        {
+            name: 'Big Bang',
+            damage: 5,
+            effectName: 'testAbility1'
+        }
+    ];
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.4,
+                magicRating: 0.2,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        },
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let gameState = await chatrpg.joinGame('player1', 'new game');
+    let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
+
+    let battleObject;
+    for(const _battle in dataSource.dataSource.battles) {
+        battleObject = dataSource.dataSource.battles[_battle];
+    }
+
+    expect(battleObject.environment).toBeDefined();
+    expect(battleObject.environment.abilityTest1Activated).toBeTruthy();
+    expect(battleUpdate.steps[3]).toBeDefined();
+    expect(battleUpdate.steps[3].type).toMatch('info');
+    expect(battleUpdate.steps[3].description).toMatch('Test ability 1 has activated.');
+    expect(battleUpdate.player.ap).toBe(2);
+
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
+    await expect(chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'})).rejects.toThrow(ChatRPG.Errors.notEnoughAp);
+
+
+});
+
+test('Battle Actions: Item', async () => {
+    let player = new Player();
+    player.datastoreObject.bag.items = [
+        {
+            name: 'Big Bang',
+            count: 2,
+            effectName: 'testItem1'
+        },
+        {
+            name: 'Small Bang',
+            count: 1,
+            effectName: 'testItem2'
+        }
+    ];
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                attackRating: 0.2,
+                defenceRating: 0.2,
+                healthRating: 0.4,
+                magicRating: 0.2,
+                name: "Eye Sack",
+                weapon: {
+                    baseDamage: 10,
+                    name: "Cornia",
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }
+            }
+        },
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let gameState = await chatrpg.joinGame('player1', 'new game');
+    let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Big Bang'});
+
+
+    let battleObject;
+    for(const _battle in dataSource.dataSource.battles) {
+        battleObject = dataSource.dataSource.battles[_battle];
+    }
+
+    expect(battleObject.environment).toBeDefined();
+    expect(battleObject.environment.itemTest1Activated).toBeTruthy();
+    expect(battleUpdate.steps[1]).toBeDefined();
+    expect(battleUpdate.steps[1].type).toMatch('info');
+    expect(battleUpdate.steps[1].description).toMatch('Test item 1 has activated in a battle.');
+    expect(battleUpdate.player.bag.items[0].count).toBe(1);
+
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'});
+
+    for(const _battle in dataSource.dataSource.battles) {
+        battleObject = dataSource.dataSource.battles[_battle];
+    }
+
+    expect(battleObject.environment.itemTest2Activated).toBeTruthy();
+    expect(battleUpdate.steps[1].description).toMatch('Test item 2 has activated in a battle.');
+    expect(battleUpdate.player.bag.items[1]).not.toBeDefined();
+
+    await expect(chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'})).rejects.toThrow(ChatRPG.Errors.itemNotEquipped);
+
+});
+
 test('Defeating a monster', async () => {
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -439,6 +618,9 @@ test('Defeating a monster', async () => {
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
 
     expect(player.level).toBe(2);
+    expect(player.trackers).toBeDefined();
+    expect(player.trackers.weaponKills).toBeDefined();
+    expect(player.trackers.weaponKills.sword).toBe(1);
 
     await expect(chatrpg.battleAction(battleState.id, {type: 'strike'})).rejects.toThrow(ChatRPG.Errors.battleNotFound);
 
@@ -726,20 +908,40 @@ test('Equip Ability', async () => {
             name: 'Test Book 1',
             abilities: [
                 {
-                    name: 'Big Bang',
-                    damage: 50
+                    weaponKillRequirements: {
+                        sword: 0
+                    },
+                    ability: {
+                        name: 'Big Bang',
+                        damage: 50
+                    }
                 },
                 {
-                    name: 'Super Blast',
-                    damage: 70
+                    weaponKillRequirements: {
+                        sword: 0
+                    },
+                    ability: {
+                        name: 'Super Blast',
+                        damage: 70
+                    }
                 },
                 {
-                    name: 'Big hit',
-                    damage: 70
+                    weaponKillRequirements: {
+                        sword: 0
+                    },
+                    ability: {
+                        name: 'Big hit',
+                        damage: 70
+                    }
                 },
                 {
-                    name: 'Scratch',
-                    damage: 70
+                    weaponKillRequirements: {
+                        sword: 0
+                    },
+                    ability: {
+                        name: 'Scratch',
+                        damage: 70
+                    }
                 }
             ]
         }
@@ -854,4 +1056,56 @@ test('Escape from battle', async () => {
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
     expect(player.health).toBeLessThan(playerOldHealth);
+});
+
+test('Equip Ability with requirements', async () => {
+    let player = new Player();
+    player.datastoreObject.bag.books = [
+        {
+            name: 'Test Book 1',
+            abilities: [
+                {
+                    weaponKillRequirements: {
+                        sword: 1
+                    },
+                    ability: {
+                        name: 'Big Bang',
+                        damage: 50
+                    }
+                }
+            ]
+        }
+    ];
+
+    let player2 = new Player();
+    player2.datastoreObject.trackers.weaponKills.sword = 1;
+    player2.datastoreObject.bag.books = [
+        {
+            name: 'Test Book 1',
+            abilities: [
+                {
+                    weaponKillRequirements: {
+                        sword: 1
+                    },
+                    ability: {
+                        name: 'Big Bang',
+                        damage: 50
+                    }
+                }
+            ]
+        }
+    ];
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData(),
+            player2: player2.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    await expect(chatrpg.equipAbility('player1', 'Test Book 1', 0)).rejects.toThrow(ChatRPG.Errors.abilityRequirementNotMet);
+    await expect(chatrpg.equipAbility('player2', 'Test Book 1', 0)).resolves;
 });

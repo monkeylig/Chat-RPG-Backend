@@ -22,7 +22,9 @@ const GameModes = {
                     continue;
                 }
 
-                monstersClasses.push(new MonsterClass(querySnapshot.docs[0].data()));
+                const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
+                monsterClass.setClassName(querySnapshot.docs[0].ref.id);
+                monstersClasses.push(monsterClass);
             }
 
             const arenaGame = new Game({mode: this.name});

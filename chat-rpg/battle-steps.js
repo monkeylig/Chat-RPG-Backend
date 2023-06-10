@@ -21,10 +21,12 @@ function damageStep(srcPlayer, targetPlayer, baseDamage) {
     return damageStep;
 }
 
-function infoStep(description) {
+function infoStep(description, action, actorId) {
     return {
         type: 'info',
-        description
+        description,
+        action: action ? action : 'generic',
+        actorId: actorId
     };
 }
 

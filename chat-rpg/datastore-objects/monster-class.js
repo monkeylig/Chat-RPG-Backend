@@ -20,12 +20,17 @@ class MonsterClass extends DatastoreObject {
         monster.name = '';
         monster.weapon = {};
         monster.weaponDropRate = 0.5;
+        monster.class = '';
     }
 
     createMonsterInstance(level) {
         const newMonster = new Monster({...this.datastoreObject, id: utility.genId()});
         newMonster.setStatsAtLevel(level);
         return newMonster;
+    }
+
+    setClassName(monsterClass) {
+        this.datastoreObject.class = monsterClass;
     }
 }
 
