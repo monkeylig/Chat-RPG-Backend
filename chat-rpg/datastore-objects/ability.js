@@ -7,7 +7,7 @@ class Ability extends DatastoreObject {
 
     constructNewObject(ability) {
         ability.name = 'nothing';
-        ability.damage = 0;
+        ability.baseDamage = 0;
         ability.speed = 0;
         ability.effectName = '';
         ability.apCost = 1;

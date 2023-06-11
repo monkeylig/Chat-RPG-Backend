@@ -160,8 +160,8 @@ class ChatRPG {
         const battleMonster = new BattleMonster(targetMonster);
 
         const battle = {
-            player: battlePlayer.getData(),
-            monster: battleMonster.getData(),
+            player: battlePlayer.datastoreObject,
+            monster: battleMonster.datastoreObject,
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
             environment: {}
@@ -211,6 +211,7 @@ class ChatRPG {
 
         if(playerAction.type === 'escape') {
             result.winner = null;
+            result.endCondition = 'escape';
             steps.push({
                 type: "battle_end",
                 description: `${battlePlayerData.name} escaped.`

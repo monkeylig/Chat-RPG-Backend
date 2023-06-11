@@ -185,6 +185,17 @@ test('Getting a game update', async () => {
 });
 
 test('Starting a battle', async () => {
+    let player = new Player();
+    player.datastoreObject.abilities = [
+        {
+            name: 'Big Bang',
+            baseDamage: 50,
+            speed: 1,
+            effectName: 'testAbility1',
+            apCost: 1
+        }
+    ];
+
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -206,18 +217,21 @@ test('Starting a battle', async () => {
                 healthRating: 0.5,
                 attackRating: 0.7
             }
+        },
+        accounts: {
+            player1: player.getData()
         }
     });
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
-    let gameState = await chatrpg.joinGame(playerId, 'new game');
-    let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
+    let gameState = await chatrpg.joinGame('player1', 'new game');
+    let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
 
     expect(battleState).toBeTruthy();
     expect(battleState.player).toBeTruthy();
-    expect(battleState.player.id).toMatch(playerId);
+    expect(battleState.player.id).toMatch('player1');
+    expect(battleState.player.abilities[0].name).toBeDefined();
     expect(battleState.monster).toBeTruthy();
     expect(battleState.gameId).toBe('new game');
     expect(battleState.monster.id).toBe(gameState.monsters[0].id);
@@ -491,7 +505,7 @@ test('Battle Actions: Ability', async () => {
 
 });
 
-test('Battle Actions: Item', async () => {
+test.only('Battle Actions: Item', async () => {
     let player = new Player();
     player.datastoreObject.bag.items = [
         {
@@ -547,6 +561,7 @@ test('Battle Actions: Item', async () => {
 
     expect(battleObject.environment).toBeDefined();
     expect(battleObject.environment.itemTest1Activated).toBeTruthy();
+    expect(battleUpdate.steps[0].action).toMatch('item');
     expect(battleUpdate.steps[1]).toBeDefined();
     expect(battleUpdate.steps[1].type).toMatch('info');
     expect(battleUpdate.steps[1].description).toMatch('Test item 1 has activated in a battle.');

@@ -173,7 +173,22 @@ class Player extends Agent {
         super.constructNewObject(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
-        agent.abilities = [];
+        agent.abilities = [
+            {
+                name: 'Big Bang',
+                baseDamage: 50,
+                speed: 1,
+                effectName: 'testAbility1',
+                apCost: 1
+            },
+            {
+                name: 'Super Blast',
+                baseDamage: 70,
+                speed: 1,
+                effectName: 'testAbility1',
+                apCost: 1  
+            }
+        ];
         agent.bag = {
             weapons: [],
             books: [JSON.stringify(
@@ -187,7 +202,10 @@ class Player extends Agent {
                             },
                             ability: {
                                 name: 'Big Bang',
-                                damage: 50
+                                baseDamage: 50,
+                                speed: 1,
+                                effectName: 'testAbility1',
+                                apCost: 1
                             }
                         },
                         {
@@ -196,7 +214,10 @@ class Player extends Agent {
                             },
                             ability: {
                                 name: 'Super Blast',
-                                damage: 70    
+                                baseDamage: 70,
+                                speed: 1,
+                                effectName: 'testAbility1',
+                                apCost: 1  
                             }
                         }
                     ]
@@ -205,11 +226,15 @@ class Player extends Agent {
             items: [
                 JSON.stringify({
                     name: 'potion',
-                    count: 5
+                    count: 5,
+                    icon: 'potion.png',
+                    effectName: 'testItem1'
                 }),
                 JSON.stringify({
                     name: 'Phenix Down',
-                    count: 5
+                    count: 5,
+                    icon: 'phenix_down.png',
+                    effectName: 'testItem1'
                 }),
             ]
         }

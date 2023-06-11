@@ -25,47 +25,21 @@ function validatePayloadParameters(payload, params)
 
 function internalErrorCatch(req, res, error) {
     let responce = {
-        message: error.message,
+        message: 'Internal Error',
+        errorCode: 0
     };
+    
     let status = 500;
 
-    switch(error) {
-        case ChatRPG.Errors.playerExists:
-            responce.errorCode = 1;
-            status = 400;
+    let errorCode = 1;
+    for(rpgError in ChatRPG.Errors) {
+        if(ChatRPG.Errors[rpgError] === error.message) {
+            responce.errorCode = errorCode;
+            responce.message = ChatRPG.Errors[rpgError];
+            status = ChatRPG.Errors[rpgError].includes('not found') ? 404 : 400;
             break;
-        case ChatRPG.Errors.playerNotFound:
-            responce.errorCode = 2;
-            status = 404;
-            break;
-        case ChatRPG.Errors.gameNotFound:
-            responce.errorCode = 3;
-            status = 404;
-            break;
-        case ChatRPG.Errors.monsterInstanceNotFound:
-            responce.errorCode = 4;
-            status = 404;
-            break;
-        case ChatRPG.Errors.playerNotInGame:
-            responce.errorCode = 5;
-            status = 400;
-            break;
-        case ChatRPG.Errors.battleNotFound:
-            responce.errorCode = 6;
-            status = 404;
-            break;
-        case ChatRPG.Errors.weaponNotInBag:
-            responce.errorCode = 7;
-            status = 404;
-            break;
-        case ChatRPG.Errors.abilitiesFull:
-            responce.errorCode = 12;
-            status = 400;
-            break;
-        default:
-            responce.message = 'Internal Error';
-            responce.errorCode = 0;
-            break;
+        }
+        errorCode += 1;
     }
     sendResponceObject(res, responce, status);
 }
@@ -284,7 +258,24 @@ function battle_action(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.battleAction(req.query.battleId, {type: req.query.actionType})
+    const battleAction = {type: req.query.actionType};
+    if(req.query.actionType === 'ability') {
+        if(!validatePayloadParameters(req.query, {name: 'abilityName', type: 'string'})) {
+            sendError(res, "Ability parameters are malformed");
+            return;
+        }
+        battleAction.abilityName = req.query.abilityName;
+    }
+
+    if(req.query.actionType === 'item') {
+        if(!validatePayloadParameters(req.query, {name: 'itemName', type: 'string'})) {
+            sendError(res, "Item parameters are malformed");
+            return;
+        }
+        battleAction.itemName = req.query.itemName;
+    }
+
+    chatrpg.battleAction(req.query.battleId, battleAction)
     .then(battleUpdate => {
         sendResponceObject(res, battleUpdate);
     })
