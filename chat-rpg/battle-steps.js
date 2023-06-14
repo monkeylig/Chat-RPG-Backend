@@ -30,9 +30,17 @@ function infoStep(description, action, actorId) {
     };
 }
 
+function battleEndStep(description) {
+    return {
+        type: 'battle_end',
+        description
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
-    info: infoStep
+    info: infoStep,
+    battleEnd: battleEndStep
 };
 
 module.exports = BattleSteps;

@@ -8,13 +8,10 @@ const Game = require('./datastore-objects/game');
 const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agent");
 const Ability = require('./datastore-objects/ability');
 const Item = require('./datastore-objects/item');
+const {MonsterClass} = require("./datastore-objects/monster-class");
 const BattleSteps = require('./battle-steps');
 const AbilityFunctions = require('./equippable-functions/ability-functions');
 const ItemFunctions = require('./equippable-functions/item-functions');
-const MonsterClass = require("./datastore-objects/monster-class");
-
-const BATTLE_AP = 3;
-const STRIKE_ABILITY_TRIGGER = 3;
 
 class ChatRPG {
     #datasource;
@@ -95,40 +92,46 @@ class ChatRPG {
 
     async joinGame(playerId, gameId) {
         //Make sure the user exists
-        const player = await this.#findPlayer(playerId);
+        const playerSnap = await this.#findPlayer(playerId);
 
         const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
         const gameSnap = await gameRef.get();
         let game;
         if(!gameSnap.exists) {
-            //TODO Use the host's game mode from the config
-            game = await GameModes.arena.createGame(this.#datasource)
 
-            const gameData = await this.#datasource.runTransaction(async (transaction) => {
+            game = await this.#datasource.runTransaction(async (transaction) => {
                 const transGameSnap = await transaction.get(gameRef);
                 if(!transGameSnap.exists) {
-                    const transGameData = game.getData();
-                    transaction.create(gameRef, transGameData);
-                    return transGameData;
+                    //TODO Use the host's game mode from the config
+                    game = await GameModes.arena.createGame(this.#datasource);
+                    transaction.create(gameRef, game.getData());
+                    return game;
                }
-               return transGameSnap.data();
+               return new Game(transGameSnap.data());
            });
-           game = new Game(gameData);
         }
         else {
             game = new Game(gameSnap.data());
         }
 
-        await player.ref.update({ currentGameId: gameId });
+        await playerSnap.ref.update({ currentGameId: gameId });
 
-        game.setData('id', gameRef.id);
-        return game.getUnflattenedData();
+        const player = new Player(playerSnap.data());
+        player.datastoreObject.currentGameId = gameId;
+        game.onPlayerJoin(player);
+
+        const gameData = game.getUnflattenedData();
+        gameData.id = gameId;
+
+        return gameData;
     }
 
     async getGame(gameId) {
         const game = new Game((await this.#findGame(gameId)).data());
-        game.setData('id', gameId);
-        return game.getUnflattenedData();
+        const gameData = game.getUnflattenedData();
+        gameData.id = gameId;
+
+        return gameData;
     }
 
     async startBattle(playerId, gameId, monsterId, fallbackMonster) {
@@ -141,12 +144,13 @@ class ChatRPG {
             throw new Error(ChatRPG.Errors.playerNotInGame);
         }
 
-        let targetMonster = game.findMonsterById(monsterId, false);
-        if(!targetMonster) {
+        let targetMonsterData = game.findMonsterById(monsterId, false);
+        if(!targetMonsterData) {
             if(fallbackMonster) {
                 const monsterRef = await this.#datasource.collection('monsters').doc(fallbackMonster.class).get();
                 const monsterClass = new MonsterClass(monsterRef.data());
-                targetMonster = monsterClass.createMonsterInstance(fallbackMonster.level);
+                targetMonsterData = monsterClass.createMonsterInstance(fallbackMonster.level).datastoreObject;
+                targetMonsterData.id = monsterId;
             }
             else {
                 throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
@@ -156,8 +160,7 @@ class ChatRPG {
         const player = new Player(playerData);
         player.datastoreObject.id = playerSnap.ref.id;
         const battlePlayer = new BattlePlayer(player.datastoreObject);
-        targetMonster.id = monsterId;
-        const battleMonster = new BattleMonster(targetMonster);
+        const battleMonster = new BattleMonster(targetMonsterData);
 
         const battle = {
             player: battlePlayer.datastoreObject,
@@ -217,10 +220,7 @@ class ChatRPG {
                 description: `${battlePlayerData.name} escaped.`
             });
 
-            player.mergeBattlePlayer(battlePlayer);
-            await playerRef.set(player.getData());
-
-            await battleSnap.ref.delete();
+            await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
             return {player: battlePlayerData, monster: monsterData, steps, result};
         }
 
@@ -234,11 +234,11 @@ class ChatRPG {
                 });
             }
             else if(battlePlayer.isDefeated()) {
+                battlePlayer.revive();
+                player.onPlayerDefeated();
+                await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
                 result.winner = monsterData.id;
-                steps.push({
-                    type: "battle_end",
-                    description: `${battlePlayerData.name} was defeated.`
-                });
+                steps.push(BattleSteps.battleEnd(`${battlePlayerData.name} was defeated.`));
             }
             else if(monster.isDefeated()) {
                 const expGain = monster.getExpGain();
@@ -267,31 +267,43 @@ class ChatRPG {
                     }
                     result.drops.push(drop);
                 }
+
+                if(monsterData.coinDrop > 0) {
+                    const drop = {
+                        type: 'coin',
+                        content: {
+                            name: `${monsterData.coinDrop} coins`,
+                            icon: 'coin.png'
+                        }
+                    };
+                    player.addCoins(monsterData.coinDrop);
+                    result.drops.push(drop);
+                }
                 
                 if(lastDrop.weapons.length) {
                     player.setLastDrop(lastDrop);
                 }
 
-                player.mergeBattlePlayer(battlePlayer);
-                player.OnMonsterDefeated();
-                await playerRef.set(player.getData());
+                player.onMonsterDefeated();
                 
                 // Remove the monster from the game
                 const gameSnap = await this.#findGame(battle.gameId);
-                const game = new Game(gameSnap.data());
+                let game = new Game(gameSnap.data());
                 
                 // Skip transaction if it is unnessesary
                 if(game.findMonsterById(monsterData.id, false)) {
                     await this.#datasource.runTransaction(async (transaction) => {
                         const transGameSnap = await transaction.get(gameSnap.ref);
-                        const transGame = new Game(transGameSnap.data());
                         
-                        const transMonster = transGame.findMonsterById(monsterData.id);
+                        game = new Game(transGameSnap.data());
+                        const transMonster = game.findMonsterById(monsterData.id);
                         if(!transMonster) {
                             return;
                         }
                         
-                        transaction.update(transGameSnap.ref, {monsters: FieldValue.arrayRemove(transMonster)});
+                        game.removeMonster(monsterData.id);
+                        await GameModes.arena.onMonsterDefeated(game, monster, this.#datasource);
+                        transaction.update(transGameSnap.ref, {monsters: game.getMonsters()});
                     });
                 }
 
@@ -301,7 +313,7 @@ class ChatRPG {
                 });
             }
 
-            await battleSnap.ref.delete();
+            await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
             return {player: battlePlayerData, monster: monsterData, steps, result};
         }
 
@@ -310,6 +322,12 @@ class ChatRPG {
         await battleSnap.ref.set(battle);
 
         return {player: battlePlayerData, monster: monsterData, steps};
+    }
+
+    async #finishBattle(battleRef, playerRef, player, battlePlayer) {
+        player.mergeBattlePlayer(battlePlayer);
+        await playerRef.set(player.getData());
+        await battleRef.delete();
     }
 
     async equipWeapon(playerId, weaponId) {

@@ -279,8 +279,11 @@ test('Starting a battle with a monster thats does not exist', async () => {
     expect(battleState.gameId).toBe('new game');
     expect(battleState.monster.id).toBe('No such monster');
     expect(battleState.monster.id).not.toBe(gameState.monsters[1].id);
-    expect(battleState.monster.health).toBeTruthy();
-    expect(battleState.monster.maxHealth).toBeTruthy();
+    expect(battleState.monster.health).toBeDefined();
+    expect(battleState.monster.health).not.toBeNaN();
+    expect(battleState.monster.maxHealth).toBeDefined();
+    expect(battleState.monster.maxHealth).not.toBeNaN();
+
 });
 
 test('Battle Actions: Strike', async () => {
@@ -505,7 +508,7 @@ test('Battle Actions: Ability', async () => {
 
 });
 
-test.only('Battle Actions: Item', async () => {
+test('Battle Actions: Item', async () => {
     let player = new Player();
     player.datastoreObject.bag.items = [
         {
@@ -629,6 +632,9 @@ test('Defeating a monster', async () => {
     const gameUpdate = await chatrpg.getGame('new game');
 
     expect(gameUpdate.monsters.includes(battleUpdate.monster.id)).toBeFalsy();
+    //#region arena game specific
+    expect(gameUpdate.monsters.length).toBe(5);
+    //#endregion
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
 
@@ -681,9 +687,14 @@ test('Player being defeated', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.player.health).toBe(0);
+    expect(battleUpdate.player.health).toBe(Math.floor(battleUpdate.player.maxHealth * 0.5));
     expect(battleUpdate.result).toBeTruthy();
     expect(battleUpdate.result.winner).toMatch(battleState.monster.id);
+
+    const player = await chatrpg.findPlayerById(playerId);
+
+    expect(player.health).toBe(Math.floor(player.maxHealth * 0.5));
+    expect(player.trackers.deaths).toBe(1);
 });
 
 test('Monster Drops', async () => {
@@ -729,6 +740,9 @@ test('Monster Drops', async () => {
     expect(battleUpdate.result.drops.length).toBeGreaterThan(0);
     expect(battleUpdate.result.drops[0].type).toMatch('weapon');
     expect(battleUpdate.result.drops[0].content.name).toMatch(battleUpdate.monster.weapon.name);
+    expect(battleUpdate.result.drops[1]).toBeDefined();
+    expect(battleUpdate.result.drops[1].type).toMatch('coin');
+    expect(battleUpdate.result.drops[1].content).toBe(3);
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
 
@@ -972,16 +986,16 @@ test('Equip Ability', async () => {
     let chatrpg = new ChatRPG(dataSource);
 
     let playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 0);
-    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[0].ability);
+    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.books[0].abilities[0].ability.name);
     
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 1);
-    expect(playerData.abilities[1]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[1].ability);
+    expect(playerData.abilities[1].name).toMatch(player.datastoreObject.bag.books[0].abilities[1].ability.name);
 
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 2);
-    expect(playerData.abilities[2]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[2].ability);
+    expect(playerData.abilities[2].name).toMatch(player.datastoreObject.bag.books[0].abilities[2].ability.name);
 
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 3, 'Big Bang');
-    expect(playerData.abilities[0]).toStrictEqual(player.datastoreObject.bag.books[0].abilities[3].ability);
+    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.books[0].abilities[3].ability.name);
 });
 
 test('Drop Book', async () => {

@@ -1,4 +1,5 @@
-const {Agent, Player, Monster} = require('./agent');
+const {Agent, Player} = require('./agent');
+const {Monster} = require('./monster-class');
 
 const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 3;
@@ -82,8 +83,7 @@ class BattleMonster extends Monster {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        battleAgentFields(agent);
-        agent.weaponDropRate = 0.5;
+        BattleAgent.setFields(agent);
     }
 
     onStrike() {

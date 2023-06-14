@@ -14,17 +14,6 @@ function getExpToNextLevel(level) {
     return expFunc(level + 1) - expFunc(level);
 }
 
-function setStatsAtLevel(player, growthObject, level) {
-    player.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
-    player.health = player.maxHealth;
-    player.attack = Math.floor(growthObject.attack * level);
-    player.magic =  Math.floor(growthObject.magic * level);
-    player.defence = Math.floor(growthObject.defence * level);
-    player.level = level;
-    player.exp = 0;
-    player.expToNextLevel = getExpToNextLevel(player.level);
-}
-
 function levelUpPlayer(player, growthObject) {
     player.maxHealth += growthObject.maxHealth + 1;
     player.health = player.maxHealth;
@@ -83,12 +72,23 @@ class Agent extends DatastoreObject {
             }
         }
 
-        setStatsAtLevel(agent, agent.weapon.statGrowth, 1);
+        this.setStatsAtLevel(1);
     }
 
     setStatsAtLevel(level) {
         const player = this.datastoreObject;
-        setStatsAtLevel(player, player.weapon.statGrowth, level);
+        Agent.setStatsAtLevel(player, player.weapon.statGrowth, level)
+    }
+
+    static setStatsAtLevel(datastoreObject, growthObject, level) {
+        datastoreObject.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
+        datastoreObject.health = datastoreObject.maxHealth;
+        datastoreObject.attack = Math.floor(growthObject.attack * level);
+        datastoreObject.magic =  Math.floor(growthObject.magic * level);
+        datastoreObject.defence = Math.floor(growthObject.defence * level);
+        datastoreObject.level = level;
+        datastoreObject.exp = 0;
+        datastoreObject.expToNextLevel = getExpToNextLevel(datastoreObject.level);
     }
 
     levelUp() {
@@ -104,7 +104,11 @@ class Agent extends DatastoreObject {
     }
 
     isDefeated() {
-        return this.datastoreObject.health <= 0;
+        return Agent.isDefeated(this.datastoreObject);
+    }
+
+    static isDefeated(datastoreObject) {
+        return datastoreObject.health <= 0;
     }
 
     findAbilityByName(name, flatten=true) {
@@ -149,6 +153,16 @@ class Agent extends DatastoreObject {
     getUnflattenedData() {
         return this.datastoreObject;
     }
+
+    revive() {
+        Agent.revive(this.datastoreObject);
+    }
+
+    static revive(datastoreObject) {
+        if(Agent.isDefeated(datastoreObject)) {
+            datastoreObject.health = Math.floor(datastoreObject.maxHealth * 0.5);
+        }
+    }
 }
 
 class Player extends Agent {
@@ -173,6 +187,7 @@ class Player extends Agent {
         super.constructNewObject(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
+        agent.coins = 0;
         agent.abilities = [
             {
                 name: 'Big Bang',
@@ -245,7 +260,8 @@ class Player extends Agent {
             weaponKills: {
                 sword: 0,
                 staff: 0
-            }
+            },
+            deaths: 0
         };
     }
 
@@ -409,45 +425,17 @@ class Player extends Agent {
         thisPlayerData.bag.items = battlePlayerData.bag.items;
     }
 
-    OnMonsterDefeated() {
+    onMonsterDefeated() {
         this.datastoreObject.trackers.weaponKills[this.datastoreObject.weapon.type] += 1;
     }
-}
 
-class Monster extends Agent {
-    static EXP_MODIFIER = 6;
-    static STAT_POINTS_PER_LEVEL = 5;
-
-    constructor(objectData) {
-        super(objectData);
+    onPlayerDefeated() {
+        this.datastoreObject.trackers.deaths += 1;
     }
 
-    constructNewObject(monster) {
-        super.constructNewObject(monster);
-        monster.expYield = 0;
-        monster.id = 0;
-        monster.attackRating = 0;
-        monster.magicRating = 0;
-        monster.defenceRating = 0;
-        monster.healthRating = 0;
-        monster.weaponDropRate = 0.5;
-        monster.class = '';
-    }
-
-    getExpGain() {
-        const monster = this.datastoreObject;
-        return Math.round(monster.expYield * monster.level/7 * Monster.EXP_MODIFIER);
-    }
-
-    setStatsAtLevel(level) {
-        const monster = this.datastoreObject;
-        setStatsAtLevel(monster, {
-            maxHealth: monster.healthRating * Monster.STAT_POINTS_PER_LEVEL,
-            attack: monster.attackRating * Monster.STAT_POINTS_PER_LEVEL,
-            defence: monster.defenceRating * Monster.STAT_POINTS_PER_LEVEL,
-            magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
-        }, level);
+    addCoins(coins) {
+        this.datastoreObject.coins += coins;
     }
 }
 
-module.exports = {Agent, Player, Monster};
+module.exports = {Agent, Player};
