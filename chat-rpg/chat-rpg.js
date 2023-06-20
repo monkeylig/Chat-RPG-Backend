@@ -56,10 +56,7 @@ class ChatRPG {
 
     async addNewPlayer(name, avatar, platformId, platform) {
 
-        const player = new Player({name, avatar});
-
         const platformIdProperty = this.#getPlatformIdProperty(platform);
-        player.setData(platformIdProperty, platformId);
 
         const playersRef = this.#datasource.collection(Schema.Collections.Accounts);
         const querySnap = await playersRef.where(platformIdProperty, '==', platformId).get();
@@ -67,6 +64,10 @@ class ChatRPG {
         if(!querySnap.empty) {
             throw new Error(ChatRPG.Errors.playerExists);
         }
+
+        const player = new Player({name, avatar});
+
+        player.setData(platformIdProperty, platformId);
 
         const newPlayer = playersRef.doc();
         await newPlayer.set(player.getData());
@@ -93,34 +94,30 @@ class ChatRPG {
     async joinGame(playerId, gameId) {
         //Make sure the user exists
         const playerSnap = await this.#findPlayer(playerId);
+        const player = new Player(playerSnap.data());
 
         const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
-        const gameSnap = await gameRef.get();
-        let game;
-        if(!gameSnap.exists) {
+    
+        const game = await this.#datasource.runTransaction(async (transaction) => {
+            const transGameSnap = await transaction.get(gameRef);
+            if(!transGameSnap.exists) {
+                //TODO Use the host's game mode from the config
+                const game = await GameModes.arena.createGame(this.#datasource);
+                game.onPlayerJoin(player);
+                transaction.create(gameRef, game.getData());
+                return game;
+            }
 
-            game = await this.#datasource.runTransaction(async (transaction) => {
-                const transGameSnap = await transaction.get(gameRef);
-                if(!transGameSnap.exists) {
-                    //TODO Use the host's game mode from the config
-                    game = await GameModes.arena.createGame(this.#datasource);
-                    transaction.create(gameRef, game.getData());
-                    return game;
-               }
-               return new Game(transGameSnap.data());
-           });
-        }
-        else {
-            game = new Game(gameSnap.data());
-        }
+            const game = new Game(transGameSnap.data());
+            game.onPlayerJoin(player);
+            transaction.update(gameRef, {trackers: game.getData().trackers})
+            return game;
+        });
 
         await playerSnap.ref.update({ currentGameId: gameId });
-
-        const player = new Player(playerSnap.data());
         player.datastoreObject.currentGameId = gameId;
-        game.onPlayerJoin(player);
 
-        const gameData = game.getUnflattenedData();
+        const gameData = game.getData();
         gameData.id = gameId;
 
         return gameData;
@@ -128,7 +125,7 @@ class ChatRPG {
 
     async getGame(gameId) {
         const game = new Game((await this.#findGame(gameId)).data());
-        const gameData = game.getUnflattenedData();
+        const gameData = game.getData();
         gameData.id = gameId;
 
         return gameData;
@@ -234,15 +231,16 @@ class ChatRPG {
                 });
             }
             else if(battlePlayer.isDefeated()) {
-                battlePlayer.revive();
                 player.onPlayerDefeated();
-                await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
+                //await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
                 result.winner = monsterData.id;
                 steps.push(BattleSteps.battleEnd(`${battlePlayerData.name} was defeated.`));
             }
             else if(monster.isDefeated()) {
                 const expGain = monster.getExpGain();
+                const oldLevel = battlePlayerData.level;
                 battlePlayer.addExpAndLevel(expGain);
+
 
                 result.winner = battlePlayerData.id;
                 result.expAward = expGain;
@@ -296,6 +294,7 @@ class ChatRPG {
                         const transGameSnap = await transaction.get(gameSnap.ref);
                         
                         game = new Game(transGameSnap.data());
+                        game.onPlayerLevelUp(oldLevel, player);
                         const transMonster = game.findMonsterById(monsterData.id);
                         if(!transMonster) {
                             return;
@@ -303,7 +302,7 @@ class ChatRPG {
                         
                         game.removeMonster(monsterData.id);
                         await GameModes.arena.onMonsterDefeated(game, monster, this.#datasource);
-                        transaction.update(transGameSnap.ref, {monsters: game.getMonsters()});
+                        transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
                     });
                 }
 
@@ -398,12 +397,12 @@ class ChatRPG {
 
         const abilityBookEntry = book.abilities[abilityIndex];
 
-        let flatAbility;
+        let replacedAbility;
 
         if(replacedAbilityName) {
-            flatAbility = player.findAbilityByName(replacedAbilityName);
+            replacedAbility = player.findAbilityByName(replacedAbilityName);
 
-            if(!flatAbility) {
+            if(!replacedAbility) {
                 throw new Error(ChatRPG.Errors.abilityNotFound);
             }
         }
@@ -413,10 +412,10 @@ class ChatRPG {
 
         await this.#datasource.runTransaction(async (transaction) => {
 
-            if(flatAbility) {
-                transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(flatAbility)});
+            if(replacedAbility) {
+                transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(replacedAbility)});
             }
-            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(JSON.stringify(abilityBookEntry.ability))});
+            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(abilityBookEntry.ability)});
         });
 
         player.equipAbility(abilityBookEntry.ability, replacedAbilityName);
@@ -542,7 +541,7 @@ class ChatRPG {
         }
 
         else if(actionRequest.type === 'ability') {
-            const ability = new Ability(battlePlayer.findAbilityByName(actionRequest.abilityName, false));
+            const ability = new Ability(battlePlayer.findAbilityByName(actionRequest.abilityName));
             const abilityData = ability.datastoreObject;
             if(!ability) {
                 throw new Error(ChatRPG.Errors.abilityNotEquipped);
@@ -560,7 +559,7 @@ class ChatRPG {
         }
 
         else if(actionRequest.type === 'item') {
-            const itemData = battlePlayer.findItemByName(actionRequest.itemName, false);
+            const itemData = battlePlayer.findItemByName(actionRequest.itemName);
             if(!itemData) {
                 throw new Error(ChatRPG.Errors.itemNotEquipped);
             }

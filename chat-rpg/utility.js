@@ -15,36 +15,16 @@ function getRandomIntInclusive(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(chatRPGUtility.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
-  }
-
-function flattenObjectArray(array) {
-    const newArray = [];
-
-    array.forEach(element => {
-        newArray.push(JSON.stringify(element));
-    });
-
-    return newArray;
 }
 
-function unflattenObjectArray(array) {
-    const newArray = [];
-
-    array.forEach(element => {
-        newArray.push(JSON.parse(element));
-    });
-
-    return newArray;
-}
-
-function findInObjectArray(arr, matcher, matchValue, flatten=true) {
+function findInObjectArray(arr, matcher, matchValue) {
     const item = arr.find(element => element[matcher] === matchValue);
 
     if(!item) {
         return;
     }
 
-    return flatten ? JSON.stringify(item) : item;
+    return item;
 }
 
 chatRPGUtility = {
@@ -76,7 +56,7 @@ chatRPGUtility = {
         player.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
         player.health = player.maxHealth;
         player.attack = Math.floor(growthObject.attack * level);
-        player.magic =  Math.floor(growthObject.magic * level);
+        player.magic = Math.floor(growthObject.magic * level);
         player.defence = Math.floor(growthObject.defence * level);
         player.level = level;
         player.exp = 0;
@@ -112,8 +92,6 @@ chatRPGUtility = {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
     },
     getRandomIntInclusive,
-    flattenObjectArray,
-    unflattenObjectArray,
     findInObjectArray
 };
 

@@ -493,14 +493,43 @@ test('Testing updating existing documents', async () => {
     await playerRef.update({'abilities': FieldValue.arrayUnion('blast')});
 
     player = (await playerRef.get()).data();
+    let oldLength = player.abilities.length;
 
     expect(player.abilities.includes('blast')).toBeTruthy();
+
+    await playerRef.update({'abilities': FieldValue.arrayUnion('blast')});
+    player = (await playerRef.get()).data();
+
+    expect(player.abilities.length).toBe(oldLength);
 
     await playerRef.update({'abilities': FieldValue.arrayRemove('block')});
 
     player = (await playerRef.get()).data();
 
     expect(player.abilities.includes('block')).toBeFalsy();
+});
+
+test('Remove an object in an object array', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: [{name: 'slash', damage: 40}, {name: 'block', damage: 0}]
+    };
+
+    const playerRef = await dataSource.collection('players').add(user);
+
+    await playerRef.update({'abilities': FieldValue.arrayRemove({name: 'block', damage: 0})});
+    
+    const player = (await playerRef.get()).data();
+
+    expect(player.abilities.length).toBe(1);
+    expect(player.abilities[0]).toStrictEqual(user.abilities[0]);
 });
 
 test('Testing creating new documents with transactions', async () => {

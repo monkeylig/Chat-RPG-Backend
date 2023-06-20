@@ -9,6 +9,16 @@ const utility = require("../utility");
  * }
  */
 
+function flattenObjectArray(array) {
+    const newArray = [];
+
+    array.forEach(element => {
+        newArray.push(JSON.stringify(element));
+    });
+
+    return newArray;
+}
+
 class MemoryBackedDataSource extends IBackendDataSource {
     dataSource;
 
@@ -187,15 +197,24 @@ class MemoryDataSourceDocumentRef {
 
             if(object[field].hasOwnProperty('fieldType')) {
                 if(object[field].fieldType == FieldValue.Arraytype) {
-                    const array1 = leafObject[targetAttribute];
-                    const array2 = object[field].arrayElements;
                     switch(object[field].arrayOp) {
-                        case FieldValue.UnionOp:
-                            leafObject[targetAttribute] = array1.concat(array2);
+                        case FieldValue.UnionOp: {
+                            const array1 = leafObject[targetAttribute];
+                            const stringArray1 = flattenObjectArray(array1);
+                            const array2 = object[field].arrayElements;
+                            array2.forEach(x => {
+                                if (!stringArray1.includes(JSON.stringify(x))) {
+                                    array1.push(x);
+                                }
+                            });
                             break;
-                        case FieldValue.RemoveOp:
-                            leafObject[targetAttribute] = array1.filter(x => !array2.includes(x));
+                        }
+                        case FieldValue.RemoveOp: {
+                            const array1 = leafObject[targetAttribute];
+                            const array2 = flattenObjectArray(object[field].arrayElements);
+                            leafObject[targetAttribute] = array1.filter(x => !array2.includes(JSON.stringify(x)));
                             break;
+                        }
                     }
                 }
             }

@@ -4,8 +4,6 @@ const chatRPGUtility = require('../utility');
 class Game extends DatastoreObject {
     constructor(objectData) {
         super(objectData);
-
-        this.datastoreObject.monsters = chatRPGUtility.unflattenObjectArray(this.datastoreObject.monsters);
     }
 
     constructNewObject(game) {
@@ -20,23 +18,13 @@ class Game extends DatastoreObject {
         };
     }
 
-    getData() {
-        const newData = Object.assign({}, this.datastoreObject);
-        newData.monsters = chatRPGUtility.flattenObjectArray(newData.monsters);
-        return newData;
-    }
-
-    getUnflattenedData() {
-        return this.datastoreObject;
-    }
-
     findMonsterById(id, flatten=true) {
         return Game.findMonsterById(this.datastoreObject, id, flatten);
     }
-    static findMonsterById(datastoreObject, id, flatten=true) {
+    static findMonsterById(datastoreObject, id,) {
         for(const monster of datastoreObject.monsters) {
             if(monster.id == id) {
-                return flatten ? JSON.stringify(monster) : monster;
+                return monster;
             }
         }
     }
@@ -51,11 +39,7 @@ class Game extends DatastoreObject {
         this.datastoreObject.monsters.splice(monsterIndex, 1);
     }
 
-    getMonsters(flatten=true) {
-        if (flatten) {
-            return chatRPGUtility.flattenObjectArray(this.datastoreObject.monsters);
-        }
-
+    getMonsters() {
         return this.datastoreObject.monsters;
     }
 
@@ -68,11 +52,23 @@ class Game extends DatastoreObject {
         const gameDataTrackers = this.datastoreObject.trackers;
 
         gameDataTrackers.numberOfPlayers += 1;
-        gameDataTrackers.levelSum += playerData.level;
-        gameDataTrackers.averageLevel = Math.floor(gameDataTrackers.levelSum / gameDataTrackers.numberOfPlayers);
-        gameDataTrackers.maxLevel = Math.max(gameDataTrackers.maxLevel, playerData.level);
-        gameDataTrackers.minLevel = gameDataTrackers.minLevel === 0 ? playerData.level : Math.min(gameDataTrackers.minLevel, playerData.level);
+        this.#updateLevelTrackers(playerData.level);
+    }
 
+    onPlayerLevelUp(oldLevel, player) {
+        const gameDataTrackers = this.datastoreObject.trackers;
+
+        gameDataTrackers.levelSum -= oldLevel;
+        this.#updateLevelTrackers(player.datastoreObject.level);
+    }
+
+    #updateLevelTrackers(newLevel) {
+        const gameDataTrackers = this.datastoreObject.trackers;
+
+        gameDataTrackers.levelSum += newLevel;
+        gameDataTrackers.averageLevel = Math.floor(gameDataTrackers.levelSum / gameDataTrackers.numberOfPlayers);
+        gameDataTrackers.maxLevel = Math.max(gameDataTrackers.maxLevel, newLevel);
+        gameDataTrackers.minLevel = gameDataTrackers.minLevel === 0 ? newLevel : Math.min(gameDataTrackers.minLevel, newLevel);
     }
 }
 

@@ -57,11 +57,11 @@ async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
             averageMonsters += 1;
         }
         //Do we have a monster at minimum level?
-        else if(Math.abs(monster.level - gameData.trackers.minLevel) <= monsterLevelGrace) {
+        if(Math.abs(monster.level - gameData.trackers.minLevel) <= monsterLevelGrace) {
             minimumMonsters += 1;
         }
         //Do we have a monster at maximum level?
-        else if(Math.abs(monster.level - gameData.trackers.maxLevel) <= monsterLevelGrace) {
+        if(Math.abs(monster.level - gameData.trackers.maxLevel) <= monsterLevelGrace) {
             maximumMonsters += 1;
         }
     }
@@ -69,7 +69,7 @@ async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
     const minLevel = Math.max(1, gameData.trackers.minLevel + levelBias);
     const maxLevel = Math.max(1, gameData.trackers.maxLevel + levelBias);
 
-    let newMonster = monsterClass.createMonsterInstance(utility.getRandomIntInclusive(minLevel, maxLevel));
+    let newMonster = monsterClass.createMonsterInstance(utility.getRandomIntInclusive(Math.max(1, minLevel - 5), maxLevel));
     if(averageMonsters === 0) {
         newMonster = monsterClass.createMonsterInstance(Math.max(1, gameData.trackers.averageLevel + levelBias));
     }

@@ -44,10 +44,6 @@ class Agent extends DatastoreObject {
     static MAXABILITIES = 3;
     constructor(objectData) {
         super(objectData);
-        const abilities = this.datastoreObject.abilities;
-        if(typeof abilities[0] === 'string') {
-            this.datastoreObject.abilities = chatRPGUtility.unflattenObjectArray(abilities);
-        }
     }
 
     constructNewObject(agent) {
@@ -111,14 +107,8 @@ class Agent extends DatastoreObject {
         return datastoreObject.health <= 0;
     }
 
-    findAbilityByName(name, flatten=true) {
-        const ability = this.datastoreObject.abilities.find(element => element.name == name);
-
-        if(!ability) {
-            return;
-        }
-
-        return flatten ? JSON.stringify(ability) : ability;
+    findAbilityByName(name) {
+        return chatRPGUtility.findInObjectArray(this.datastoreObject.abilities, 'name', name);
     }
 
     equipAbility(ability, replacedAbilityName)
@@ -144,12 +134,6 @@ class Agent extends DatastoreObject {
         return this.datastoreObject.abilities.length < Agent.MAXABILITIES;
     }
 
-    getData() {
-        const newData = JSON.parse(JSON.stringify(this.datastoreObject));
-        newData.abilities = chatRPGUtility.flattenObjectArray(newData.abilities);
-        return newData;
-    }
-
     getUnflattenedData() {
         return this.datastoreObject;
     }
@@ -169,18 +153,6 @@ class Player extends Agent {
     static MAXWEAPONS = 10;
     constructor(objectData) {
         super(objectData);
-
-        const weapons = this.datastoreObject.bag.weapons;
-        this.datastoreObject.bag.weapons = chatRPGUtility.unflattenObjectArray(weapons);
-
-        const books = this.datastoreObject.bag.books;
-        this.datastoreObject.bag.books = chatRPGUtility.unflattenObjectArray(books);
-
-        const items = this.datastoreObject.bag.items;
-        this.datastoreObject.bag.items = chatRPGUtility.unflattenObjectArray(items);
-
-        const lastDropWeapons = this.datastoreObject.lastDrops.weapons;
-        this.datastoreObject.lastDrops.weapons = chatRPGUtility.unflattenObjectArray(lastDropWeapons);
     }
 
     constructNewObject(agent) {
@@ -189,7 +161,7 @@ class Player extends Agent {
         agent.currentGameId = '';
         agent.coins = 0;
         agent.abilities = [
-            {
+            /*{
                 name: 'Big Bang',
                 baseDamage: 50,
                 speed: 1,
@@ -202,11 +174,11 @@ class Player extends Agent {
                 speed: 1,
                 effectName: 'testAbility1',
                 apCost: 1  
-            }
+            }*/
         ];
         agent.bag = {
             weapons: [],
-            books: [JSON.stringify(
+            books: [
                 {
                     name: 'Test Book 1',
                     icon: "tome_azure.png",
@@ -236,21 +208,21 @@ class Player extends Agent {
                             }
                         }
                     ]
-                })
+                }
             ],
             items: [
-                JSON.stringify({
+                {
                     name: 'potion',
                     count: 5,
                     icon: 'potion.png',
                     effectName: 'testItem1'
-                }),
-                JSON.stringify({
+                },
+                {
                     name: 'Phenix Down',
                     count: 5,
                     icon: 'phenix_down.png',
                     effectName: 'testItem1'
-                }),
+                },
             ]
         }
         agent.lastDrops = {
@@ -263,15 +235,6 @@ class Player extends Agent {
             },
             deaths: 0
         };
-    }
-
-    getData() {
-        const newData = super.getData();
-        newData.bag.weapons = chatRPGUtility.flattenObjectArray(newData.bag.weapons);
-        newData.bag.books = chatRPGUtility.flattenObjectArray(newData.bag.books);
-        newData.bag.items = chatRPGUtility.flattenObjectArray(newData.bag.items);
-        newData.lastDrops.weapons = chatRPGUtility.flattenObjectArray(newData.lastDrops.weapons);
-        return newData;
     }
 
     getUnflattenedData() {
@@ -299,14 +262,14 @@ class Player extends Agent {
         return false;
     }
 
-    findWeaponById(weaponId, flatten=true) {
+    findWeaponById(weaponId) {
         const weapon = this.datastoreObject.bag.weapons.find(element => element.id === weaponId);
 
         if(!weapon) {
             return;
         }
 
-        return flatten ? JSON.stringify(weapon) : weapon;
+        return weapon;
     }
 
     equipWeapon(weapon) {
@@ -337,14 +300,14 @@ class Player extends Agent {
         return this.datastoreObject.weapon.id === weaponId
     }
 
-    findBookByName(name, flatten=true) {
+    findBookByName(name) {
         const book = this.datastoreObject.bag.books.find(element => element.name === name);
 
         if(!book) {
             return;
         }
 
-        return flatten ? JSON.stringify(book) : book;
+        return book;
     }
 
     abilityRequirementMet(abilityBook, abilityIndex) {
@@ -372,12 +335,12 @@ class Player extends Agent {
         this.datastoreObject.bag.books.splice(bookIndex, 1);
     }
 
-    findItemByName(itemName, flatten) {
-        return Player.findItemByName(this.datastoreObject, itemName, flatten);
+    findItemByName(itemName) {
+        return Player.findItemByName(this.datastoreObject, itemName);
     }
 
-    static findItemByName(datastoreObject, itemName, flatten) {
-        return chatRPGUtility.findInObjectArray(datastoreObject.bag.items, 'name', itemName, flatten);
+    static findItemByName(datastoreObject, itemName) {
+        return chatRPGUtility.findInObjectArray(datastoreObject.bag.items, 'name', itemName);
     }
 
     dropItem(itemName) {
@@ -423,6 +386,8 @@ class Player extends Agent {
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
         thisPlayerData.bag.items = battlePlayerData.bag.items;
+
+        this.revive();
     }
 
     onMonsterDefeated() {

@@ -13,7 +13,7 @@ test('Area game creation', async () => {
         }
     });
 
-    let arenaGame = (await GameModes.arena.createGame(datasource)).getUnflattenedData();
+    let arenaGame = (await GameModes.arena.createGame(datasource)).getData();
 
     expect(arenaGame.mode).toMatch(GameModes.arena.name);
     expect(arenaGame.monsters.length).toBe(GameModes.arena.numberOfStartingMonsters);
@@ -24,7 +24,7 @@ test('Area game creation', async () => {
     datasource = new MemoryBackedDataSource();
     await datasource.initializeDataSource();
 
-    arenaGame = (await GameModes.arena.createGame(datasource)).getUnflattenedData();
+    arenaGame = (await GameModes.arena.createGame(datasource)).getData();
 
     expect(arenaGame.mode).toMatch(GameModes.arena.name);
     expect(arenaGame.monsters.length).toBe(0);
@@ -68,6 +68,5 @@ test('Arena game onMonsterDefeated', async () => {
     await GameModes.arena.onMonsterDefeated(arenaGame, {}, datasource);
 
     expect(game.monsters[8]).toBeDefined();
-    expect(game.monsters[8].level).toBeGreaterThanOrEqual(15);
     expect(game.monsters[8].level).toBeLessThanOrEqual(30);
 });

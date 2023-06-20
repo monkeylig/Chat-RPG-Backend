@@ -5,8 +5,6 @@ const Schema = require("./datasource-schema");
 const {Player} = require('./datastore-objects/agent');
 const seedrandom = require('seedrandom');
 
-
-
 test('Testing adding a new Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();
@@ -76,6 +74,9 @@ test('Testing finding a Twitch player', async () => {
     expect(player.id).toBeDefined();
     defaultPlayer.setData('id', player.id);
     expect(player).toStrictEqual(defaultPlayer.datastoreObject);
+    expect(player.bag).toBeDefined();
+    expect(player.bag.items).toBeDefined();
+    expect(typeof player.bag.items[0]).not.toMatch('string');
 
     await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
 });
@@ -143,9 +144,6 @@ test('Testing joining a Twitch game', async () => {
     for(player in players) {
         expect(players[player].currentGameId).toBe('new game2');
     }
-
-    const gameData = (await dataSource.collection(Schema.Collections.Games).doc('new game2').get()).data();
-    expect(typeof gameData.monsters[0]).toMatch('string');
 });
 
 test('Getting a game update', async () => {
@@ -179,9 +177,6 @@ test('Getting a game update', async () => {
     expect(gameUpdate.monsters.length).toBeGreaterThan(0);
     expect(gameUpdate.monsters[0]).toHaveProperty("attack");
     expect(gameUpdate.monsters[0]).toHaveProperty("defence");
-
-    const gameData = (await dataSource.collection(Schema.Collections.Games).doc('new game').get()).data();
-    expect(typeof gameData.monsters[0]).toMatch('string');
 });
 
 test('Starting a battle', async () => {
@@ -687,7 +682,7 @@ test('Player being defeated', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.player.health).toBe(Math.floor(battleUpdate.player.maxHealth * 0.5));
+    expect(battleUpdate.player.health).toBe(0);
     expect(battleUpdate.result).toBeTruthy();
     expect(battleUpdate.result.winner).toMatch(battleState.monster.id);
 
@@ -742,15 +737,12 @@ test('Monster Drops', async () => {
     expect(battleUpdate.result.drops[0].content.name).toMatch(battleUpdate.monster.weapon.name);
     expect(battleUpdate.result.drops[1]).toBeDefined();
     expect(battleUpdate.result.drops[1].type).toMatch('coin');
-    expect(battleUpdate.result.drops[1].content).toBe(3);
+    expect(battleUpdate.result.drops[1].content).toBeDefined();
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
 
     expect(player.bag.weapons.length).toBeGreaterThan(0);
     expect(player.bag.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
-
-    const playerData = (await dataSource.collection(Schema.Collections.Accounts).doc(playerId).get()).data();
-    expect(typeof playerData.bag.weapons[0]).toMatch('string');
 });
 
 test('Monster Drops with bag full', async () => {
@@ -810,9 +802,6 @@ test('Monster Drops with bag full', async () => {
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
     expect(player.lastDrops.weapons.length).toBeGreaterThan(0);
     expect(player.lastDrops.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
-
-    const playerData = (await dataSource.collection(Schema.Collections.Accounts).doc('testPlayer').get()).data();
-    expect(typeof playerData.lastDrops.weapons[0]).toMatch('string');
 });
 
 test('Monster does not drop weapon', async () => {
@@ -996,6 +985,10 @@ test('Equip Ability', async () => {
 
     playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 3, 'Big Bang');
     expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.books[0].abilities[3].ability.name);
+    expect(playerData.abilities.length).toBe(3);
+
+    const updatedPlayer = await chatrpg.findPlayerById('player1');
+    expect(updatedPlayer.abilities.length).toBe(3);
 });
 
 test('Drop Book', async () => {
