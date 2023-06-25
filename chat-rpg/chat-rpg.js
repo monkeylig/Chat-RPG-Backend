@@ -165,7 +165,8 @@ class ChatRPG {
             monster: battleMonster.datastoreObject,
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
-            environment: {}
+            environment: {},
+            round: 1
         };
 
         const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
@@ -318,9 +319,10 @@ class ChatRPG {
 
         battle.player = battlePlayerData;
         battle.monster = monsterData;
+        battle.round += 1;
         await battleSnap.ref.set(battle);
 
-        return {player: battlePlayerData, monster: monsterData, steps};
+        return {player: battlePlayerData, monster: monsterData, turn: battle.round - 1, steps};
     }
 
     async #finishBattle(battleRef, playerRef, player, battlePlayer) {

@@ -12,8 +12,10 @@ const BattleAgent = {
         agent.id = 0;
         agent.attack = 0;
         agent.defence = 0;
+        agent.magic = 0;
         agent.attackAmp = 0;
         agent.defenceAmp = 0;
+        agent.magicAmp = 0;
         agent.empowerment = {
             strike: 0
         };
@@ -46,6 +48,14 @@ const BattleAgent = {
 
     getModifiedDefence(datastoreObject) {
         return this.getModifiedStat(datastoreObject, 'defence', 'defenceAmp');
+    },
+
+    magicAmp(datastoreObject, stages) {
+        return this.statAmp(datastoreObject, 'magicAmp', stages);
+    },
+
+    getModifiedMagic(datastoreObject) {
+        return this.getModifiedStat(datastoreObject, 'magic', 'magicAmp');
     },
 
     onStrike(datastoreObject) {
@@ -148,6 +158,14 @@ class BattlePlayer extends Agent {
         return BattleAgent.getModifiedDefence(this.datastoreObject);
     }
 
+    magicAmp(stages) {
+        return BattleAgent.magicAmp(this.datastoreObject, stages);
+    }
+
+    getModifiedMagic() {
+        return BattleAgent.getModifiedMagic(this.datastoreObject);
+    }
+
     addEmpowerment(type, value) {
         BattleAgent.addEmpowerment(this.datastoreObject, type, value);
     }
@@ -197,6 +215,14 @@ class BattleMonster extends Monster {
 
     getModifiedDefence() {
         return BattleAgent.getModifiedDefence(this.datastoreObject);
+    }
+
+    magicAmp(stages) {
+        return BattleAgent.magicAmp(this.datastoreObject, stages);
+    }
+
+    getModifiedMagic() {
+        return BattleAgent.getModifiedMagic(this.datastoreObject);
     }
 
     addEmpowerment(type, value) {

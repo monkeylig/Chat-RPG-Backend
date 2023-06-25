@@ -15,12 +15,19 @@ function knightsHonorOverrideBaseDamage(ability, battle, user, opponent) {
 }
 //#endregion
 
+function decadeBlastOverrideBaseDamage(ability, battle, user, opponent) {
+    return ability.getData().baseDamage + ability.getSpecialStat('damgeIncrease') * battle.round;
+}
+
 const AbilitiesSeries1 = {
     skyscraper: {
         overrideBaseDamage: skyscraperOverrideBaseDamage
     },
     knightsHonor: {
         overrideBaseDamage: knightsHonorOverrideBaseDamage
+    },
+    decadeBlast: {
+        overrideBaseDamage: decadeBlastOverrideBaseDamage
     }
 };
 

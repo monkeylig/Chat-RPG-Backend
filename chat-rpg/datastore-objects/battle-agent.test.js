@@ -3,7 +3,8 @@ const MAX_STAT_AMP = 12;
 
 describe.each([
     ['attack', 'getModifiedAttack', 'attackAmp'],
-    ['defence', 'getModifiedDefence', 'defenceAmp']
+    ['defence', 'getModifiedDefence', 'defenceAmp'],
+    ['magic', 'getModifiedMagic', 'magicAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {
     test('Basic mod test', () => {
         const startingStat = 50;

@@ -45,3 +45,20 @@ test('Knight\'s Honor', () => {
 
     expect(baseDamage).toBe(180);
 });
+
+test('Decade Blast', () => {
+    expect(AbilityEffects.decadeBlast).toBeDefined();
+    expect(AbilityEffects.decadeBlast.overrideBaseDamage).toBeDefined();
+    
+    const player = new BattlePlayer();
+    const ability = new Ability({
+        baseDamage: 30,
+        specialStats: {
+            damgeIncrease: 10
+        }
+    });
+
+    let baseDamage = AbilityEffects.decadeBlast.overrideBaseDamage(ability, {round: 6}, player, {});
+    
+    expect(baseDamage).toBe(90);
+});

@@ -6,6 +6,7 @@ function damageStep(srcPlayer, targetPlayer, baseDamage) {
     const damageStep = {
         type: 'damage',
         actorId: srcPlayerData.id,
+        targetId: targetPlayerData.id,
         damage: 0
     };
 
@@ -16,11 +17,11 @@ function damageStep(srcPlayer, targetPlayer, baseDamage) {
     if(targetPlayer.getModifiedDefence()) {
         defence = targetPlayer.getModifiedDefence();
     }
- 
-    damageStep.damage = Math.floor(((2 * srcPlayerData.level / 5 + 2) * baseDamage * power / defence) / 50 + 2);
 
+    const damage = Math.floor(((2 * srcPlayerData.level / 5 + 2) * baseDamage * power / defence) / 50 + 2);
+    damageStep.damage = Math.min(damage, targetPlayerData.health);
     //Apply damage step
-    targetPlayerData.health -= Math.min(damageStep.damage, targetPlayerData.health);
+    targetPlayerData.health -= damageStep.damage;
 
     return damageStep;
 }
@@ -30,7 +31,9 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
     const targetPlayerData = targetPlayer.getData();
     const healStep = {
         type: 'heal',
-        actorId: srcPlayerData.id
+        actorId: srcPlayerData.id,
+        targetId: targetPlayerData.id,
+        healAmount: 0
     };
 
     healStep.healAmount = targetPlayer.heal(healAmount);
@@ -112,6 +115,10 @@ function speedAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'speed', 'speedAmp', stages);
 }
 
+function magicAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'magic', 'magicAmp', stages);
+}
+
 function weaponSpeedAmpStep(battlePlayer, stages) {
     const weapon = new BattleWeapon(battlePlayer.getData().weapon);
     const speedAmpStep = statAmpStep(weapon, 'speed', 'speedAmp', stages);
@@ -139,6 +146,7 @@ const BattleSteps = {
     battleEnd: battleEndStep,
     attackAmp: attackAmpStep,
     defenceAmp: defenceAmpStep,
+    magicAmp: magicAmpStep,
     speedAmp: speedAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep
