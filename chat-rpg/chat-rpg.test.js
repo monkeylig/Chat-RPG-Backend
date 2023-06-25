@@ -410,7 +410,7 @@ test('Magic Strike', async () => {
         name: 'Magic Fists',
         baseDamage: 10,
         speed: 3,
-        modifier: 'magic',
+        type: 'magical',
         strikeAbility: {
             name: 'Heavy Blast',
             baseDamage: 30,
@@ -446,7 +446,7 @@ test('Battle Actions: Ability', async () => {
     player.datastoreObject.abilities = [
         {
             name: 'Big Bang',
-            damage: 5,
+            baseDamage: 5,
             effectName: 'testAbility1'
         }
     ];
@@ -491,9 +491,10 @@ test('Battle Actions: Ability', async () => {
 
     expect(battleObject.environment).toBeDefined();
     expect(battleObject.environment.abilityTest1Activated).toBeTruthy();
-    expect(battleUpdate.steps[3]).toBeDefined();
-    expect(battleUpdate.steps[3].type).toMatch('info');
-    expect(battleUpdate.steps[3].description).toMatch('Test ability 1 has activated.');
+    expect(battleUpdate.steps[3].damage).toBeGreaterThan(3);
+    expect(battleUpdate.steps[4]).toBeDefined();
+    expect(battleUpdate.steps[4].type).toMatch('info');
+    expect(battleUpdate.steps[4].description).toMatch('Test ability 1 has activated.');
     expect(battleUpdate.player.ap).toBe(2);
 
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});

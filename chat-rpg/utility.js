@@ -27,7 +27,7 @@ function findInObjectArray(arr, matcher, matchValue) {
     return item;
 }
 
-chatRPGUtility = {
+const chatRPGUtility = {
     random: Math.random,
     strikeAnim: {
         spriteSheet: 'Hit-Yellow.png',

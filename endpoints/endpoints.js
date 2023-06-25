@@ -41,6 +41,8 @@ function internalErrorCatch(req, res, error) {
         }
         errorCode += 1;
     }
+
+    console.error(error);
     sendResponceObject(res, responce, status);
 }
 

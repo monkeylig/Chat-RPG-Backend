@@ -1,21 +1,40 @@
 const {BattlePlayer, BattleMonster} = require('./battle-agent');
-const MAX_ATTACK_AMP = 12;
+const MAX_STAT_AMP = 12;
 
-test('Attack mod', () => {
-    const startingAttack = 50;
-    const player = new BattlePlayer({attack: startingAttack});
+describe.each([
+    ['attack', 'getModifiedAttack', 'attackAmp'],
+    ['defence', 'getModifiedDefence', 'defenceAmp']
+])('%s mod test', (stat, modFunctionName, ampFunctionName) => {
+    test('Basic mod test', () => {
+        const startingStat = 50;
+        const player = new BattlePlayer({[stat]: startingStat});
 
-    expect(player.getModifiedAttack()).toBe(startingAttack);
+        expect(player[modFunctionName]()).toBe(startingStat);
 
-    player.slightAttackAmp();
+        player[ampFunctionName](1);
 
-    expect(player.getModifiedAttack()).toBe(startingAttack + startingAttack * (1 / MAX_ATTACK_AMP));
+        expect(player[modFunctionName]()).toBe(startingStat + startingStat * (1 / MAX_STAT_AMP));
 
-    const monster = new BattleMonster({attack: startingAttack});
+        const monster = new BattleMonster({[stat]: startingStat});
 
-    expect(monster.getModifiedAttack()).toBe(startingAttack);
+        expect(monster[modFunctionName]()).toBe(startingStat);
 
-    monster.slightAttackAmp();
+        monster[ampFunctionName](1);
 
-    expect(monster.getModifiedAttack()).toBe(startingAttack + startingAttack * (1 / MAX_ATTACK_AMP));
+        expect(monster[modFunctionName]()).toBe(startingStat + startingStat * (1 / MAX_STAT_AMP));
+    });
+});
+
+test('Strike empowerment', () => {
+    const player = new BattlePlayer();
+
+    expect(player.getEmpowermentValue('strike')).toBe(0);
+
+    player.addEmpowerment('strike', 50);
+
+    expect(player.getEmpowermentValue('strike')).toBe(50);
+
+    player.onStrike();
+
+    expect(player.getEmpowermentValue('strike')).toBe(0);
 });

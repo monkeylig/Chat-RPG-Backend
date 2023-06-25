@@ -12,6 +12,7 @@ const {MonsterClass} = require("./datastore-objects/monster-class");
 const BattleSteps = require('./battle-steps');
 const AbilityFunctions = require('./equippable-functions/ability-functions');
 const ItemFunctions = require('./equippable-functions/item-functions');
+const {BattleWeapon} = require("./datastore-objects/weapon");
 
 class ChatRPG {
     #datasource;
@@ -232,7 +233,6 @@ class ChatRPG {
             }
             else if(battlePlayer.isDefeated()) {
                 player.onPlayerDefeated();
-                //await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
                 result.winner = monsterData.id;
                 steps.push(BattleSteps.battleEnd(`${battlePlayerData.name} was defeated.`));
             }
@@ -470,23 +470,26 @@ class ChatRPG {
         const targetPlayerData = targetPlayer.datastoreObject;
         // Damage step
         if(battleAction.type === 'strike') {
-            srcPlayer.onStrike();
             
             if(srcPlayer.strikeAbilityReady()) {
-                srcPlayerData.strikeLevel = 0;
-                const abilitySteps = this.#createAbilitySteps(srcPlayerData.weapon.strikeAbility, srcPlayerData, targetPlayerData, battle);
+                srcPlayer.getData().strikeLevel = 0;
+                const strikeAbility = new Ability(srcPlayer.getData().weapon.strikeAbility);
+                const abilitySteps = this.#createAbilitySteps(strikeAbility, srcPlayer, targetPlayer, battle);
                 steps.push(...abilitySteps);
+                srcPlayer.onStrikeAbility();
             }
             else {
-                const infoStep = BattleSteps.info(`${srcPlayerData.name} strikes ${targetPlayerData.name}!`, 'strike', srcPlayerData.id);
-                const damageStep = BattleSteps.damage(srcPlayerData, targetPlayerData, srcPlayerData.weapon.baseDamage);
+                const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, chatRPGUtility.strikeAnim);
+                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.getEmpowermentValue('strike'));
                 steps.push(infoStep);
                 steps.push(damageStep);
+                srcPlayer.onStrike();
             }
+
         }
 
         else if(battleAction.type === 'ability') {
-            steps.push(...this.#createAbilitySteps(battleAction.ability, srcPlayerData, targetPlayerData, battle));
+            steps.push(...this.#createAbilitySteps(battleAction.ability, srcPlayer, targetPlayer, battle));
             srcPlayer.onAbilityUsed(battleAction.ability);
         }
 
@@ -511,8 +514,8 @@ class ChatRPG {
 
     #createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
         const steps = [];
-        const infoStep = BattleSteps.info(`${srcPlayer.name} used ${ability.name}!`, 'ability', srcPlayer.id);
-        const standardSteps = AbilityFunctions.standardSteps(ability, srcPlayer, targetPlayer);
+        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, ability.getData().animation);
+        const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer);
         const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
 
         steps.push(infoStep);
@@ -529,9 +532,10 @@ class ChatRPG {
         const playerData = battlePlayer.datastoreObject;
         let playerBattleAction;
         if(actionRequest.type === 'strike') {
+            const weapon = new BattleWeapon(playerData.weapon);
             playerBattleAction = {
                 type: 'strike',
-                speed: playerData.weapon.speed
+                speed: weapon.getModifiedSpeed()
             }
         }
         else if(actionRequest.type === 'escape') {
@@ -541,20 +545,20 @@ class ChatRPG {
         }
 
         else if(actionRequest.type === 'ability') {
-            const ability = new Ability(battlePlayer.findAbilityByName(actionRequest.abilityName));
-            const abilityData = ability.datastoreObject;
-            if(!ability) {
+            const abilityData = battlePlayer.findAbilityByName(actionRequest.abilityName);
+            if(!abilityData) {
                 throw new Error(ChatRPG.Errors.abilityNotEquipped);
             }
+            const ability = new Ability(abilityData);
 
-            if(playerData.ap < abilityData.apCost) {
+            if(playerData.ap < ability.getData().apCost) {
                 throw new Error(ChatRPG.Errors.notEnoughAp);
             }
 
             playerBattleAction = {
                 type: 'ability',
-                ability: abilityData,
-                speed: abilityData.speed
+                ability: ability,
+                speed: ability.getData().speed
             }
         }
 

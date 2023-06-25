@@ -68,6 +68,15 @@ class Agent extends DatastoreObject {
             }
         }
 
+        agent.maxHealth = 0;
+        agent.health = 0;
+        agent.attack = 0;
+        agent.magic = 0;
+        agent.defence = 0;
+        agent.level = 0;
+        agent.exp = 0;
+        agent.expToNextLevel = 0;
+
         this.setStatsAtLevel(1);
     }
 
@@ -105,6 +114,17 @@ class Agent extends DatastoreObject {
 
     static isDefeated(datastoreObject) {
         return datastoreObject.health <= 0;
+    }
+
+    heal(hp) {
+        let healAmount = Math.floor(Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health));
+
+        if (healAmount > 0) {
+            healAmount = Math.max(healAmount, 1);
+        }
+        this.datastoreObject.health += healAmount;
+
+        return healAmount;
     }
 
     findAbilityByName(name) {
@@ -231,7 +251,8 @@ class Player extends Agent {
         agent.trackers = {
             weaponKills: {
                 sword: 0,
-                staff: 0
+                staff: 0,
+                dagger: 0
             },
             deaths: 0
         };
