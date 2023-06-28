@@ -10,7 +10,8 @@ describe.each([
     ['defenceAmp', {defenceAmp: 1}],
     ['magicAmp', {magicAmp: 1}],
     ['speedAmp', {weaponSpeedAmp: 1}],
-    ['empowerment', {empowerment: {strike: 50}}]
+    ['empowerment', {empowerment: {pysical: 50}}],
+    ['empowerment', {empowerment: {magical: 50}}]
 ])('Simple %s step test', (stepType, abilityData, stepIndex = 0) => {
     test('Smoke test', () => {
         const ability = new Ability(abilityData);

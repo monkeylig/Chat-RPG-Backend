@@ -482,7 +482,7 @@ class ChatRPG {
             }
             else {
                 const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, chatRPGUtility.strikeAnim);
-                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.getEmpowermentValue('strike'));
+                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.consumeEmpowermentValue(srcPlayer.getData().weapon.type));
                 steps.push(infoStep);
                 steps.push(damageStep);
                 srcPlayer.onStrike();
@@ -514,10 +514,10 @@ class ChatRPG {
         return steps;
     }
 
-    #createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
+    #createAbilitySteps(ability, srcPlayer, targetPlayer, battle, isStrikeAbility) {
         const steps = [];
         const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, ability.getData().animation);
-        const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer);
+        const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer, isStrikeAbility);
         const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
 
         steps.push(infoStep);

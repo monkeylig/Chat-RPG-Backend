@@ -52,7 +52,8 @@ class Agent extends DatastoreObject {
         agent.abilities = [];
         agent.weapon = {
             name: 'Fists',
-            type: 'sword',
+            type: 'physical',
+            style: 'sword',
             baseDamage: 10,
             speed: 3,
             icon: 'fist.png',
@@ -412,7 +413,7 @@ class Player extends Agent {
     }
 
     onMonsterDefeated() {
-        this.datastoreObject.trackers.weaponKills[this.datastoreObject.weapon.type] += 1;
+        this.datastoreObject.trackers.weaponKills[this.datastoreObject.weapon.style] += 1;
     }
 
     onPlayerDefeated() {

@@ -3,6 +3,11 @@ const {BattleAgent} = require('./battle-agent')
 const chatRPGUtility = require('../utility');
 
 class Weapon extends DatastoreObject {
+    static Type = {
+        Physical: 'physical',
+        Magical: 'magical'
+    }
+
     constructor(objectData) {
         super(objectData);
     }

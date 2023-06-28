@@ -9,6 +9,7 @@ class Item extends DatastoreObject {
         item.name = 'nothing';
         item.count = 1;
         item.effectName = '';
+        item.heal = 0;
     }
 
     isDepleted() {

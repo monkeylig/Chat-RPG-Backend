@@ -9,6 +9,11 @@ function StandardBattleSteps(item, srcPlayer, targetPlayer) {
         steps.push(damageStep);
     }
 
+    if(item.heal > 0) {
+        const healStep = BattleSteps.heal(srcPlayer, srcPlayer, item.heal);
+        steps.push(healStep);
+    }
+
     return steps;
 }
 

@@ -10,7 +10,7 @@ function damageStep(srcPlayer, targetPlayer, baseDamage) {
         damage: 0
     };
 
-    const power = srcPlayerData.weapon.type === 'magical' ? srcPlayerData.magic : srcPlayer.getModifiedAttack();
+    const power = srcPlayerData.weapon.type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedAttack();
 
     // make sure we don't devide by 0
     let defence = 1;
