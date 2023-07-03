@@ -20,7 +20,6 @@ describe.each([
         player1.setStatsAtLevel(50);
         player2.setStatsAtLevel(50);
 
-
         let steps = AbilityFunctions.standardSteps(ability, {}, player1, player2);
 
         expect(steps.length).toBeGreaterThan(0);

@@ -29,42 +29,42 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id))
     }
 
-    if(ability.getData().attackAmp > 0) {
+    if(ability.getData().attackAmp !== 0) {
         const attackAmpStep = BattleSteps.attackAmp(srcPlayer, ability.getData().attackAmp);
         steps.push(attackAmpStep);
     }
 
-    if(ability.getData().targetAttackAmp > 0) {
+    if(ability.getData().targetAttackAmp !== 0) {
         const attackAmpStep = BattleSteps.attackAmp(targetPlayer, ability.getData().targetAttackAmp);
         steps.push(attackAmpStep);
     }
 
-    if(ability.getData().magicAmp > 0) {
+    if(ability.getData().magicAmp !== 0) {
         const magicAmpStep = BattleSteps.magicAmp(srcPlayer, ability.getData().magicAmp);
         steps.push(magicAmpStep);
     }
 
-    if(ability.getData().targetMagicAmp > 0) {
+    if(ability.getData().targetMagicAmp !== 0) {
         const magicAmpStep = BattleSteps.magicAmp(targetPlayer, ability.getData().targetMagicAmp);
         steps.push(magicAmpStep);
     }
 
-    if(ability.getData().defenceAmp > 0) {
+    if(ability.getData().defenceAmp !== 0) {
         const defenceAmpStep = BattleSteps.defenceAmp(srcPlayer, ability.getData().defenceAmp);
         steps.push(defenceAmpStep);
     }
 
-    if(ability.getData().targetDefenceAmp > 0) {
+    if(ability.getData().targetDefenceAmp !== 0) {
         const defenceAmpStep = BattleSteps.defenceAmp(targetPlayer, ability.getData().targetDefenceAmp);
         steps.push(defenceAmpStep);
     }
 
-    if(ability.getData().weaponSpeedAmp > 0) {
+    if(ability.getData().weaponSpeedAmp !== 0) {
         const speedAmpStep = BattleSteps.weaponSpeedAmp(srcPlayer, ability.getData().weaponSpeedAmp);
         steps.push(speedAmpStep);
     }
 
-    if(ability.getData().targetWeaponSpeedAmp > 0) {
+    if(ability.getData().targetWeaponSpeedAmp !== 0) {
         const speedAmpStep = BattleSteps.weaponSpeedAmp(targetPlayer, ability.getData().targetWeaponSpeedAmp);
         steps.push(speedAmpStep);
     }

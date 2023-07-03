@@ -22,7 +22,7 @@ test('Skyscraper', () => {
 
     baseDamage = AbilityEffects.skyscraper.overrideBaseDamage(ability, {}, player, {});
 
-    expect(baseDamage).toBe(15);
+    expect(baseDamage).toBe(25);
 });
 
 test('Knight\'s Honor', () => {

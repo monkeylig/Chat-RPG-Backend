@@ -7,9 +7,11 @@ class Item extends DatastoreObject {
 
     constructNewObject(item) {
         item.name = 'nothing';
+        item.icon = 'potion.png';
         item.count = 1;
         item.effectName = '';
         item.heal = 0;
+        item.description = 'A useful Item.'
     }
 
     isDepleted() {

@@ -28,14 +28,16 @@ function rapidSlashOnActivate(ability, battle, user, opponent, contextControl) {
     const hits = chatRPGUtility.getRandomIntInclusive(0, ability.getSpecialStat('maxHits'));
     const steps = [];
 
+    let hitCount = 1;
     for(let i = 0; i < hits; i++) {
         if(!opponent.isDefeated()) {
-            steps.push(BattleSteps.info('', 'hit', user.id, ability.getData().animation));
+            hitCount += 1;
+            steps.push(BattleSteps.info('', 'hit', user.getData().id, ability.getData().animation));
             steps.push(BattleSteps.damage(user, opponent, ability.getData().baseDamage));
         }
     }
 
-    steps.push(BattleSteps.info(`${user.getData().name} hit ${opponent.getData().name} ${hits + 1} times!`));
+    steps.push(BattleSteps.info(`${user.getData().name} hit ${opponent.getData().name} ${hitCount} times!`));
     return steps;
 }
 //#endregion

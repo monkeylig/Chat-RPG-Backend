@@ -69,6 +69,7 @@ class Agent extends DatastoreObject {
             }
         }
 
+        agent.reviveReady = false;
         agent.maxHealth = 0;
         agent.health = 0;
         agent.attack = 0;
@@ -181,70 +182,12 @@ class Player extends Agent {
         agent.twitchId = '';
         agent.currentGameId = '';
         agent.coins = 0;
-        agent.abilities = [
-            /*{
-                name: 'Big Bang',
-                baseDamage: 50,
-                speed: 1,
-                effectName: 'testAbility1',
-                apCost: 1
-            },
-            {
-                name: 'Super Blast',
-                baseDamage: 70,
-                speed: 1,
-                effectName: 'testAbility1',
-                apCost: 1  
-            }*/
-        ];
+        agent.abilities = [];
         agent.bag = {
+            capacity: 20,
             weapons: [],
-            books: [
-                {
-                    name: 'Test Book 1',
-                    icon: "tome_azure.png",
-                    abilities: [
-                        {
-                            weaponKillRequirements: {
-                                sword: 1
-                            },
-                            ability: {
-                                name: 'Big Bang',
-                                baseDamage: 50,
-                                speed: 1,
-                                effectName: 'testAbility1',
-                                apCost: 1
-                            }
-                        },
-                        {
-                            weaponKillRequirements: {
-                                staff: 1
-                            },
-                            ability: {
-                                name: 'Super Blast',
-                                baseDamage: 70,
-                                speed: 1,
-                                effectName: 'testAbility1',
-                                apCost: 1  
-                            }
-                        }
-                    ]
-                }
-            ],
-            items: [
-                {
-                    name: 'potion',
-                    count: 5,
-                    icon: 'potion.png',
-                    effectName: 'testItem1'
-                },
-                {
-                    name: 'Phenix Down',
-                    count: 5,
-                    icon: 'phenix_down.png',
-                    effectName: 'testItem1'
-                },
-            ]
+            books: [],
+            items: []
         }
         agent.lastDrops = {
             weapons: []
@@ -265,7 +208,7 @@ class Player extends Agent {
 
     addWeapon(weapon) {
         const weapons = this.datastoreObject.bag.weapons;
-        if(weapons.length >= Player.MAXWEAPONS) {
+        if(weapons.length >= this.datastoreObject.bag.capacity) {
             return false;
         }
 
@@ -357,6 +300,22 @@ class Player extends Agent {
         this.datastoreObject.bag.books.splice(bookIndex, 1);
     }
 
+    addItem(item) {
+        if(this.datastoreObject.bag.items.length >= this.datastoreObject.bag.capacity) {
+            return false;
+        }
+
+        const existingItemData = this.findItemByName(item.getData().name);
+
+        if(!existingItemData) {
+            this.datastoreObject.bag.items.push(item.getData());
+            return true;
+        }
+
+        existingItemData.count += item.getData().count;
+        return true;
+    }
+
     findItemByName(itemName) {
         return Player.findItemByName(this.datastoreObject, itemName);
     }
@@ -408,6 +367,7 @@ class Player extends Agent {
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
         thisPlayerData.bag.items = battlePlayerData.bag.items;
+        thisPlayerData.reviveReady = battlePlayerData.reviveReady;
 
         this.revive();
     }

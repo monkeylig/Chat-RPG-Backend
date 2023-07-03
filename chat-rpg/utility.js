@@ -19,11 +19,6 @@ function getRandomIntInclusive(min, max) {
 
 function findInObjectArray(arr, matcher, matchValue) {
     const item = arr.find(element => element[matcher] === matchValue);
-
-    if(!item) {
-        return;
-    }
-
     return item;
 }
 

@@ -81,10 +81,22 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages) {
                 description: `${battlePlayer.getData().name}'s ${stat} rose slightly.`
             };
         }
+        case -1: {
+            return {
+                type: ampFunctionName,
+                description: `${battlePlayer.getData().name}'s ${stat} fell slightly.`
+            };
+        }
         case 3: {
             return {
                 type: ampFunctionName,
                 description: `${battlePlayer.getData().name}'s ${stat} rose suddenly!`
+            };
+        }
+        case -3: {
+            return {
+                type: ampFunctionName,
+                description: `${battlePlayer.getData().name}'s ${stat} fell suddenly!`
             };
         }
         case 4: {
@@ -93,11 +105,17 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages) {
                 description: `${battlePlayer.getData().name}'s ${stat} rose greatly!`
             };
         }
+        case -4: {
+            return {
+                type: ampFunctionName,
+                description: `${battlePlayer.getData().name}'s ${stat} fell greatly!`
+            };
+        }
         case 2:
         default: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} rose!`
+                description: stages > 0 ? `${battlePlayer.getData().name}'s ${stat} rose!` : `${battlePlayer.getData().name}'s ${stat} fell.`
             };
         }
     }

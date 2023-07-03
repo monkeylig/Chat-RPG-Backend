@@ -1,6 +1,22 @@
 const BattleSteps = require('../battle-steps');
 const ItemEffects = require('./item-effects/item-effects');
 
+function IsItemReady(item, battle, user, opponent) {
+    if(!ItemEffects[item.effectName] || !ItemEffects[item.effectName].isReady) {
+        return true;
+    }
+
+    return ItemEffects[item.effectName].isReady(item, battle, user, opponent);
+}
+
+function GetNotReadyMessage(item) {
+    if(!ItemEffects[item.effectName] || !ItemEffects[item.effectName].notReadyMessage) {
+        return `This ${item.name} is not ready to be used.`;
+    }
+
+    return ItemEffects[item.effectName].notReadyMessage;
+}
+
 function StandardBattleSteps(item, srcPlayer, targetPlayer) {
     const steps = [];
 
@@ -19,7 +35,7 @@ function StandardBattleSteps(item, srcPlayer, targetPlayer) {
 
 function EffectBattleSteps(item, battle, user, opponent, contextControl) {
 
-    if(!ItemEffects[item.effectName]) {
+    if(!ItemEffects[item.effectName] || !ItemEffects[item.effectName].onBattleActivate) {
         return;
     }
 
@@ -42,7 +58,9 @@ const ItemFunctions = {
     standardBattleSteps: StandardBattleSteps,
     effectBattleSteps: EffectBattleSteps,
     standardEffects: StandardOutOfBattleEffects,
-    outOfBattleEffects: OutOfBattleEffects
+    outOfBattleEffects: OutOfBattleEffects,
+    isItemReady: IsItemReady,
+    getNotReadyMessage: GetNotReadyMessage
 };
 
 module.exports = ItemFunctions;

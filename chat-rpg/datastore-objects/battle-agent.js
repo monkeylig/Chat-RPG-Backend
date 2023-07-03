@@ -44,6 +44,7 @@ const BattleAgent = {
         agent.attackAmp = 0;
         agent.defenceAmp = 0;
         agent.magicAmp = 0;
+        agent.reviveReady = false;
         agent.empowerment = {
             strike: 0,
             physical: 0
@@ -244,7 +245,7 @@ class BattleMonster extends Monster {
     }
 
     attackAmp(stage) {
-        BattleAgent.attackAmp(this.datastoreObject, stage);
+        return BattleAgent.attackAmp(this.datastoreObject, stage);
     }
 
     getModifiedAttack() {

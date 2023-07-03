@@ -384,6 +384,46 @@ function drop_item(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+function get_shop(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'shopId', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.getShop(req.query.shopId)
+    .then(shop => {
+        sendResponceObject(res, shop);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function buy(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    const queryParams = [
+        {name: 'playerId', type: 'string'},
+        {name: 'shopId', type: 'string'},
+        {name: 'productId', type: 'string'}
+    ];
+
+    if(!validatePayloadParameters(req.query, queryParams)) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.buy(req.query.playerId, req.query.shopId, req.query.productId)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -400,5 +440,7 @@ module.exports = {
     drop_weapon,
     equip_ability,
     drop_book,
-    drop_item
+    drop_item,
+    buy,
+    get_shop
 };

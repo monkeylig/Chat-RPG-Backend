@@ -39,6 +39,9 @@ function startServer(dataSource) {
     app.post('/equip_ability', (req, res) => endpoints.equip_ability(req, res, chatrpg));
     app.post('/drop_book', (req, res) => endpoints.drop_book(req, res, chatrpg));
     app.post('/drop_item', (req, res) => endpoints.drop_item(req, res, chatrpg));
+    app.get('/get_shop', (req, res) => endpoints.get_shop(req, res, chatrpg));
+    app.post('/buy', (req, res) => endpoints.buy(req, res, chatrpg));
+
 
     const options = {
         key: fs.readFileSync('yourdomain.key'),
