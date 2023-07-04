@@ -31,7 +31,8 @@ function startServer(dataSource) {
     app.put('/create_new_player', (req, res) => endpoints.create_new_player(req, res, chatrpg));
     app.get('/get_player', (req, res) => endpoints.get_player(req, res, chatrpg));
     app.post('/join_game', (req, res) => endpoints.join_game(req, res, chatrpg));
-    app.get('/get_game', (req, res) => endpoints.get_game(req, res, chatrpg))
+    app.get('/get_game', (req, res) => endpoints.get_game(req, res, chatrpg));
+    app.options('/start_battle', endpoints.start_battle_options);
     app.post('/start_battle', (req, res) => endpoints.start_battle(req, res, chatrpg));
     app.post('/battle_action', (req, res) => endpoints.battle_action(req, res, chatrpg));
     app.post('/equip_weapon', (req, res) => endpoints.equip_weapon(req, res, chatrpg));

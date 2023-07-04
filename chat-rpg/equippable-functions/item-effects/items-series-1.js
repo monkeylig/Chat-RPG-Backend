@@ -20,12 +20,12 @@ function PheonixDownOnBattleActivate(item, battle, user, opponent, contextContro
 const ItemsSeries1 = {
     potion: {
         isReady: PotionIsReady,
-        notReadyMessage: 'Hp is already full.'
+        notReadyMessage: 'HP is already full.'
     },
     pheonixDown: {
         onBattleActivate: PheonixDownOnBattleActivate,
         isReady: PheonixDownIsReady,
-        notReadyMessage: 'Pheonix Down is already active.'
+        notReadyMessage: 'Phoenix Down is already active.'
     }
 };
 

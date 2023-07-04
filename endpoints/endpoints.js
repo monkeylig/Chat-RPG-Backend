@@ -214,6 +214,14 @@ function get_game(req, res, chatrpg) {
     .catch(error => internalErrorCatch(req, res, error));
 }
 
+function start_battle_options(req, res) {
+    setStandardHeaders(res);
+    //res.set('Access-Control-Allow-Methods', '*');
+    res.set('Access-Control-Allow-Headers', '*');
+    res.status(200);
+    res.send('OK');
+}
+
 function start_battle(req, res, chatrpg) {
     setStandardHeaders(res);
 
@@ -234,7 +242,7 @@ function start_battle(req, res, chatrpg) {
             {name: 'level', type: 'number'}
         ];
 
-        if(!validatePayloadParameters(req.body.fallbackMonster, queryParams)) {
+        if(!validatePayloadParameters(req.body.fallbackMonster, fallbackMonsterParams)) {
             sendError(res, "Fallback monster parameters are malformed");
             return;
         }
@@ -434,6 +442,7 @@ module.exports = {
     get_player,
     join_game,
     get_game,
+    start_battle_options,
     start_battle,
     battle_action,
     equip_weapon,

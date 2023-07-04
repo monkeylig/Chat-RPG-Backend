@@ -90,7 +90,7 @@ class ChatRPG {
         }
     
         const player = new Player(playerSnap.data());
-        return this.#returnPlayerResponce(player, playerSnap.id);
+        return this.#returnPlayerResponce(player, playerSnap.ref.id);
     }
 
     async joinGame(playerId, gameId) {
@@ -146,7 +146,7 @@ class ChatRPG {
         let targetMonsterData = game.findMonsterById(monsterId, false);
         if(!targetMonsterData) {
             if(fallbackMonster) {
-                const monsterRef = await this.#datasource.collection('monsters').doc(fallbackMonster.class).get();
+                const monsterRef = await this.#datasource.collection('monsters').doc(fallbackMonster.monsterClass).get();
                 const monsterClass = new MonsterClass(monsterRef.data());
                 targetMonsterData = monsterClass.createMonsterInstance(fallbackMonster.level).datastoreObject;
                 targetMonsterData.id = monsterId;
@@ -527,8 +527,7 @@ class ChatRPG {
                 return false;
             }
 
-            player.revive();
-            steps.push(BattleSteps.info(`${player.getData().name} was revived!`));
+            steps.push(BattleSteps.revive(player));
             player.getData().reviveReady = false;
             return true
         };
@@ -579,8 +578,8 @@ class ChatRPG {
             const itemData = battleAction.item.datastoreObject;
             const infoStep = BattleSteps.info(`${srcPlayerData.name} used ${itemData.name}!`, 'item', srcPlayerData.id);
             if(ItemFunctions.isItemReady(itemData, battle, srcPlayer, targetPlayer)) {
-                const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayerData, targetPlayerData);
-                const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayerData, targetPlayerData, {});
+                const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+                const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayer, targetPlayer, {});
                 srcPlayer.onItemUsed(battleAction.item);
 
                 steps.push(infoStep);

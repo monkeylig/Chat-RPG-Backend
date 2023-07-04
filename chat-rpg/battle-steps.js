@@ -157,6 +157,22 @@ function empowermentStep(battlePlayer, empowerType, empowerValue) {
     };
 }
 
+function reviveStep(battlePlayer) {
+    if (!battlePlayer.isDefeated()) {
+        return BattleSteps.info(`${battlePlayer.getData().name} is not defeated.`);
+    }
+
+    battlePlayer.revive();
+
+    return {
+        type: 'revive',
+        actorId: battlePlayer.getData().id,
+        targetId: battlePlayer.getData().id,
+        healAmount: battlePlayer.getData().health,
+        description: `${battlePlayer.getData().name} was revived!`
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -167,7 +183,8 @@ const BattleSteps = {
     magicAmp: magicAmpStep,
     speedAmp: speedAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
-    empowerment: empowermentStep
+    empowerment: empowermentStep,
+    revive: reviveStep
 };
 
 module.exports = BattleSteps;
