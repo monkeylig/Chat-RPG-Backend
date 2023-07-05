@@ -3,7 +3,7 @@ const {MonsterClass} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');
 
-const NumberOfMonsters = 1;
+const NumberOfMonsters = 10;
 
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);

@@ -191,7 +191,7 @@ class ChatRPG {
         const monster = new BattleMonster(battle.monster);
         const monsterData = monster.datastoreObject;
         
-        const monsterActionRequest = monsterAi.genericAi(battle);
+        const monsterActionRequest = monsterAi.genericAi(monster, battlePlayer, battle);
 
         //Proccess battle actions
         //player action
@@ -212,7 +212,8 @@ class ChatRPG {
                 description: `${battlePlayerData.name} escaped.`
             });
 
-            await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
+            //Don't need to wait on this
+            this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
             return {player: battlePlayerData, monster: monsterData, steps, result};
         }
 
