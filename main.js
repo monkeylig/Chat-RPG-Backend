@@ -1,6 +1,5 @@
-const LISTEN_PORT = 3000;
+const LOCAL_TEST_PORT = 3000;
 
-const https = require('https');
 const fs = require('fs');
 const express = require('express');
 
@@ -9,12 +8,6 @@ const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const utility = require('./utility');
 const endpoints = require('./endpoints/endpoints');
-
-const dataSourceFileName = 'chat-rpg-data-source.json';
-
-const Headers = {
-    Platform: 'chat-rpg-platform'
-}
 
 function startServer(dataSource) {
     console.log('starting server');
@@ -43,15 +36,9 @@ function startServer(dataSource) {
     app.get('/get_shop', (req, res) => endpoints.get_shop(req, res, chatrpg));
     app.post('/buy', (req, res) => endpoints.buy(req, res, chatrpg));
 
-
-    const options = {
-        key: fs.readFileSync('yourdomain.key'),
-        cert: fs.readFileSync('domain.crt')
-    };
-    let server = https.createServer(options, app);
-
-    server.listen(LISTEN_PORT, () => {
-        console.log(`Server running at port ${LISTEN_PORT}`)
+    const PORT = process.env.PORT || LOCAL_TEST_PORT;
+    app.listen(PORT, () => {
+        console.log(`Server running at port ${PORT}`);
     });
 }
 
