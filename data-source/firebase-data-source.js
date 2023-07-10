@@ -9,7 +9,12 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
     }
 
     async initializeDataSource() {
-        initializeApp({ projectId: "demo-test" });
+        if(process.env.NODE_ENV === 'production') {
+            initializeApp({ credential: applicationDefault() });
+        }
+        else {
+            initializeApp({ projectId: "demo-test" });
+        }
     }
 
     collection(name) {

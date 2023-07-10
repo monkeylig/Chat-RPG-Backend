@@ -25,7 +25,7 @@ function findInObjectArray(arr, matcher, matchValue) {
 const chatRPGUtility = {
     random: Math.random,
     strikeAnim: {
-        spriteSheet: 'Hit-Yellow.png',
+        spriteSheet: 'Hit-Yellow.webp',
         frameWidth: 1024,
         frameHeight: 1024,
         frameCount: 16,

@@ -64,7 +64,7 @@ function sendResponceObject(res, message = {}, status = 200) {
 function welcome(req, res) {
     res.set('Access-Control-Allow-Origin', '*');
     res.status(200);
-    res.send('Hello World!')
+    res.send('Welcome to chat RPG!')
 }
 
 function get_starting_avatars(req, res, chatrpg) {
