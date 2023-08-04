@@ -13,7 +13,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
 
     if(baseDamage > 0) {
         baseDamage += srcPlayer.consumeEmpowermentValue(ability.getData().type);
-        const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, baseDamage);
+        const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, baseDamage, ability.getData().type);
         steps.push(damageStep);
 
         if(ability.getData().absorb > 0) {
@@ -24,7 +24,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     }
 
     if(ability.getData().recoil > 0) {
-        const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer, baseDamage * ability.getData().recoil);
+        const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer, baseDamage * ability.getData().recoil, ability.getData().type);
         steps.push(recoilStep);
         steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id))
     }

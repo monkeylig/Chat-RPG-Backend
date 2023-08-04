@@ -1,6 +1,6 @@
 const { BattleWeapon } = require("./datastore-objects/weapon");
 
-function damageStep(srcPlayer, targetPlayer, baseDamage) {
+function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
     const srcPlayerData = srcPlayer.getData();
     const targetPlayerData = targetPlayer.getData();
     const damageStep = {
@@ -10,7 +10,10 @@ function damageStep(srcPlayer, targetPlayer, baseDamage) {
         damage: 0
     };
 
-    const power = srcPlayerData.weapon.type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedAttack();
+    if(!damageType) {
+        throw new Error('Missing param!');
+    }
+    const power = damageType === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedAttack();
 
     // make sure we don't devide by 0
     let defence = 1;
@@ -41,7 +44,7 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
     return healStep;
 }
 
-function infoStep(description, action, actorId='', animation) {
+function infoStep(description, action, actorId='', animation={}) {
     const infoStep = {
         type: 'info',
         description,
@@ -63,59 +66,65 @@ function battleEndStep(description) {
     };
 }
 
-function statAmpStep(battlePlayer, stat, ampFunctionName, stages) {
+function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
+
+    let descBeginning = `${battlePlayer.getData().name}'s ${stat}`;
+    if(prefix) {
+        descBeginning = prefix;
+    }
+
     if(!battlePlayer[ampFunctionName](stages)) {
-        return infoStep(`${battlePlayer.getData().name}'s ${stat} can't rise any higher.`);
+        return infoStep(`${descBeginning} can't rise any higher.`);
     }
 
     switch(stages) {
         case 0: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} did not rise at all.`
+                description: `${descBeginning} did not rise at all.`
             };
         }
         case 1: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} rose slightly.`
+                description: `${descBeginning} rose slightly.`
             };
         }
         case -1: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} fell slightly.`
+                description: `${descBeginning} fell slightly.`
             };
         }
         case 3: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} rose suddenly!`
+                description: `${descBeginning} rose suddenly!`
             };
         }
         case -3: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} fell suddenly!`
+                description: `${descBeginning} fell suddenly!`
             };
         }
         case 4: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} rose greatly!`
+                description: `${descBeginning} rose greatly!`
             };
         }
         case -4: {
             return {
                 type: ampFunctionName,
-                description: `${battlePlayer.getData().name}'s ${stat} fell greatly!`
+                description: `${descBeginning} fell greatly!`
             };
         }
         case 2:
         default: {
             return {
                 type: ampFunctionName,
-                description: stages > 0 ? `${battlePlayer.getData().name}'s ${stat} rose!` : `${battlePlayer.getData().name}'s ${stat} fell.`
+                description: stages > 0 ? `${descBeginning} rose!` : `${descBeginning} fell.`
             };
         }
     }
@@ -129,17 +138,13 @@ function defenceAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'defence', 'defenceAmp', stages);
 }
 
-function speedAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'speed', 'speedAmp', stages);
-}
-
 function magicAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'magic', 'magicAmp', stages);
 }
 
 function weaponSpeedAmpStep(battlePlayer, stages) {
     const weapon = new BattleWeapon(battlePlayer.getData().weapon);
-    const speedAmpStep = statAmpStep(weapon, 'speed', 'speedAmp', stages);
+    const speedAmpStep = statAmpStep(weapon, 'speed', 'speedAmp', stages, `${battlePlayer.getData().name}'s weapon speed`);
     battlePlayer.getData().weapon = weapon.getData();
     return speedAmpStep;
 }
@@ -181,7 +186,6 @@ const BattleSteps = {
     attackAmp: attackAmpStep,
     defenceAmp: defenceAmpStep,
     magicAmp: magicAmpStep,
-    speedAmp: speedAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep,
     revive: reviveStep

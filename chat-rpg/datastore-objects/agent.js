@@ -166,7 +166,7 @@ class Agent extends DatastoreObject {
 
     static revive(datastoreObject) {
         if(Agent.isDefeated(datastoreObject)) {
-            datastoreObject.health = Math.floor(datastoreObject.maxHealth * 0.5);
+            datastoreObject.health = Math.floor(datastoreObject.maxHealth * 0.75);
         }
     }
 }
@@ -287,6 +287,20 @@ class Player extends Agent {
             }
         }
 
+        return true;
+    }
+
+    addBook(book) {
+        if(this.datastoreObject.bag.books.length >= this.datastoreObject.bag.capacity) {
+            return false;
+        }
+
+        const existingBookData = this.findBookByName(book.name);
+        if(existingBookData) {
+            return false;
+        }
+
+        this.datastoreObject.bag.books.push(book);
         return true;
     }
 

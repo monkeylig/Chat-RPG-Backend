@@ -1,5 +1,5 @@
 const DatastoreObject = require('./datastore-object');
-const chatRPGUtility = require('../utility');
+const animations = require('../content/animations');
 
 class Ability extends DatastoreObject {
     constructor(objectData) {
@@ -30,7 +30,7 @@ class Ability extends DatastoreObject {
         };
         ability.description = 'This is an empty default ability.';
         ability.effectName = '';
-        ability.animation = chatRPGUtility.strikeAnim;
+        ability.animation = animations.yellowHit;
         ability.specialStats = {};
     }
 

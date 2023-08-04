@@ -5,6 +5,13 @@ const Schema = require("./datasource-schema");
 const {Player} = require('./datastore-objects/agent');
 const seedrandom = require('seedrandom');
 const { Shop, ShopItem } = require('./datastore-objects/shop');
+const GameModes = require('./game-modes');
+const { Weapon } = require('./datastore-objects/weapon');
+
+beforeAll(() => {
+    GameModes.numberOfMonsters = 1;
+  });
+
 
 test('Testing adding a new Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
@@ -29,7 +36,9 @@ test('Testing adding a new Twitch player', async () => {
     }
 
     expect(playerField).toBeTruthy();
-    expect(userData[playerField]).toStrictEqual(defaultPlayer.getData());
+    expect(userData[playerField].twitchId).toMatch(defaultPlayer.getData().twitchId);
+    expect(userData[playerField].avatar).toMatch(defaultPlayer.getData().avatar);
+    expect(userData[playerField].name).toMatch(defaultPlayer.getData().name);
 
     // Make sure the same player can't be added twice
     await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPG.Errors.playerExists);
@@ -74,7 +83,9 @@ test('Testing finding a Twitch player', async () => {
     
     expect(player.id).toBeDefined();
     defaultPlayer.setData('id', player.id);
-    expect(player).toStrictEqual(defaultPlayer.datastoreObject);
+    expect(player.twitchId).toMatch(defaultPlayer.getData().twitchId);
+    expect(player.avatar).toMatch(defaultPlayer.getData().avatar);
+    expect(player.name).toMatch(defaultPlayer.getData().name);
     expect(player.bag).toBeDefined();
     expect(player.bag.items).toBeDefined();
     expect(typeof player.bag.items[0]).not.toMatch('string');
@@ -297,6 +308,7 @@ test('Battle Actions: Strike', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -357,6 +369,7 @@ test('Battle Actions: Strike Ability', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -397,6 +410,7 @@ test('Magic Strike', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'magical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -447,10 +461,14 @@ test('Battle Actions: Ability', async () => {
     player.datastoreObject.abilities = [
         {
             name: 'Big Bang',
-            baseDamage: 5,
+            type: 'magical',
+            baseDamage: 50,
             effectName: 'testAbility1'
         }
     ];
+
+    player.datastoreObject.attack = 0;
+    player.datastoreObject.magic = 10;
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -459,10 +477,10 @@ test('Battle Actions: Ability', async () => {
                 monsterNumber: 0,
                 attackRating: 0.2,
                 defenceRating: 0.2,
-                healthRating: 0.4,
+                healthRating: 40,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     speed: 1,
@@ -470,7 +488,7 @@ test('Battle Actions: Ability', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         },
         accounts: {
@@ -492,7 +510,7 @@ test('Battle Actions: Ability', async () => {
 
     expect(battleObject.environment).toBeDefined();
     expect(battleObject.environment.abilityTest1Activated).toBeTruthy();
-    expect(battleUpdate.steps[3].damage).toBeGreaterThan(3);
+    expect(battleUpdate.steps[3].damage).toBeGreaterThan(4);
     expect(battleUpdate.steps[4]).toBeDefined();
     expect(battleUpdate.steps[4].type).toMatch('info');
     expect(battleUpdate.steps[4].description).toMatch('Test ability 1 has activated.');
@@ -533,6 +551,7 @@ test('Battle Actions: Item', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -597,6 +616,7 @@ test('Defeating a monster', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -660,6 +680,7 @@ test('Player being defeated', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -690,7 +711,7 @@ test('Player being defeated', async () => {
 
     const player = await chatrpg.findPlayerById(playerId);
 
-    expect(player.health).toBe(Math.floor(player.maxHealth * 0.5));
+    expect(player.health).toBe(Math.floor(player.maxHealth * 0.75));
     expect(player.trackers.deaths).toBe(1);
 });
 
@@ -711,6 +732,7 @@ test('Player being revived', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -743,6 +765,8 @@ test('Player being revived', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.result).toBeDefined();
 
@@ -753,7 +777,7 @@ test('Player being revived', async () => {
 });
 
 test('Monster Drops', async () => {
-    chatRPGUtility.random = seedrandom('Welcome!');
+    chatRPGUtility.random = seedrandom('3');
 
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -770,6 +794,7 @@ test('Monster Drops', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -806,7 +831,7 @@ test('Monster Drops', async () => {
 });
 
 test('Monster Drops with bag full', async () => {
-    chatRPGUtility.random = seedrandom('Welcome!');
+    chatRPGUtility.random = seedrandom('3');
     const defaultPlayer = new Player({name: 'jhard', avatar: 'big-bad.png', twitchId: 'fr4wt4'});
     const fillerWeapon = {
         baseDamage: 10,
@@ -838,6 +863,7 @@ test('Monster Drops with bag full', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -882,6 +908,7 @@ test('Monster does not drop weapon', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,
@@ -1115,6 +1142,7 @@ test('Escape from battle', async () => {
                 weapon: {
                     baseDamage: 10,
                     name: "Cornia",
+                    type: 'physical',
                     speed: 1,
                     strikeAbility: {
                         baseDamage: 20,

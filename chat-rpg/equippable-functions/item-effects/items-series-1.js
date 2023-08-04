@@ -13,7 +13,7 @@ function PheonixDownIsReady(item, battle, user, opponent) {
 
 function PheonixDownOnBattleActivate(item, battle, user, opponent, contextControl) {
     user.getData().reviveReady = true;
-    return [BattleSteps.info(`${user.getData().name} will be revive if they are defeated.`)];
+    return [BattleSteps.info(`${user.getData().name} will be revived if they are defeated.`)];
 }
 //#endregion
 

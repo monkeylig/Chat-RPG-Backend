@@ -1,3 +1,6 @@
+const content = require("./content/content");
+const Item = require("./datastore-objects/item");
+
 
 const EXP_MODIFIER = 6;
 
@@ -30,21 +33,32 @@ const chatRPGUtility = {
         frameHeight: 1024,
         frameCount: 16,
         duration: 0.5,
-        positioning: 'opponent'
+        positioning: 'opponent',
+        imageRendering: 'smooth'
     },
     defaultWeapon: {
         name: 'Fists',
-        baseDamage: 10,
+        baseDamage: 20,
         speed: 3,
         strikeAbility: {
             name: 'Heavy Strike',
-            baseDamage: 30
+            baseDamage: 40
         },
         statGrowth: {
-            maxHealth: 2,
+            maxHealth: 1,
             attack: 1,
             magic: 1,
             defence: 1
+        }
+    },
+    startingItems: {
+        items: {
+            potion: new Item({...content.items.potion.getData(), count: 10}),
+            phoenixDown: new Item({...content.items.pheonixDown.getData(), count: 10})
+        },
+        books: {
+            warriorMasteryI: content.books.warriorMasteryI,
+            wizardMasteryI: content.books.wizardMasteryI
         }
     },
     setStatsAtLevel(player, growthObject, level) {

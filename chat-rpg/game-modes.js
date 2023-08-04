@@ -3,8 +3,6 @@ const {MonsterClass} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');
 
-const NumberOfMonsters = 10;
-
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);
 }
@@ -14,7 +12,7 @@ async function ArenaCreateGame(name, numberOfStartingMonsters, dataSource) {
     const monstersRef = dataSource.collection(Schema.Collections.Monsters);
 
     for(let i=0; i < numberOfStartingMonsters; i++) {
-        const querySnapshot = await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(NumberOfMonsters)).get();
+        const querySnapshot = await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get();
         if(querySnapshot.empty) {
             continue;
         }
@@ -36,7 +34,7 @@ async function ArenaCreateGame(name, numberOfStartingMonsters, dataSource) {
 async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
     const monstersRef = dataSource.collection(Schema.Collections.Monsters);
 
-    const querySnapshot = await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(NumberOfMonsters)).get();
+    const querySnapshot = await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get();
     if(querySnapshot.empty) {
         return;
     }
@@ -84,6 +82,7 @@ async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
 }
 
 const GameModes = {
+    numberOfMonsters: 10,
     arena: {
         name: 'arena',
         numberOfStartingMonsters: 5,

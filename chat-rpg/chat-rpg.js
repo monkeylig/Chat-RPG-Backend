@@ -73,6 +73,10 @@ class ChatRPG {
         const player = new Player({name, avatar});
 
         player.setData(platformIdProperty, platformId);
+        player.addItem(chatRPGUtility.startingItems.items.potion);
+        player.addItem(chatRPGUtility.startingItems.items.phoenixDown);
+        player.addBook(chatRPGUtility.startingItems.books.warriorMasteryI);
+        player.addBook(chatRPGUtility.startingItems.books.wizardMasteryI);
 
         const newPlayer = playersRef.doc();
         await newPlayer.set(player.getData());
@@ -562,7 +566,7 @@ class ChatRPG {
             }
             else {
                 const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, chatRPGUtility.strikeAnim);
-                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.consumeEmpowermentValue(srcPlayer.getData().weapon.type));
+                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.consumeEmpowermentValue(srcPlayer.getData().weapon.type), srcPlayer.getData().weapon.type);
                 steps.push(infoStep);
                 steps.push(damageStep);
                 srcPlayer.onStrike();
