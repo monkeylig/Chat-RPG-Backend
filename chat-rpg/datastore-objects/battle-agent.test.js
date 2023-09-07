@@ -3,7 +3,7 @@ const {BattlePlayer, BattleMonster, BattleAgent} = require('./battle-agent');
 const MAX_STAT_AMP = 12;
 
 describe.each([
-    ['attack', 'getModifiedAttack', 'attackAmp'],
+    ['strength', 'getModifiedStrength', 'strengthAmp'],
     ['defence', 'getModifiedDefence', 'defenceAmp'],
     ['magic', 'getModifiedMagic', 'magicAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {

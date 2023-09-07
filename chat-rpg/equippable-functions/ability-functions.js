@@ -29,14 +29,14 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id))
     }
 
-    if(ability.getData().attackAmp !== 0) {
-        const attackAmpStep = BattleSteps.attackAmp(srcPlayer, ability.getData().attackAmp);
-        steps.push(attackAmpStep);
+    if(ability.getData().strengthAmp !== 0) {
+        const strengthAmpStep = BattleSteps.strengthAmp(srcPlayer, ability.getData().strengthAmp);
+        steps.push(strengthAmpStep);
     }
 
-    if(ability.getData().targetAttackAmp !== 0) {
-        const attackAmpStep = BattleSteps.attackAmp(targetPlayer, ability.getData().targetAttackAmp);
-        steps.push(attackAmpStep);
+    if(ability.getData().targetStrengthAmp !== 0) {
+        const strengthAmpStep = BattleSteps.strengthAmp(targetPlayer, ability.getData().targetStrengthAmp);
+        steps.push(strengthAmpStep);
     }
 
     if(ability.getData().magicAmp !== 0) {

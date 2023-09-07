@@ -10,7 +10,7 @@ class MonsterClass extends DatastoreObject {
 
     static setFields(monster) {
         monster.abilities = [];
-        monster.attackRating = 0;
+        monster.strengthRating = 0;
         monster.magicRating = 0;
         monster.defenceRating = 0;
         monster.healthRating = 0;
@@ -63,7 +63,7 @@ class Monster extends Agent {
         const monster = this.datastoreObject;
         Agent.setStatsAtLevel(monster, {
             maxHealth: monster.healthRating * Monster.STAT_POINTS_PER_LEVEL,
-            attack: monster.attackRating * Monster.STAT_POINTS_PER_LEVEL,
+            strength: monster.strengthRating * Monster.STAT_POINTS_PER_LEVEL,
             defence: monster.defenceRating * Monster.STAT_POINTS_PER_LEVEL,
             magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
         }, level);

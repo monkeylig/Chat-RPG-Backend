@@ -13,7 +13,7 @@ test('Area game creation', async () => {
         monsters: {
             skellington: {
                 monsterNumber: 0,
-                attackRating: 0.5
+                strengthRating: 0.5
             }
         }
     });
@@ -22,7 +22,7 @@ test('Area game creation', async () => {
 
     expect(arenaGame.mode).toMatch(GameModes.arena.name);
     expect(arenaGame.monsters.length).toBe(GameModes.arena.numberOfStartingMonsters);
-    expect(arenaGame.monsters[0]).toHaveProperty("attack");
+    expect(arenaGame.monsters[0]).toHaveProperty("strength");
     expect(arenaGame.monsters[0]).toHaveProperty("defence");
     expect(arenaGame.monsters[0]).toHaveProperty("id");
 
@@ -41,7 +41,7 @@ test('Arena game onMonsterDefeated', async () => {
         monsters: {
             skellington: {
                 monsterNumber: 0,
-                attackRating: 0.5
+                strengthRating: 0.5
             }
         }
     });

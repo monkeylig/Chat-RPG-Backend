@@ -17,7 +17,7 @@ const utility = {
             monmon: {
                 name: 'Monmon',
                 monsterNumber: 0,
-                attackRating: 0.25,
+                strengthRating: 0.25,
                 defenceRating: 0.25,
                 magicRating: 0.1,
                 healthRating: 0.4,
@@ -35,7 +35,7 @@ const utility = {
             bokumon: {
                 name: 'Bokumon',
                 monsterNumber: 1,
-                attackRating: 0.25,
+                strengthRating: 0.25,
                 defenceRating: 0.25,
                 magicRating: 0.1,
                 healthRating: 0.4,
