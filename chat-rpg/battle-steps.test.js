@@ -13,7 +13,7 @@ test('Damage Step', ()=>{
     expect(battleStep).toBeDefined();
     expect(battleStep.type).toMatch('damage');
 
-    const damage = Math.floor(((2 * player1.getData().level / 5 + 2) * baseDamage * player1.getData().attack / player2.getData().defence) / 50 + 2);
+    const damage = Math.floor(((2 * player1.getData().level / 5 + 2) * baseDamage * player1.getData().strength / player2.getData().defence) / 50 + 2);
 
     expect(battleStep.damage).toBe(damage);
     expect(player2.getData().maxHealth - player2.getData().health).toBe(damage);
@@ -52,7 +52,7 @@ test('Battle End', ()=>{
 });
 
 describe.each([
-    ['attack', BattleSteps.attackAmp],
+    ['strength', BattleSteps.strengthAmp],
     ['defence', BattleSteps.defenceAmp],
     ['magic', BattleSteps.magicAmp],
     ['speed', BattleSteps.weaponSpeedAmp, true]

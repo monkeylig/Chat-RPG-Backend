@@ -13,7 +13,7 @@ function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
     if(!damageType) {
         throw new Error('Missing param!');
     }
-    const power = damageType === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedAttack();
+    const power = damageType === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
 
     // make sure we don't devide by 0
     let defence = 1;
@@ -130,8 +130,8 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
     }
 }
 
-function attackAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'attack', 'attackAmp', stages);
+function strengthAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'strength', 'strengthAmp', stages);
 }
 
 function defenceAmpStep(battlePlayer, stages) {
@@ -183,7 +183,7 @@ const BattleSteps = {
     heal: healStep,
     info: infoStep,
     battleEnd: battleEndStep,
-    attackAmp: attackAmpStep,
+    strengthAmp: strengthAmpStep,
     defenceAmp: defenceAmpStep,
     magicAmp: magicAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,

@@ -6,7 +6,7 @@ describe.each([
     ['damage', {baseDamage: 50}],
     ['heal', {baseDamage: 50, absorb: 0.5}, 1],
     ['damage', {baseDamage: 50, recoil: 0.5}],
-    ['attackAmp', {attackAmp: 1}],
+    ['strengthAmp', {strengthAmp: 1}],
     ['defenceAmp', {defenceAmp: 1}],
     ['magicAmp', {magicAmp: 1}],
     ['speedAmp', {weaponSpeedAmp: 1}],

@@ -38,10 +38,10 @@ const BattleAgent = {
         agent.ap = BATTLE_AP;
         agent.strikeLevel = 0;
         agent.id = 0;
-        agent.attack = 0;
+        agent.strength = 0;
         agent.defence = 0;
         agent.magic = 0;
-        agent.attackAmp = 0;
+        agent.strengthAmp = 0;
         agent.defenceAmp = 0;
         agent.magicAmp = 0;
         agent.reviveReady = false;
@@ -69,12 +69,12 @@ const BattleAgent = {
         return Math.max(datastoreObject[stat] * this.statAmpTable[datastoreObject[statAmp]], 1);
     },
 
-    attackAmp(datastoreObject, stages) {
-        return this.statAmp(datastoreObject, 'attackAmp', stages);
+    strengthAmp(datastoreObject, stages) {
+        return this.statAmp(datastoreObject, 'strengthAmp', stages);
     },
 
-    getModifiedAttack(datastoreObject) {
-        return this.getModifiedStat(datastoreObject, 'attack', 'attackAmp');
+    getModifiedStrength(datastoreObject) {
+        return this.getModifiedStat(datastoreObject, 'strength', 'strengthAmp');
     },
 
     defenceAmp(datastoreObject, stages) {
@@ -104,6 +104,7 @@ const BattleAgent = {
     },
 
     onStrikeAbility(datastoreObject) {
+        this.onStrike(datastoreObject);
         datastoreObject.strikeLevel = 0;
     },
 
@@ -181,12 +182,12 @@ class BattlePlayer extends Agent {
         BattleAgent.onAbilityUsed(this.datastoreObject, ability);
     }
 
-    attackAmp(stages) {
-        return BattleAgent.attackAmp(this.datastoreObject, stages);
+    strengthAmp(stages) {
+        return BattleAgent.strengthAmp(this.datastoreObject, stages);
     }
 
-    getModifiedAttack() {
-        return BattleAgent.getModifiedAttack(this.datastoreObject);
+    getModifiedStrength() {
+        return BattleAgent.getModifiedStrength(this.datastoreObject);
     }
 
     defenceAmp(stages) {
@@ -244,12 +245,12 @@ class BattleMonster extends Monster {
         BattleAgent.onAbilityUsed(this.datastoreObject, ability);
     }
 
-    attackAmp(stage) {
-        return BattleAgent.attackAmp(this.datastoreObject, stage);
+    strengthAmp(stage) {
+        return BattleAgent.strengthAmp(this.datastoreObject, stage);
     }
 
-    getModifiedAttack() {
-        return BattleAgent.getModifiedAttack(this.datastoreObject);
+    getModifiedStrength() {
+        return BattleAgent.getModifiedStrength(this.datastoreObject);
     }
 
     defenceAmp(stages) {

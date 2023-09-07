@@ -42,7 +42,7 @@ async function test_join_game() {
 
         let failed = false;
         gameState.monsters.forEach(element => {
-            if(!element.hasOwnProperty('attackRating') || !element.hasOwnProperty('defenceRating') || !element.hasOwnProperty('magicRating')) {
+            if(!element.hasOwnProperty('strengthRating') || !element.hasOwnProperty('defenceRating') || !element.hasOwnProperty('magicRating')) {
                 failed = true;
                 return;
             }

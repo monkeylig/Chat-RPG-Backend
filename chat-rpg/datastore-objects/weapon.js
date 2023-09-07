@@ -32,7 +32,7 @@ class Weapon extends DatastoreObject {
         };
         weapon.statGrowth = {
             maxHealth: 1,
-            attack: 1,
+            strength: 1,
             magic: 1,
             defence: 1
         };

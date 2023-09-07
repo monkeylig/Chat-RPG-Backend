@@ -21,7 +21,7 @@ test('Set Player Level', () => {
     const player = {};
     let growthObject = {
         maxHealth: 3,
-        attack: 2,
+        strength: 2,
         magic: 4,
         defence: 1
     };
@@ -31,7 +31,7 @@ test('Set Player Level', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -41,7 +41,7 @@ test('Set Player Level', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -51,7 +51,7 @@ test('Set Player Level', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -61,7 +61,7 @@ test('Level Up Player', () => {
     const player = {};
     let growthObject = {
         maxHealth: 3,
-        attack: 2,
+        strength: 2,
         magic: 4,
         defence: 1
     };
@@ -73,7 +73,7 @@ test('Level Up Player', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -83,7 +83,7 @@ test('Level Up Player', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -95,7 +95,7 @@ test('Level Up Player', () => {
 
     expect(player.maxHealth).toBe(growthObject.maxHealth * level + level + 10);
     expect(player.health).toBe(player.maxHealth);
-    expect(player.attack).toBe(growthObject.attack * level);
+    expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
     expect(player.defence).toBe(growthObject.defence * level);
     expect(player.level).toBe(level);
@@ -106,7 +106,7 @@ test('Gaining Experience', () => {
     const player = {};
     let growthObject = {
         maxHealth: 3,
-        attack: 2,
+        strength: 2,
         magic: 4,
         defence: 1
     };

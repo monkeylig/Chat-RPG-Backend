@@ -40,7 +40,7 @@ async function test_get_game() {
         }
 
         for (const monster of gameState.monsters) {
-            if(!monster.hasOwnProperty('attackRating') || !monster.hasOwnProperty('defenceRating') || !monster.hasOwnProperty('magicRating')) {
+            if(!monster.hasOwnProperty('strengthRating') || !monster.hasOwnProperty('defenceRating') || !monster.hasOwnProperty('magicRating')) {
                 utility.fail(Endpoint);
                 return;
             }

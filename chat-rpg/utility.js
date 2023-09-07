@@ -20,6 +20,14 @@ function getRandomIntInclusive(min, max) {
     return Math.floor(chatRPGUtility.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
 }
 
+function chance(chanceValue) {
+    if (chanceValue == 0) {
+        return 0;
+    }
+
+    return chatRPGUtility.random() < chanceValue;
+}
+
 function findInObjectArray(arr, matcher, matchValue) {
     const item = arr.find(element => element[matcher] === matchValue);
     return item;
@@ -27,6 +35,8 @@ function findInObjectArray(arr, matcher, matchValue) {
 
 const chatRPGUtility = {
     random: Math.random,
+    getRandomIntInclusive,
+    chance,
     strikeAnim: {
         spriteSheet: 'Hit-Yellow.webp',
         frameWidth: 1024,
@@ -46,7 +56,7 @@ const chatRPGUtility = {
         },
         statGrowth: {
             maxHealth: 1,
-            attack: 1,
+            strength: 1,
             magic: 1,
             defence: 1
         }
@@ -64,7 +74,7 @@ const chatRPGUtility = {
     setStatsAtLevel(player, growthObject, level) {
         player.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
         player.health = player.maxHealth;
-        player.attack = Math.floor(growthObject.attack * level);
+        player.strength = Math.floor(growthObject.strength * level);
         player.magic = Math.floor(growthObject.magic * level);
         player.defence = Math.floor(growthObject.defence * level);
         player.level = level;
@@ -75,7 +85,7 @@ const chatRPGUtility = {
     levelUpPlayer(player, growthObject) {
         player.maxHealth += growthObject.maxHealth + 1;
         player.health = player.maxHealth;
-        player.attack += growthObject.attack;
+        player.strength += growthObject.strength;
         player.magic +=  growthObject.magic;
         player.defence += growthObject.defence;
         player.level += 1;
@@ -100,7 +110,6 @@ const chatRPGUtility = {
     getMonsterExpGain(monster) {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
     },
-    getRandomIntInclusive,
     findInObjectArray
 };
 

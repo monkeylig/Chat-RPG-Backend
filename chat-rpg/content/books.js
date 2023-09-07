@@ -29,8 +29,8 @@ const warriorMasteryI = {
                 type: 'physical',
                 style: 'sword',
                 speed: 3,
-                attackAmp: 2,
-                description: "Increases user's attack.",
+                strengthAmp: 2,
+                description: "Increases user's strength.",
                 animation: animations.swordBuff1
             }).getData()
         },

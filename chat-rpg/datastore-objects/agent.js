@@ -17,7 +17,7 @@ function getExpToNextLevel(level) {
 function levelUpPlayer(player, growthObject) {
     player.maxHealth += growthObject.maxHealth + 1;
     player.health = player.maxHealth;
-    player.attack += growthObject.attack;
+    player.strength += growthObject.strength;
     player.magic +=  growthObject.magic;
     player.defence += growthObject.defence;
     player.level += 1;
@@ -63,7 +63,7 @@ class Agent extends DatastoreObject {
             },
             statGrowth: {
                 maxHealth: 2,
-                attack: 1,
+                strength: 1,
                 magic: 1,
                 defence: 1
             }
@@ -72,7 +72,7 @@ class Agent extends DatastoreObject {
         agent.reviveReady = false;
         agent.maxHealth = 0;
         agent.health = 0;
-        agent.attack = 0;
+        agent.strength = 0;
         agent.magic = 0;
         agent.defence = 0;
         agent.level = 0;
@@ -90,7 +90,7 @@ class Agent extends DatastoreObject {
     static setStatsAtLevel(datastoreObject, growthObject, level) {
         datastoreObject.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
         datastoreObject.health = datastoreObject.maxHealth;
-        datastoreObject.attack = Math.floor(growthObject.attack * level);
+        datastoreObject.strength = Math.floor(growthObject.strength * level);
         datastoreObject.magic =  Math.floor(growthObject.magic * level);
         datastoreObject.defence = Math.floor(growthObject.defence * level);
         datastoreObject.level = level;
@@ -374,7 +374,7 @@ class Player extends Agent {
 
         thisPlayerData.maxHealth = battlePlayerData.maxHealth;
         thisPlayerData.health = battlePlayerData.health;
-        thisPlayerData.attack = battlePlayerData.attack;
+        thisPlayerData.strength = battlePlayerData.strength;
         thisPlayerData.magic =  battlePlayerData.magic;
         thisPlayerData.defence = battlePlayerData.defence;
         thisPlayerData.level = battlePlayerData.level;

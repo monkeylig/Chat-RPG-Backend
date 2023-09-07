@@ -205,10 +205,10 @@ class ChatRPG {
 
         const result = {};
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
-        const player = new Player((await playerRef.get()).data());
 
         const steps = [];
         if(playerAction.type === 'escape') {
+            const player = new Player((await playerRef.get()).data());
             result.winner = null;
             result.endCondition = 'escape';
             steps.push({
@@ -230,7 +230,7 @@ class ChatRPG {
         }
 
         if(battlePlayer.isDefeated() || monster.isDefeated()) {
-
+            const player = new Player((await playerRef.get()).data());
             if(battlePlayer.isDefeated() && monster.isDefeated()) {
                 result.winner = null;
                 steps.push({
@@ -273,7 +273,8 @@ class ChatRPG {
                     result.drops.push(drop);
                 }
 
-                if(monsterData.coinDrop > 0) {
+                let shouldDropCoin = player.getData().level <= monsterData.level || chatRPGUtility.chance(0.3);
+                if(monsterData.coinDrop > 0 && shouldDropCoin) {
                     const drop = {
                         type: 'coin',
                         content: {
