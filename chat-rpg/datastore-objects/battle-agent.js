@@ -113,11 +113,7 @@ const BattleAgent = {
     },
 
     onAbilityUsed(datastoreObject, ability) {
-        datastoreObject.ap -= ability.datastoreObject.apCost;
-
-        if(datastoreObject.ap < 0) {
-            datastoreObject.ap = 0;
-        }
+    
     },
 
     addEmpowerment(datastoreObject, type, value) {

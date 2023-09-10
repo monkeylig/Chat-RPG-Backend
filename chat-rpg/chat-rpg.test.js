@@ -7,6 +7,7 @@ const seedrandom = require('seedrandom');
 const { Shop, ShopItem } = require('./datastore-objects/shop');
 const GameModes = require('./game-modes');
 const { Weapon } = require('./datastore-objects/weapon');
+const ChatRPGErrors = require('./errors')
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -53,7 +54,7 @@ test('Testing adding a new Twitch player', async () => {
     expect(userData[playerField].name).toMatch(defaultPlayer.getData().name);
 
     // Make sure the same player can't be added twice
-    await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPG.Errors.playerExists);
+    await expect(chatrpg.addNewPlayer('jhard', 'big-bad.png', twitchId, 'twitch')).rejects.toThrow(ChatRPGErrors.playerExists);
 });
 
 test('Testing getting starting avatars', async () => {
@@ -102,7 +103,7 @@ test('Testing finding a Twitch player', async () => {
     expect(player.bag.items).toBeDefined();
     expect(typeof player.bag.items[0]).not.toMatch('string');
 
-    await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPG.Errors.playerNotFound);
+    await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPGErrors.playerNotFound);
 });
 
 test('Testing joining a Twitch game', async () => {
@@ -341,6 +342,7 @@ test('Battle Actions: Strike', async () => {
     const battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate).toBeTruthy();
+    expect(battleUpdate.result).toBeUndefined();
     expect(battleUpdate.steps).toBeTruthy();
     expect(battleUpdate.steps.length).toBe(4);
 
@@ -527,10 +529,12 @@ test('Battle Actions: Ability', async () => {
     expect(battleUpdate.steps[4].type).toMatch('info');
     expect(battleUpdate.steps[4].description).toMatch('Test ability 1 has activated.');
     expect(battleUpdate.player.ap).toBe(2);
+    expect(battleUpdate.steps[5].type).toMatch('apCost');
+    expect(battleUpdate.steps[5].apCost).toBe(1);
 
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
-    await expect(chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'})).rejects.toThrow(ChatRPG.Errors.notEnoughAp);
+    await expect(chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'})).rejects.toThrow(ChatRPGErrors.notEnoughAp);
 
 
 });
@@ -608,7 +612,7 @@ test('Battle Actions: Item', async () => {
     expect(battleUpdate.steps[1].description).toMatch('Test item 2 has activated in a battle.');
     expect(battleUpdate.player.bag.items[1]).not.toBeDefined();
 
-    await expect(chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'})).rejects.toThrow(ChatRPG.Errors.itemNotEquipped);
+    await expect(chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'})).rejects.toThrow(ChatRPGErrors.itemNotEquipped);
 
 });
 
@@ -652,9 +656,9 @@ test('Defeating a monster', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.monster.health).toBe(0);
-    expect(battleUpdate.result).toBeTruthy();
+    expect(battleUpdate.result).toBeDefined();
     expect(battleUpdate.result.winner).toMatch(battleState.player.id);
-    expect(battleUpdate.result.expAward).toBeTruthy();
+    expect(battleUpdate.result.expAward).toBeDefined();
     expect(battleUpdate.result.expAward).toBe(chatRPGUtility.getMonsterExpGain(battleUpdate.monster));
     expect(battleUpdate.player.level).toBe(2);
 
@@ -672,7 +676,7 @@ test('Defeating a monster', async () => {
     expect(player.trackers.weaponKills).toBeDefined();
     expect(player.trackers.weaponKills.sword).toBe(1);
 
-    await expect(chatrpg.battleAction(battleState.id, {type: 'strike'})).rejects.toThrow(ChatRPG.Errors.battleNotFound);
+    await expect(chatrpg.battleAction(battleState.id, {type: 'strike'})).rejects.toThrow(ChatRPGErrors.battleNotFound);
 
 });
 
@@ -718,7 +722,7 @@ test('Player being defeated', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.player.health).toBe(0);
-    expect(battleUpdate.result).toBeTruthy();
+    expect(battleUpdate.result).toBeDefined();
     expect(battleUpdate.result.winner).toMatch(battleState.monster.id);
 
     const player = await chatrpg.findPlayerById(playerId);
@@ -842,7 +846,7 @@ test('Monster Drops', async () => {
     expect(player.bag.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
 });
 
-test.only('Low level monster coin drop rate', async () => {
+test('Low level monster coin drop rate', async () => {
     const expectedDropRate = 0.3;
     const marginOfError = 0.15;
 
@@ -1285,7 +1289,7 @@ test('Equip Ability with requirements', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    await expect(chatrpg.equipAbility('player1', 'Test Book 1', 0)).rejects.toThrow(ChatRPG.Errors.abilityRequirementNotMet);
+    await expect(chatrpg.equipAbility('player1', 'Test Book 1', 0)).rejects.toThrow(ChatRPGErrors.abilityRequirementNotMet);
     await expect(chatrpg.equipAbility('player2', 'Test Book 1', 0)).resolves;
 });
 
@@ -1379,7 +1383,7 @@ test('Buying Items', async () => {
     expect(newItem).toBeDefined();
     expect(newItem.count).toBe(2);
 
-    await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPG.Errors.insufficientFunds);
+    await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPGErrors.insufficientFunds);
 });
 
 test('Buying Weapons', async () => {

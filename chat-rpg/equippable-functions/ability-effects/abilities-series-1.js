@@ -32,7 +32,7 @@ function rapidSlashOnActivate(ability, battle, user, opponent, contextControl) {
     for(let i = 0; i < hits; i++) {
         if(!opponent.isDefeated()) {
             hitCount += 1;
-            steps.push(BattleSteps.info('', 'hit', user.getData().id, ability.getData().animation));
+            steps.push(BattleSteps.info('', 'hit', user.getData().id, opponent.getData().id, ability.getData().animation));
             steps.push(BattleSteps.damage(user, opponent, ability.getData().baseDamage, ability.getData().type));
         }
     }

@@ -14,34 +14,14 @@ const AbilityFunctions = require('./equippable-functions/ability-functions');
 const ItemFunctions = require('./equippable-functions/item-functions');
 const {BattleWeapon} = require("./datastore-objects/weapon");
 const { Shop, ShopItem } = require("./datastore-objects/shop");
+const BattleFunctions = require('./battle/battle')
+const ChatRPGErrors = require('./errors')
 
 class ChatRPG {
     #datasource;
     
     static Platforms = {
         Twitch: 'twitch'
-    }
-
-    static Errors = {
-        playerExists: 'player exists',
-        playerNotFound: 'player not found',
-        gameNotFound: 'game not found',
-        monsterInstanceNotFound: 'monster instance not found',
-        playerNotInGame: 'Player not in game',
-        battleNotFound: 'Battle not found',
-        weaponNotInBag: 'Weapon not in bag',
-        bookNotInBag: 'Book not in bag',
-        badAbilityBookIndex: 'Ability book index out of range',
-        abilityNotFound: 'Ability not found',
-        itemNotinBag: 'Item not in bag',
-        abilitiesFull: 'Player ability slots are full',
-        abilityRequirementNotMet: 'The requirements to equip this ability were not met',
-        abilityNotEquipped: 'This ability is not equipped',
-        itemNotEquipped: 'This item is not equipped',
-        notEnoughAp: 'Not enough ap to use this ability',
-        shopNotFound: 'Shop not found',
-        productNotFound: 'Product not found',
-        insufficientFunds: 'Insufficient Funds'
     }
 
     constructor(datasource) {
@@ -67,7 +47,7 @@ class ChatRPG {
         const querySnap = await playersRef.where(platformIdProperty, '==', platformId).get();
 
         if(!querySnap.empty) {
-            throw new Error(ChatRPG.Errors.playerExists);
+            throw new Error(ChatRPGErrors.playerExists);
         }
 
         const player = new Player({name, avatar});
@@ -144,7 +124,7 @@ class ChatRPG {
 
         const playerData = playerSnap.data();
         if(playerData.currentGameId != gameSnap.ref.id) {
-            throw new Error(ChatRPG.Errors.playerNotInGame);
+            throw new Error(ChatRPGErrors.playerNotInGame);
         }
 
         let targetMonsterData = game.findMonsterById(monsterId, false);
@@ -156,7 +136,7 @@ class ChatRPG {
                 targetMonsterData.id = monsterId;
             }
             else {
-                throw new Error(ChatRPG.Errors.monsterInstanceNotFound);
+                throw new Error(ChatRPGErrors.monsterInstanceNotFound);
             }
         }
 
@@ -171,7 +151,8 @@ class ChatRPG {
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
             environment: {},
-            round: 1
+            round: 1,
+            active: true
         };
 
         const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
@@ -186,106 +167,43 @@ class ChatRPG {
         const battleSnap = await this.#datasource.collection(Schema.Collections.Battles).doc(battleId).get();
 
         if(!battleSnap.exists) {
-            throw new Error(ChatRPG.Errors.battleNotFound);
+            throw new Error(ChatRPGErrors.battleNotFound);
         }
 
         const battle = battleSnap.data();
+        const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
+
         const battlePlayer = new BattlePlayer(battle.player);
         const battlePlayerData = battlePlayer.datastoreObject;
         const monster = new BattleMonster(battle.monster);
-        const monsterData = monster.datastoreObject;
-        
-        const monsterActionRequest = monsterAi.genericAi(monster, battlePlayer, battle);
+        const monsterData = monster.getData();
 
-        //Proccess battle actions
-        //player action
-        const playerAction = this.#createBattleAction(actionRequest, battlePlayer);
-        //monster action
-        const monsterAction = this.#createBattleAction(monsterActionRequest, monster);
-
-        const result = {};
-        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
-
-        const steps = [];
-        if(playerAction.type === 'escape') {
+        if(!battle.active) {
+            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
             const player = new Player((await playerRef.get()).data());
-            result.winner = null;
-            result.endCondition = 'escape';
-            steps.push({
-                type: "battle_end",
-                description: `${battlePlayerData.name} escaped.`
-            });
-
-            //Don't need to wait on this
-            this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
-            return {player: battlePlayerData, monster: monsterData, steps, result};
-        }
-
-
-        if(playerAction.speed >= monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(battlePlayer, playerAction, monster, monsterAction, battle));
-        }
-        else if(playerAction.speed < monsterAction.speed) {
-            steps.push(...this.#executeActionPhase(monster, monsterAction, battlePlayer, playerAction, battle));
-        }
-
-        if(battlePlayer.isDefeated() || monster.isDefeated()) {
-            const player = new Player((await playerRef.get()).data());
-            if(battlePlayer.isDefeated() && monster.isDefeated()) {
-                result.winner = null;
-                steps.push({
-                    type: "battle_end",
-                    description: "The battle ended in a draw."
-                });
-            }
-            else if(battlePlayer.isDefeated()) {
+           if(battlePlayer.isDefeated()) {
                 player.onPlayerDefeated();
-                result.winner = monsterData.id;
-                steps.push(BattleSteps.battleEnd(`${battlePlayerData.name} was defeated.`));
             }
             else if(monster.isDefeated()) {
-                const expGain = monster.getExpGain();
-                const oldLevel = battlePlayerData.level;
-                battlePlayer.addExpAndLevel(expGain);
-
-
-                result.winner = battlePlayerData.id;
-                result.expAward = expGain;
-                result.drops = [];
+                const oldLevel = battlePlayer.getData().level;
                 const lastDrop = {
                     weapons: []
                 };
 
-                // Compute the monster drops
-                const willDropWeapon = chatRPGUtility.random() < monsterData.weaponDropRate && !player.hasWeapon(monsterData.weapon);
-
-                if(willDropWeapon) {
-                    const drop = {
-                        type: 'weapon',
-                        content: monsterData.weapon,
-                        bagFull: false
-                    };
-
-                    if(!player.addWeapon(monsterData.weapon)) {
-                        drop.bagFull = true;
-                        lastDrop.weapons.push(monsterData.weapon);
+                for (const drop of battle.result.drops) {
+                    switch (drop.type) {
+                        case 'weapon':
+                            if(!player.addWeapon(monsterData.weapon)) {
+                                drop.bagFull = true;
+                                lastDrop.weapons.push(monsterData.weapon);
+                            }
+                            break;
+                        case 'coin':
+                            player.addCoins(monsterData.coinDrop);
+                            break;
                     }
-                    result.drops.push(drop);
                 }
 
-                let shouldDropCoin = player.getData().level <= monsterData.level || chatRPGUtility.chance(0.3);
-                if(monsterData.coinDrop > 0 && shouldDropCoin) {
-                    const drop = {
-                        type: 'coin',
-                        content: {
-                            name: `${monsterData.coinDrop} coins`,
-                            icon: 'coin.png'
-                        }
-                    };
-                    player.addCoins(monsterData.coinDrop);
-                    result.drops.push(drop);
-                }
-                
                 if(lastDrop.weapons.length) {
                     player.setLastDrop(lastDrop);
                 }
@@ -313,23 +231,15 @@ class ChatRPG {
                         transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
                     });
                 }
-
-                steps.push({
-                    type: "battle_end",
-                    description: `${monsterData.name} was defeated!`
-                });
             }
 
             await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
-            return {player: battlePlayerData, monster: monsterData, steps, result};
+            return {player: battlePlayerData, monster: monsterData, steps, result: battle.result};
         }
 
-        battle.player = battlePlayerData;
-        battle.monster = monsterData;
-        battle.round += 1;
         await battleSnap.ref.set(battle);
 
-        return {player: battlePlayerData, monster: monsterData, turn: battle.round - 1, steps};
+        return {player: battle.player, monster: battle.monster, turn: battle.round - 1, steps};
     }
 
     async #finishBattle(battleRef, playerRef, player, battlePlayer) {
@@ -346,7 +256,7 @@ class ChatRPG {
         const weaponData = player.findWeaponById(weaponId, false);
 
         if(!weaponData) {
-            throw new ChatRPG.Errors.weaponNotInBag;
+            throw new ChatRPGErrors.weaponNotInBag;
         }
 
         await playSnap.ref.update({weapon: weaponData});
@@ -363,14 +273,14 @@ class ChatRPG {
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
-                throw new ChatRPG.Errors.playerNotFound;
+                throw new ChatRPGErrors.playerNotFound;
             }
 
             player = new Player(playerSnap.data());
 
             const weaponData = player.findWeaponById(weaponId);
             if(!weaponData) {
-                throw new ChatRPG.Errors.weaponNotInBag;
+                throw new ChatRPGErrors.weaponNotInBag;
             }
 
             transaction.update(playerRef, {'bag.weapons': FieldValue.arrayRemove(weaponData)});
@@ -393,15 +303,15 @@ class ChatRPG {
         const book = player.findBookByName(abilityBookName, false);
 
         if(!book) {
-            throw new Error(ChatRPG.Errors.bookNotInBag);
+            throw new Error(ChatRPGErrors.bookNotInBag);
         }
 
         if(abilityIndex >= book.abilities.length || abilityIndex < 0) {
-            throw new Error(ChatRPG.Errors.badAbilityBookIndex);
+            throw new Error(ChatRPGErrors.badAbilityBookIndex);
         }
 
         if(!player.abilityRequirementMet(book, abilityIndex)) {
-            throw new Error(ChatRPG.Errors.abilityRequirementNotMet);
+            throw new Error(ChatRPGErrors.abilityRequirementNotMet);
         }
 
         const abilityBookEntry = book.abilities[abilityIndex];
@@ -412,11 +322,11 @@ class ChatRPG {
             replacedAbility = player.findAbilityByName(replacedAbilityName);
 
             if(!replacedAbility) {
-                throw new Error(ChatRPG.Errors.abilityNotFound);
+                throw new Error(ChatRPGErrors.abilityNotFound);
             }
         }
         else if(!player.hasOpenAbilitySlot()) {
-            throw new Error(ChatRPG.Errors.abilitiesFull);
+            throw new Error(ChatRPGErrors.abilitiesFull);
         }
 
         await this.#datasource.runTransaction(async (transaction) => {
@@ -437,7 +347,7 @@ class ChatRPG {
         const book = player.findBookByName(abilityBookName);
 
         if(!book) {
-            throw new ChatRPG.Errors.bookNotInBag;
+            throw new ChatRPGErrors.bookNotInBag;
         }
 
         await playerSnap.ref.update({'bag.books': FieldValue.arrayRemove(book)});
@@ -454,7 +364,7 @@ class ChatRPG {
         const item = player.findItemByName(itemName);
 
         if(!item) {
-            throw new ChatRPG.Errors.itemNotinBag;
+            throw new ChatRPGErrors.itemNotinBag;
         }
 
         await playerSnap.ref.update({'bag.items': FieldValue.arrayRemove(item)});
@@ -481,7 +391,7 @@ class ChatRPG {
         const shopItem = shop.findProduct(productId);
 
         if(!shopItem) {
-            throw new Error(ChatRPG.Errors.productNotFound);
+            throw new Error(ChatRPGErrors.productNotFound);
         }
 
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
@@ -489,13 +399,13 @@ class ChatRPG {
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
-                throw new Error(ChatRPG.Errors.playerNotFound);
+                throw new Error(ChatRPGErrors.playerNotFound);
             }
 
             const player = new Player(playerSnap.data());
 
             if(player.getData().coins < shopItem.getData().price) {
-                throw new Error(ChatRPG.Errors.insufficientFunds);
+                throw new Error(ChatRPGErrors.insufficientFunds);
             }
 
             player.getData().coins -= shopItem.getData().price;
@@ -525,154 +435,6 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
-    #executeActionPhase(firstPlayer, firstAction, secondPlayer, secondAction, battle) {
-        const steps = [];
-        steps.push(...this.#applyAction(firstAction, firstPlayer, secondPlayer, battle));
-        const checkRevive = (player) => {
-            if(!player.isDefeated() || !player.getData().reviveReady) {
-                return false;
-            }
-
-            steps.push(BattleSteps.revive(player));
-            player.getData().reviveReady = false;
-            return true
-        };
-
-        if(firstPlayer.isDefeated() || secondPlayer.isDefeated()) {
-            if(!checkRevive(firstPlayer) && !checkRevive(secondPlayer)) {
-                return steps;
-            }
-        }
-
-        steps.push(...this.#applyAction(secondAction, secondPlayer, firstPlayer, battle));
-        checkRevive(firstPlayer);
-        checkRevive(secondPlayer);
-
-        return steps;
-    }
-
-    #applyAction(battleAction, srcPlayer, targetPlayer, battle) {
-        const steps = [];
-        const srcPlayerData = srcPlayer.datastoreObject;
-        const targetPlayerData = targetPlayer.datastoreObject;
-        // Damage step
-        if(battleAction.type === 'strike') {
-            
-            if(srcPlayer.strikeAbilityReady()) {
-                srcPlayer.getData().strikeLevel = 0;
-                const strikeAbility = new Ability(srcPlayer.getData().weapon.strikeAbility);
-                const abilitySteps = this.#createAbilitySteps(strikeAbility, srcPlayer, targetPlayer, battle);
-                steps.push(...abilitySteps);
-                srcPlayer.onStrikeAbility();
-            }
-            else {
-                const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, chatRPGUtility.strikeAnim);
-                const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage + srcPlayer.consumeEmpowermentValue(srcPlayer.getData().weapon.type), srcPlayer.getData().weapon.type);
-                steps.push(infoStep);
-                steps.push(damageStep);
-                srcPlayer.onStrike();
-            }
-
-        }
-
-        else if(battleAction.type === 'ability') {
-            steps.push(...this.#createAbilitySteps(battleAction.ability, srcPlayer, targetPlayer, battle));
-            srcPlayer.onAbilityUsed(battleAction.ability);
-        }
-
-        else if(battleAction.type === 'item') {
-            const itemData = battleAction.item.datastoreObject;
-            const infoStep = BattleSteps.info(`${srcPlayerData.name} used ${itemData.name}!`, 'item', srcPlayerData.id);
-            if(ItemFunctions.isItemReady(itemData, battle, srcPlayer, targetPlayer)) {
-                const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
-                const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayer, targetPlayer, {});
-                srcPlayer.onItemUsed(battleAction.item);
-
-                steps.push(infoStep);
-                if(standardSteps) {
-                    steps.push(...standardSteps);
-                }
-                if(itemSteps) {
-                    steps.push(...itemSteps);
-                }
-            }
-            else {
-                const readyInfoStep = BattleSteps.info(ItemFunctions.getNotReadyMessage(itemData), 'item failed', srcPlayer.getData().id);
-                steps.push(readyInfoStep);
-            }
-        }
-
-        return steps;
-    }
-
-    #createAbilitySteps(ability, srcPlayer, targetPlayer, battle, isStrikeAbility) {
-        const steps = [];
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, ability.getData().animation);
-        const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer, isStrikeAbility);
-        const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
-
-        steps.push(infoStep);
-        if(standardSteps) {
-            steps.push(...standardSteps);
-        }
-        if(abilitySteps) {
-            steps.push(...abilitySteps);
-        }
-        return steps;
-    }
-
-    #createBattleAction(actionRequest, battlePlayer) {
-        const playerData = battlePlayer.datastoreObject;
-        let playerBattleAction;
-        if(actionRequest.type === 'strike') {
-            const weapon = new BattleWeapon(playerData.weapon);
-            playerBattleAction = {
-                type: 'strike',
-                speed: weapon.getModifiedSpeed()
-            }
-        }
-        else if(actionRequest.type === 'escape') {
-            playerBattleAction = {
-                type: 'escape',
-            }
-        }
-
-        else if(actionRequest.type === 'ability') {
-            const abilityData = battlePlayer.findAbilityByName(actionRequest.abilityName);
-            if(!abilityData) {
-                throw new Error(ChatRPG.Errors.abilityNotEquipped);
-            }
-            const ability = new Ability(abilityData);
-
-            if(playerData.ap < ability.getData().apCost) {
-                throw new Error(ChatRPG.Errors.notEnoughAp);
-            }
-
-            playerBattleAction = {
-                type: 'ability',
-                ability: ability,
-                speed: ability.getData().speed
-            }
-        }
-
-        else if(actionRequest.type === 'item') {
-            const itemData = battlePlayer.findItemByName(actionRequest.itemName);
-            if(!itemData) {
-                throw new Error(ChatRPG.Errors.itemNotEquipped);
-            }
-            const item = new Item(itemData);
-
-            playerBattleAction = {
-                type: 'item',
-                item: item,
-                speed: 10000
-            }
-
-        }
-
-        return playerBattleAction;
-    }
-
     #returnPlayerResponce(player, id) {
         const playerData = player.getData();
         playerData.id = id;
@@ -682,7 +444,7 @@ class ChatRPG {
         const playerSnapShot = await this.#datasource.collection(Schema.Collections.Accounts).doc(id).get();
         
         if(!playerSnapShot.exists) {
-            throw new Error(ChatRPG.Errors.playerNotFound);
+            throw new Error(ChatRPGErrors.playerNotFound);
         }
 
         return playerSnapShot;
@@ -691,7 +453,7 @@ class ChatRPG {
     async #findShop(shopId) {
         const shopSnapshot = await this.#datasource.collection(Schema.Collections.Shops).doc(shopId).get();
         if(!shopSnapshot.exists) {
-            throw new Error(ChatRPG.Errors.shopNotFound);
+            throw new Error(ChatRPGErrors.shopNotFound);
         }
 
         return shopSnapshot;
@@ -701,7 +463,7 @@ class ChatRPG {
         const gameSnapshot = await this.#datasource.collection(Schema.Collections.Games).doc(id).get();
 
         if(!gameSnapshot.exists) {
-            throw new Error(ChatRPG.Errors.gameNotFound);
+            throw new Error(ChatRPGErrors.gameNotFound);
         }
 
         return gameSnapshot;
@@ -713,7 +475,7 @@ class ChatRPG {
         const playerQuerySnapShot = await this.#datasource.collection(Schema.Collections.Accounts).where(idProperty, '==', platformId).get();
         
         if(playerQuerySnapShot.empty) {
-            throw new Error(ChatRPG.Errors.playerNotFound);
+            throw new Error(ChatRPGErrors.playerNotFound);
         }
 
         return playerQuerySnapShot.docs[0];

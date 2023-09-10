@@ -1,4 +1,4 @@
-const ChatRPG = require('./../chat-rpg/chat-rpg');
+const ChatRPGErrors = require('../chat-rpg/errors');
 
 //#region Utilities
 function setStandardHeaders(res) {
@@ -32,11 +32,11 @@ function internalErrorCatch(req, res, error) {
     let status = 500;
 
     let errorCode = 1;
-    for(rpgError in ChatRPG.Errors) {
-        if(ChatRPG.Errors[rpgError] === error.message) {
+    for(rpgError in ChatRPGErrors) {
+        if(ChatRPGErrors[rpgError] === error.message) {
             responce.errorCode = errorCode;
-            responce.message = ChatRPG.Errors[rpgError];
-            status = ChatRPG.Errors[rpgError].includes('not found') ? 404 : 400;
+            responce.message = ChatRPGErrors[rpgError];
+            status = ChatRPGErrors[rpgError].includes('not found') ? 404 : 400;
             break;
         }
         errorCode += 1;
@@ -118,7 +118,7 @@ function create_new_player(req, res, chatrpg) {
             res.status(200);
             res.send(JSON.stringify({playerId: playerId}));
     }).catch(error => {
-        if(error.message == ChatRPG.Errors.playerExists) {
+        if(error.message === ChatRPGErrors.playerExists) {
             res.status(400);
             responce.message = "A player with the provided ID already exsists";
             responce.errorCode = 2;
@@ -157,7 +157,7 @@ function get_player(req, res, chatrpg) {
         res.send(JSON.stringify(player));
     })
     .catch(error => {
-        if(error.message == ChatRPG.Errors.playerNotFound) {
+        if(error.message == ChatRPGErrors.playerNotFound) {
             res.status(400);
             responce.message = error.message;
             responce.errorCode = 2;

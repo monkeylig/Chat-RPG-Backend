@@ -34,10 +34,6 @@ class MonsterClass extends DatastoreObject {
         newMonster.setStatsAtLevel(level);
         return newMonster;
     }
-
-    setClassName(monsterClass) {
-        this.datastoreObject.class = monsterClass;
-    }
 }
 
 class Monster extends Agent {

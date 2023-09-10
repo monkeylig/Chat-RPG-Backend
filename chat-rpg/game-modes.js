@@ -18,7 +18,6 @@ async function ArenaCreateGame(name, numberOfStartingMonsters, dataSource) {
         }
 
         const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
-        monsterClass.setClassName(querySnapshot.docs[0].ref.id);
         monstersClasses.push(monsterClass);
     }
 
@@ -40,7 +39,6 @@ async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
     }
 
     const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
-    monsterClass.setClassName(querySnapshot.docs[0].ref.id);
 
     //We have our monster class, now we need to determine what level it should be
     const monsterLevelGrace = 5;

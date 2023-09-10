@@ -1,3 +1,4 @@
+const { BattlePlayer } = require("./datastore-objects/battle-agent");
 const { BattleWeapon } = require("./datastore-objects/weapon");
 
 function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
@@ -44,12 +45,13 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
     return healStep;
 }
 
-function infoStep(description, action, actorId='', animation={}) {
+function infoStep(description, action, actorId='', targetId='', animation={}) {
     const infoStep = {
         type: 'info',
         description,
         action: action ? action : 'generic',
-        actorId: actorId
+        actorId: actorId,
+        targetId: targetId
     };
 
     if(animation) {
@@ -178,6 +180,18 @@ function reviveStep(battlePlayer) {
     };
 }
 
+function apCostStep(battlePlayer, apCost) {
+    const battlePlayerData = battlePlayer.getData();
+    const netCost = Math.min(apCost, battlePlayerData.ap);
+    battlePlayerData.ap -= netCost;
+
+    return {
+        type: 'apCost',
+        actorId: battlePlayer.getData().id,
+        apCost: netCost
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -188,7 +202,8 @@ const BattleSteps = {
     magicAmp: magicAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep,
-    revive: reviveStep
+    revive: reviveStep,
+    apCost: apCostStep
 };
 
 module.exports = BattleSteps;

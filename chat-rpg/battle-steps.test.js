@@ -34,13 +34,16 @@ test('Heal Step', ()=>{
 });
 
 test('Info Step', ()=>{
-    const infoStep = BattleSteps.info("testing", 'test action', 'testID');
+    const animation = {name: 'cool animation'}
+    const infoStep = BattleSteps.info("testing", 'test action', 'testID', 'targetID', animation);
 
     expect(infoStep).toBeDefined();
     expect(infoStep.type).toMatch('info');
     expect(infoStep.description).toMatch('testing');
     expect(infoStep.action).toMatch('test action');
     expect(infoStep.actorId).toMatch('testID');
+    expect(infoStep.targetId).toMatch('targetID');
+    expect(infoStep.animation).toStrictEqual(animation);
 });
 
 test('Battle End', ()=>{
@@ -101,4 +104,20 @@ test('Revive step', () => {
     expect(reviveStep.type).toMatch('revive');
     expect(reviveStep.healAmount).toBeGreaterThan(0);
     expect(player1.getData().health).toBeGreaterThan(0);
+});
+
+test('ApCost step', () => {
+    const player1 = new BattlePlayer();
+
+    let apCostStep = BattleSteps.apCost(player1, 2);
+
+    expect(apCostStep).toBeDefined();
+    expect(apCostStep.type).toMatch('apCost');
+    expect(apCostStep.apCost).toBe(2);
+    expect(player1.getData().ap).toBe(1);
+
+    apCostStep = BattleSteps.apCost(player1, 2);
+
+    expect(apCostStep.apCost).toBe(1);
+    expect(player1.getData().ap).toBe(0);
 });

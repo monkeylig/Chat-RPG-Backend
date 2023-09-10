@@ -19,14 +19,14 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         if(ability.getData().absorb > 0) {
             const absorbStep = BattleSteps.heal(srcPlayer, srcPlayer, damageStep.damage * ability.getData().absorb);
             steps.push(absorbStep);
-            steps.push(BattleSteps.info(`${srcPlayer.getData().name} absorbed ${targetPlayer.getData().name}'s health.`, 'absorb', srcPlayer.getData().id))
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} absorbed ${targetPlayer.getData().name}'s health.`, 'absorb', srcPlayer.getData().id, targetPlayer.getData().id))
         }
     }
 
     if(ability.getData().recoil > 0) {
         const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer, baseDamage * ability.getData().recoil, ability.getData().type);
         steps.push(recoilStep);
-        steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id))
+        steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id, targetPlayer.getData().id))
     }
 
     if(ability.getData().strengthAmp !== 0) {
