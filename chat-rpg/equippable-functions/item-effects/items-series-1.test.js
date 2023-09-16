@@ -32,7 +32,7 @@ test('Peonix Down', () => {
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps.length).toBe(1);
-    expect(battleSteps[0].type).toBe('info');
+    expect(battleSteps[0].type).toBe('readyRevive');
     
     expect(player.getData().reviveReady).toBeTruthy();
 });

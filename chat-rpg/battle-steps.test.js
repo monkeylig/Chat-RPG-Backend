@@ -8,7 +8,7 @@ test('Damage Step', ()=>{
     player2.setStatsAtLevel(10);
 
     const baseDamage = 50;
-    const battleStep = BattleSteps.damage(player1, player2, 50, 'physical');
+    const battleStep = BattleSteps.damage(player1, player2, baseDamage, 'physical');
 
     expect(battleStep).toBeDefined();
     expect(battleStep.type).toMatch('damage');
@@ -120,4 +120,48 @@ test('ApCost step', () => {
 
     expect(apCostStep.apCost).toBe(1);
     expect(player1.getData().ap).toBe(0);
+});
+
+test('ReadyRevive Step', () => {
+    const player1 = new BattlePlayer();
+
+    let apCostStep = BattleSteps.readyRevive(player1);
+
+    expect(apCostStep).toBeDefined();
+    expect(apCostStep.type).toMatch('readyRevive');
+    expect(apCostStep.description).toMatch(`will be revived if they are defeated.`);
+    expect(player1.getData().reviveReady).toBeTruthy(); 
+});
+
+test('Generate Hit Steps: damage', ()=>{
+    let player1 = new BattlePlayer();
+    player1.setStatsAtLevel(10);
+    let player2 = new BattlePlayer();
+    player2.setStatsAtLevel(10);
+
+    const baseDamage = 50;
+    const hitResult = {};
+    let battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', null, hitResult);
+
+    expect(battleSteps).toBeDefined();
+    expect(battleSteps[0].type).toMatch('damage');
+    expect(battleSteps[0].damage).toBe(hitResult.damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBe(hitResult.damage);
+
+    //Test If empowerment is applied
+    player1 = new BattlePlayer();
+    player1.setStatsAtLevel(10);
+    player1.addEmpowerment('physical', 50);
+    player2 = new BattlePlayer();
+    player2.setStatsAtLevel(10);
+
+    const hitResult2 = {};
+    battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', null, hitResult2);
+
+    expect(battleSteps).toBeDefined();
+    expect(battleSteps[0].type).toMatch('damage');
+    expect(battleSteps[0].damage).toBe(hitResult2.damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBe(hitResult2.damage);
+    expect(player1.getEmpowermentValue('physical')).toBe(0);
+    expect(hitResult2.damage).toBeGreaterThan(hitResult.damage)
 });

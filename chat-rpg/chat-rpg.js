@@ -84,21 +84,26 @@ class ChatRPG {
 
         const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
     
-        const game = await this.#datasource.runTransaction(async (transaction) => {
-            const transGameSnap = await transaction.get(gameRef);
-            if(!transGameSnap.exists) {
-                //TODO Use the host's game mode from the config
-                const game = await GameModes.arena.createGame(this.#datasource);
-                game.onPlayerJoin(player);
-                transaction.create(gameRef, game.getData());
-                return game;
-            }
+        let game;
+        try {
+            game = await this.#datasource.runTransaction(async (transaction) => {
+                const transGameSnap = await transaction.get(gameRef);
+                if(!transGameSnap.exists) {
+                    //TODO Use the host's game mode from the config
+                    const game = await GameModes.arena.createGame(this.#datasource);
+                    game.onPlayerJoin(player);
+                    transaction.create(gameRef, game.getData());
+                    return game;
+                }
 
-            const game = new Game(transGameSnap.data());
-            game.onPlayerJoin(player);
-            transaction.update(gameRef, {trackers: game.getData().trackers})
-            return game;
-        });
+                const game = new Game(transGameSnap.data());
+                game.onPlayerJoin(player);
+                transaction.update(gameRef, {trackers: game.getData().trackers})
+                return game;
+            });
+        } catch (error) {
+            console.error(error);
+        }
 
         await playerSnap.ref.update({ currentGameId: gameId });
         player.datastoreObject.currentGameId = gameId;
@@ -216,20 +221,24 @@ class ChatRPG {
                 
                 // Skip transaction if it is unnessesary
                 if(game.findMonsterById(monsterData.id, false)) {
-                    await this.#datasource.runTransaction(async (transaction) => {
-                        const transGameSnap = await transaction.get(gameSnap.ref);
-                        
-                        game = new Game(transGameSnap.data());
-                        game.onPlayerLevelUp(oldLevel, player);
-                        const transMonster = game.findMonsterById(monsterData.id);
-                        if(!transMonster) {
-                            return;
-                        }
-                        
-                        game.removeMonster(monsterData.id);
-                        await GameModes.arena.onMonsterDefeated(game, monster, this.#datasource);
-                        transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
-                    });
+                    try {
+                        await this.#datasource.runTransaction(async (transaction) => {
+                            const transGameSnap = await transaction.get(gameSnap.ref);
+                            
+                            game = new Game(transGameSnap.data());
+                            game.onPlayerLevelUp(oldLevel, player);
+                            const transMonster = game.findMonsterById(monsterData.id);
+                            if(!transMonster) {
+                                return;
+                            }
+                            
+                            game.removeMonster(monsterData.id);
+                            await GameModes.arena.onMonsterDefeated(game, monster, this.#datasource);
+                            transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
+                        });
+                    } catch(error) {
+                        console.error(error);
+                    }
                 }
             }
 

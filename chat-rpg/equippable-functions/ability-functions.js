@@ -12,12 +12,11 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     }
 
     if(baseDamage > 0) {
-        baseDamage += srcPlayer.consumeEmpowermentValue(ability.getData().type);
-        const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, baseDamage, ability.getData().type);
-        steps.push(damageStep);
+        const hitStepResults = {};
+        steps.push(...BattleSteps.genHitSteps(srcPlayer, targetPlayer, baseDamage, ability.getData().type, null, hitStepResults));
 
         if(ability.getData().absorb > 0) {
-            const absorbStep = BattleSteps.heal(srcPlayer, srcPlayer, damageStep.damage * ability.getData().absorb);
+            const absorbStep = BattleSteps.heal(srcPlayer, srcPlayer, hitStepResults.damage * ability.getData().absorb);
             steps.push(absorbStep);
             steps.push(BattleSteps.info(`${srcPlayer.getData().name} absorbed ${targetPlayer.getData().name}'s health.`, 'absorb', srcPlayer.getData().id, targetPlayer.getData().id))
         }

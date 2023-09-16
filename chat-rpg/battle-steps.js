@@ -1,6 +1,22 @@
 const { BattlePlayer } = require("./datastore-objects/battle-agent");
 const { BattleWeapon } = require("./datastore-objects/weapon");
 
+function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, elements, stepResults = {}) {
+    if(baseDamage <= 0) {
+        return [];
+    }
+
+    const steps = [];
+    baseDamage += srcPlayer.consumeEmpowermentValue(type);
+
+    const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, baseDamage, type);
+    stepResults.damage = damageStep.damage;
+    steps.push(damageStep);
+
+    return steps;
+
+}
+
 function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
     const srcPlayerData = srcPlayer.getData();
     const targetPlayerData = targetPlayer.getData();
@@ -192,6 +208,15 @@ function apCostStep(battlePlayer, apCost) {
     };
 }
 
+function readyReviveStep(battlePlayer) {
+    battlePlayer.getData().reviveReady = true;
+    return {
+        type: 'readyRevive',
+        actorId: battlePlayer.getData().id,
+        description: `${battlePlayer.getData().name} will be revived if they are defeated.`
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -203,7 +228,9 @@ const BattleSteps = {
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep,
     revive: reviveStep,
-    apCost: apCostStep
+    apCost: apCostStep,
+    readyRevive: readyReviveStep,
+    genHitSteps
 };
 
 module.exports = BattleSteps;
