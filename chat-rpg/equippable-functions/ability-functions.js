@@ -13,7 +13,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
 
     if(baseDamage > 0) {
         const hitStepResults = {};
-        steps.push(...BattleSteps.genHitSteps(srcPlayer, targetPlayer, baseDamage, ability.getData().type, null, hitStepResults));
+        steps.push(...BattleSteps.genHitSteps(srcPlayer, targetPlayer, baseDamage, ability.getData().type, ability.getData().style, null, hitStepResults));
 
         if(ability.getData().absorb > 0) {
             const absorbStep = BattleSteps.heal(srcPlayer, srcPlayer, hitStepResults.damage * ability.getData().absorb);

@@ -53,7 +53,7 @@ class Agent extends DatastoreObject {
         agent.weapon = {
             name: 'Fists',
             type: 'physical',
-            style: 'sword',
+            style: 'melee',
             baseDamage: 10,
             speed: 3,
             icon: 'fist.png',
@@ -196,7 +196,7 @@ class Player extends Agent {
             weaponKills: {
                 sword: 0,
                 staff: 0,
-                dagger: 0
+                dagger: 0,
             },
             deaths: 0
         };
@@ -387,7 +387,11 @@ class Player extends Agent {
     }
 
     onMonsterDefeated() {
-        this.datastoreObject.trackers.weaponKills[this.datastoreObject.weapon.style] += 1;
+        const style = this.datastoreObject.weapon.style;
+        if (!this.datastoreObject.trackers.weaponKills[style]) {
+            this.datastoreObject.trackers.weaponKills[style] = 0;
+        }
+        this.datastoreObject.trackers.weaponKills[style] += 1;
     }
 
     onPlayerDefeated() {

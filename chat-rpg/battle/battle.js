@@ -175,7 +175,7 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
         }
         else {
             const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, chatRPGUtility.strikeAnim);
-            const hitSteps = BattleSteps.genHitSteps(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage, srcPlayer.getData().weapon.type, null);
+            const hitSteps = BattleSteps.genHitSteps(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage, srcPlayer.getData().weapon.type, srcPlayer.getData().weapon.style, null);
             steps.push(infoStep);
             steps.push(...hitSteps);
             srcPlayer.onStrike();

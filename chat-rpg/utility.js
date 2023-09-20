@@ -4,6 +4,10 @@ const Item = require("./datastore-objects/item");
 
 const EXP_MODIFIER = 6;
 
+function calcHitDamge(srclevel, baseDamage, attack, defence) {
+    return ((2 * srclevel / 5 + 2) * baseDamage * attack / defence) / 50 + 2;
+}
+
 function expFunc(level) {
     if (level == 1) {
         return 0;
@@ -110,7 +114,8 @@ const chatRPGUtility = {
     getMonsterExpGain(monster) {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
     },
-    findInObjectArray
+    findInObjectArray,
+    calcHitDamge
 };
 
 module.exports = chatRPGUtility;

@@ -6,7 +6,7 @@ const {Player} = require('./datastore-objects/agent');
 const seedrandom = require('seedrandom');
 const { Shop, ShopItem } = require('./datastore-objects/shop');
 const GameModes = require('./game-modes');
-const { Weapon } = require('./datastore-objects/weapon');
+const { Weapon, BattleWeapon } = require('./datastore-objects/weapon');
 const ChatRPGErrors = require('./errors')
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
@@ -318,7 +318,7 @@ test('Battle Actions: Strike', async () => {
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -327,7 +327,7 @@ test('Battle Actions: Strike', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -349,12 +349,10 @@ test('Battle Actions: Strike', async () => {
     expect(battleUpdate.steps[0].type).toMatch('info');
     expect(battleUpdate.steps[0].description).toMatch(/strikes/);
     expect(battleUpdate.steps[1].type).toMatch('damage');
-    expect(battleUpdate.steps[1].actorId).toMatch(playerId);
 
     expect(battleUpdate.steps[2].type).toMatch('info');
     expect(battleUpdate.steps[2].description).toMatch(/strikes/);
     expect(battleUpdate.steps[3].type).toMatch('damage');
-    expect(battleUpdate.steps[3].actorId).toMatch(gameState.monsters[0].id);
 
     const playerLevel = battleUpdate.player.level;
     const playerBaseDamage = battleUpdate.player.weapon.baseDamage;
@@ -380,7 +378,7 @@ test('Battle Actions: Strike Ability', async () => {
                 healthRating: 1,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -389,7 +387,7 @@ test('Battle Actions: Strike Ability', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -421,7 +419,7 @@ test('Magic Strike', async () => {
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'magical',
@@ -430,12 +428,12 @@ test('Magic Strike', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
     
-    const magicWeapon = {
+    const magicWeapon = new Weapon({
         name: 'Magic Fists',
         baseDamage: 10,
         speed: 3,
@@ -451,7 +449,7 @@ test('Magic Strike', async () => {
             magic: 1,
             defence: 1
         }
-    };
+    }).getData();
 
     let chatrpg = new ChatRPG(dataSource);
 
@@ -564,7 +562,7 @@ test('Battle Actions: Item', async () => {
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -573,7 +571,7 @@ test('Battle Actions: Item', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         },
         accounts: {
@@ -629,7 +627,7 @@ test('Defeating a monster', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -638,7 +636,7 @@ test('Defeating a monster', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -674,7 +672,7 @@ test('Defeating a monster', async () => {
     expect(player.level).toBe(2);
     expect(player.trackers).toBeDefined();
     expect(player.trackers.weaponKills).toBeDefined();
-    expect(player.trackers.weaponKills.sword).toBe(1);
+    expect(player.trackers.weaponKills.melee).toBe(1);
 
     await expect(chatrpg.battleAction(battleState.id, {type: 'strike'})).rejects.toThrow(ChatRPGErrors.battleNotFound);
 
@@ -693,7 +691,7 @@ test('Player being defeated', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -702,7 +700,7 @@ test('Player being defeated', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -714,7 +712,6 @@ test('Player being defeated', async () => {
     let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -745,7 +742,7 @@ test('Player being revived', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -754,7 +751,7 @@ test('Player being revived', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         },
         [Schema.Collections.Accounts]: {
@@ -778,8 +775,6 @@ test('Player being revived', async () => {
     expect(battleUpdate.result).not.toBeDefined();
     expect(battleUpdate.player.reviveReady).toBe(false);
 
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -807,7 +802,7 @@ test('Monster Drops', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -816,7 +811,7 @@ test('Monster Drops', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -933,7 +928,7 @@ test('Monster Drops with bag full', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -942,7 +937,7 @@ test('Monster Drops with bag full', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -978,7 +973,7 @@ test('Monster does not drop weapon', async () => {
                 magicRating: 0.2,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -987,7 +982,7 @@ test('Monster does not drop weapon', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });
@@ -1212,7 +1207,7 @@ test('Escape from battle', async () => {
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
-                weapon: {
+                weapon: new Weapon ({
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
@@ -1221,7 +1216,7 @@ test('Escape from battle', async () => {
                         baseDamage: 20,
                         name: "X ray"
                     }
-                }
+                }).getData()
             }
         }
     });

@@ -1,7 +1,13 @@
 const { BattlePlayer } = require("./datastore-objects/battle-agent");
 const { BattleWeapon } = require("./datastore-objects/weapon");
+const chatRPGUtility = require('./utility');
 
-function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, elements, stepResults = {}) {
+const WEAPON_SYNERGY_BONUS = 1.2;
+
+function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, stepResults = {}) {
+    if(!style) {
+        throw new Error('Missing param!');
+    }
     if(baseDamage <= 0) {
         return [];
     }
@@ -9,28 +15,9 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, elements, stepRe
     const steps = [];
     baseDamage += srcPlayer.consumeEmpowermentValue(type);
 
-    const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, baseDamage, type);
-    stepResults.damage = damageStep.damage;
-    steps.push(damageStep);
-
-    return steps;
-
-}
-
-function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
+    const power = type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
+    
     const srcPlayerData = srcPlayer.getData();
-    const targetPlayerData = targetPlayer.getData();
-    const damageStep = {
-        type: 'damage',
-        actorId: srcPlayerData.id,
-        targetId: targetPlayerData.id,
-        damage: 0
-    };
-
-    if(!damageType) {
-        throw new Error('Missing param!');
-    }
-    const power = damageType === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
 
     // make sure we don't devide by 0
     let defence = 1;
@@ -38,10 +25,31 @@ function damageStep(srcPlayer, targetPlayer, baseDamage, damageType) {
         defence = targetPlayer.getModifiedDefence();
     }
 
-    const damage = Math.floor(((2 * srcPlayerData.level / 5 + 2) * baseDamage * power / defence) / 50 + 2);
-    damageStep.damage = Math.min(damage, targetPlayerData.health);
+    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defence);
+
+    //Weapon Synergy Bonus
+    if(srcPlayerData.weapon.style === style) {
+        damage *= WEAPON_SYNERGY_BONUS;
+    }
+
+    const damageStep = BattleSteps.damage(targetPlayer, Math.floor(damage));
+    stepResults.damage = damageStep.damage;
+    steps.push(damageStep);
+
+    return steps;
+
+}
+
+function damageStep(targetPlayer, damage) {
+    const targetPlayerData = targetPlayer.getData();
+    const damageStep = {
+        type: 'damage',
+        targetId: targetPlayerData.id,
+        damage: damage
+    };
+
     //Apply damage step
-    targetPlayerData.health -= damageStep.damage;
+    targetPlayerData.health -= Math.min(damage, targetPlayerData.health);
 
     return damageStep;
 }
@@ -176,7 +184,7 @@ function empowermentStep(battlePlayer, empowerType, empowerValue) {
 
     return {
         type: 'empowerment',
-        description: `${battlePlayer.getData().name} gained ${empowerType} empowerment!`
+        description: `${battlePlayer.getData().name} gained ${empowerValue} ${empowerType} empowerment!`
     };
 }
 
