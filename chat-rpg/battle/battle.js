@@ -274,7 +274,7 @@ function createBattleAction(actionRequest, battlePlayer) {
     }
 
     else if(actionRequest.type === 'item') {
-        const itemData = battlePlayer.findItemByName(actionRequest.itemName);
+        const itemData = battlePlayer.findObjectInBagByName(actionRequest.itemName);
         if(!itemData) {
             throw new Error(ChatRPGErrors.itemNotEquipped);
         }

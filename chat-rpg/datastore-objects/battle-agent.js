@@ -154,8 +154,8 @@ class BattlePlayer extends Agent {
         agent.bag.items = [];
     }
 
-    findItemByName(itemName) {
-        return Player.findItemByName(this.datastoreObject, itemName);
+    findObjectInBagByName(itemName) {
+        return Player.findObjectInBagByName(this.datastoreObject, itemName);
     }
 
     onStrike() {

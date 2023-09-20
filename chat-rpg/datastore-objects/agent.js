@@ -184,13 +184,11 @@ class Player extends Agent {
         agent.coins = 0;
         agent.abilities = [];
         agent.bag = {
-            capacity: 20,
-            weapons: [],
-            books: [],
-            items: []
+            capacity: 10,
+            objects: []
         }
         agent.lastDrops = {
-            weapons: []
+            objects: []
         };
         agent.trackers = {
             weaponKills: {
@@ -291,17 +289,7 @@ class Player extends Agent {
     }
 
     addBook(book) {
-        if(this.datastoreObject.bag.books.length >= this.datastoreObject.bag.capacity) {
-            return false;
-        }
-
-        const existingBookData = this.findBookByName(book.name);
-        if(existingBookData) {
-            return false;
-        }
-
-        this.datastoreObject.bag.books.push(book);
-        return true;
+        return this.addObjectToBag(book, 'book');;
     }
 
     dropBook(bookName) {
@@ -314,28 +302,40 @@ class Player extends Agent {
         this.datastoreObject.bag.books.splice(bookIndex, 1);
     }
 
-    addItem(item) {
-        if(this.datastoreObject.bag.items.length >= this.datastoreObject.bag.capacity) {
+    addObjectToBag(object, type) {
+        if(this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity) {
             return false;
         }
 
-        const existingItemData = this.findItemByName(item.getData().name);
+        const objectContainer = {
+            type,
+            id: utility.genId(),
+            content: object
+        };
+        this.datastoreObject.bag.objects.push(objectContainer);
+    }
+
+    addItem(item) {
+        const existingItemData = this.findObjectInBagByName(item.getData().name);
 
         if(!existingItemData) {
-            this.datastoreObject.bag.items.push(item.getData());
-            return true;
+            return this.addObjectToBag(item.getData(), 'item');
         }
 
         existingItemData.count += item.getData().count;
         return true;
     }
 
-    findItemByName(itemName) {
-        return Player.findItemByName(this.datastoreObject, itemName);
+    findObjectInBagByName(name) {
+        return Player.findObjectInBagByName(this.datastoreObject, name);
     }
 
-    static findItemByName(datastoreObject, itemName) {
-        return chatRPGUtility.findInObjectArray(datastoreObject.bag.items, 'name', itemName);
+    static findObjectInBagByName(datastoreObject, name) {
+        for(const object of datastoreObject.bag.objects) {
+            if(object.content.name === name) {
+                return object.content;
+            }
+        }
     }
 
     dropItem(itemName) {

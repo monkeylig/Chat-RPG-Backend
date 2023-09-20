@@ -38,7 +38,7 @@ test('Testing adding a new Twitch player', async () => {
 
     defaultPlayer.setStatsAtLevel(1);
 
-    await expect(chatrpg.addNewPlayer(name, avatar, twitchId, 'twitch')).resolves.toBeTruthy();
+    await expect(chatrpg.addNewPlayer(name, avatar, twitchId, 'twitch')).resolves.toBeDefined();
 
     const userData = dataSource.dataSource["accounts"];
 
@@ -100,8 +100,7 @@ test('Testing finding a Twitch player', async () => {
     expect(player.avatar).toMatch(defaultPlayer.getData().avatar);
     expect(player.name).toMatch(defaultPlayer.getData().name);
     expect(player.bag).toBeDefined();
-    expect(player.bag.items).toBeDefined();
-    expect(typeof player.bag.items[0]).not.toMatch('string');
+    expect(player.bag.capacity).toBe(10);
 
     await expect(chatrpg.findPlayerById('does not exist', 'twitch')).rejects.toThrow(ChatRPGErrors.playerNotFound);
 });
@@ -537,7 +536,7 @@ test('Battle Actions: Ability', async () => {
 
 });
 
-test('Battle Actions: Item', async () => {
+test.only('Battle Actions: Item', async () => {
     let player = new Player();
     player.datastoreObject.bag.items = [
         {

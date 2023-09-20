@@ -50,9 +50,8 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.playerExists);
         }
 
-        const player = new Player({name, avatar});
+        const player = new Player({name, avatar, [platformIdProperty]: platformId});
 
-        player.setData(platformIdProperty, platformId);
         player.addItem(chatRPGUtility.startingItems.items.potion);
         player.addItem(chatRPGUtility.startingItems.items.phoenixDown);
         player.addBook(chatRPGUtility.startingItems.books.warriorMasteryI);
