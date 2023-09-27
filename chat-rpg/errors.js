@@ -17,7 +17,11 @@ const Errors = {
     notEnoughAp: 'Not enough ap to use this ability',
     shopNotFound: 'Shop not found',
     productNotFound: 'Product not found',
-    insufficientFunds: 'Insufficient Funds'
+    insufficientFunds: 'Insufficient funds',
+    objectNotInBag: 'Object not found in bag',
+    inventoryPageNotFound: 'Inventory page not found',
+    objectNotInInventory: 'Object not found in inventory',
+    objectCantBeclaimed: 'Object cannot be claimed'
 }
 
 module.exports = Errors;

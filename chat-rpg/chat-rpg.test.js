@@ -7,7 +7,9 @@ const seedrandom = require('seedrandom');
 const { Shop, ShopItem } = require('./datastore-objects/shop');
 const GameModes = require('./game-modes');
 const { Weapon, BattleWeapon } = require('./datastore-objects/weapon');
-const ChatRPGErrors = require('./errors')
+const ChatRPGErrors = require('./errors');
+const Item = require('./datastore-objects/item');
+const { InventoryPage } = require('./datastore-objects/inventory-page');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -536,20 +538,19 @@ test('Battle Actions: Ability', async () => {
 
 });
 
-test.only('Battle Actions: Item', async () => {
+test('Battle Actions: Item', async () => {
     let player = new Player();
-    player.datastoreObject.bag.items = [
-        {
-            name: 'Big Bang',
-            count: 2,
-            effectName: 'testItem1'
-        },
-        {
-            name: 'Small Bang',
-            count: 1,
-            effectName: 'testItem2'
-        }
-    ];
+    player.addItemToBag(new Item({
+        name: 'Big Bang',
+        count: 2,
+        effectName: 'testItem1'
+    }));
+    player.addItemToBag(new Item({
+        name: 'Small Bang',
+        count: 1,
+        effectName: 'testItem2'
+    }));
+
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -583,7 +584,7 @@ test.only('Battle Actions: Item', async () => {
     let gameState = await chatrpg.joinGame('player1', 'new game');
     let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
 
-    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Big Bang'});
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemId: player.getData().bag.objects[0].id});
 
 
     let battleObject;
@@ -592,24 +593,25 @@ test.only('Battle Actions: Item', async () => {
     }
 
     expect(battleObject.environment).toBeDefined();
-    expect(battleObject.environment.itemTest1Activated).toBeTruthy();
+    expect(battleObject.environment.itemTest1Activated).toBeDefined();
     expect(battleUpdate.steps[0].action).toMatch('item');
     expect(battleUpdate.steps[1]).toBeDefined();
     expect(battleUpdate.steps[1].type).toMatch('info');
     expect(battleUpdate.steps[1].description).toMatch('Test item 1 has activated in a battle.');
-    expect(battleUpdate.player.bag.items[0].count).toBe(1);
+    expect(battleUpdate.player.bag.objects[0].content.count).toBe(1);
 
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'});
+    const itemId = player.getData().bag.objects[1].id;
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'item', itemId: itemId});
 
     for(const _battle in dataSource.dataSource.battles) {
         battleObject = dataSource.dataSource.battles[_battle];
     }
 
-    expect(battleObject.environment.itemTest2Activated).toBeTruthy();
+    expect(battleObject.environment.itemTest2Activated).toBeDefined();
     expect(battleUpdate.steps[1].description).toMatch('Test item 2 has activated in a battle.');
-    expect(battleUpdate.player.bag.items[1]).not.toBeDefined();
+    expect(battleUpdate.player.bag.objects[1]).not.toBeDefined();
 
-    await expect(chatrpg.battleAction(battleState.id, {type: 'item', itemName: 'Small Bang'})).rejects.toThrow(ChatRPGErrors.itemNotEquipped);
+    await expect(chatrpg.battleAction(battleState.id, {type: 'item', itemName: itemId})).rejects.toThrow(ChatRPGErrors.itemNotEquipped);
 
 });
 
@@ -788,7 +790,7 @@ test('Player being revived', async () => {
 
 test('Monster Drops', async () => {
     chatRPGUtility.random = seedrandom('3');
-
+    let playerId = 'pid';
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -812,12 +814,14 @@ test('Monster Drops', async () => {
                     }
                 }).getData()
             }
+        },
+        [Schema.Collections.Accounts]: {
+            [playerId]: new Player().getData()
         }
     });
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
     let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
@@ -834,10 +838,10 @@ test('Monster Drops', async () => {
     expect(battleUpdate.result.drops[1].type).toMatch('coin');
     expect(battleUpdate.result.drops[1].content).toBeDefined();
 
-    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
+    const player = await chatrpg.findPlayerById(playerId);
 
-    expect(player.bag.weapons.length).toBeGreaterThan(0);
-    expect(player.bag.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
+    expect(player.bag.objects.length).toBeGreaterThan(0);
+    expect(player.bag.objects[0].content.name).toMatch(battleUpdate.monster.weapon.name);
 });
 
 test('Low level monster coin drop rate', async () => {
@@ -900,7 +904,7 @@ test('Low level monster coin drop rate', async () => {
 test('Monster Drops with bag full', async () => {
     chatRPGUtility.random = seedrandom('3');
     const defaultPlayer = new Player({name: 'jhard', avatar: 'big-bad.png', twitchId: 'fr4wt4'});
-    const fillerWeapon = {
+    const fillerWeapon = new Weapon({
         baseDamage: 10,
         name: "bat",
         speed: 1,
@@ -908,9 +912,9 @@ test('Monster Drops with bag full', async () => {
             baseDamage: 20,
             name: "swing"
         }
-    };
+    });
 
-    while(defaultPlayer.addWeapon(fillerWeapon)){}
+    while(defaultPlayer.addWeaponToBag(fillerWeapon)){}
 
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -953,12 +957,13 @@ test('Monster Drops with bag full', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
-    expect(player.lastDrops.weapons.length).toBeGreaterThan(0);
-    expect(player.lastDrops.weapons[0].name).toMatch(battleUpdate.monster.weapon.name);
+    expect(player.lastDrops.objects.length).toBeGreaterThan(0);
+    expect(player.lastDrops.objects[0].content.name).toMatch(battleUpdate.monster.weapon.name);
 });
 
 test('Monster does not drop weapon', async () => {
     chatRPGUtility.random = seedrandom('Chat RPG!');
+    let playerId = 'pid';
 
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -983,12 +988,14 @@ test('Monster does not drop weapon', async () => {
                     }
                 }).getData()
             }
-        }
+        },
+        [Schema.Collections.Accounts]: {
+            [playerId]: new Player()
+        },
     });
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'fr4wt4', 'twitch');
     let gameState = await chatrpg.joinGame(playerId, 'new game');
     let battleState = await chatrpg.startBattle(playerId, gameState.id, gameState.monsters[0].id);
 
@@ -997,9 +1004,9 @@ test('Monster does not drop weapon', async () => {
         battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     } while(!battleUpdate.result)
 
-    const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
-    expect(player.bag.weapons.length).toBe(0);
-    expect(player.lastDrops.weapons.length).toBe(0);
+    const player = await chatrpg.findPlayerById(playerId);
+    expect(player.bag.objects.length).toBe(0);
+    expect(player.lastDrops.objects.length).toBe(0);
 
     for(const drop of battleUpdate.result.drops) {
         expect(drop.type).not.toMatch('weapon');
@@ -1008,8 +1015,8 @@ test('Monster does not drop weapon', async () => {
 
 test('Equip weapon', async () => {
     let player = new Player();
-    player.addWeapon({name: 'sword'});
-    const weaponId = player.datastoreObject.bag.weapons[0].id;
+    player.addWeaponToBag(new Weapon({name: 'sword'}));
+    const weaponId = player.datastoreObject.bag.objects[0].id;
     
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1033,9 +1040,9 @@ test('Equip weapon', async () => {
 
 test('Player drop weapon', async () => {
     let player = new Player();
-    player.addWeapon({name: 'sword'});
-    player.addWeapon({name: 'sword2'});
-    const weaponId = player.datastoreObject.bag.weapons[0].id;
+    player.addWeaponToBag(new Weapon({name: 'sword'}));
+    player.addWeaponToBag(new Weapon({name: 'sword2'}));
+    const weaponId = player.datastoreObject.bag.objects[0].id;
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1046,31 +1053,10 @@ test('Player drop weapon', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerData = await chatrpg.dropWeapon('player1', weaponId);
+    let playerData = await chatrpg.dropObjectFromBag('player1', weaponId);
 
-    expect(playerData.bag.weapons.length).toBe(1);
-    expect(playerData.bag.weapons[0].name).toMatch('sword2');
-});
-
-test('Player drop weapon while equipped', async () => {
-    let player = new Player();
-    const weapon = {name: 'sword', id: 'weapon1'};
-    player.addWeapon(weapon);
-    const weaponId = player.datastoreObject.bag.weapons[0].id;
-
-    const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource({
-        accounts: {
-            player1: player.getData()
-        }
-    });
-
-    let chatrpg = new ChatRPG(dataSource);
-
-    let playerData = await chatrpg.dropWeapon('player1', weaponId);
-
-    expect(playerData.bag.weapons.length).toBe(0);
-    expect(playerData.weapon.name).toMatch(chatRPGUtility.defaultWeapon.name);
+    expect(playerData.bag.objects.length).toBe(1);
+    expect(playerData.bag.objects[0].content.name).toMatch('sword2');
 });
 
 test('Equip Ability', async () => {
@@ -1147,17 +1133,15 @@ test('Equip Ability', async () => {
 
 test('Drop Book', async () => {
     let player = new Player();
-    player.datastoreObject.bag.books = [
-        {
-            name: 'Test Book 1',
-            abilities: [
-                {
-                    name: 'Scratch',
-                    damage: 70
-                }
-            ]
-        }
-    ];
+    player.addBookToBag({
+        name: 'Test Book 1',
+        abilities: [
+            {
+                name: 'Scratch',
+                damage: 70
+            }
+        ]
+    });
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1168,18 +1152,16 @@ test('Drop Book', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerData = await chatrpg.dropBook('player1', 'Test Book 1');
-    expect(playerData.bag.books.length).toBe(0);
+    let playerData = await chatrpg.dropObjectFromBag('player1', player.getData().bag.objects[0].id);
+    expect(playerData.bag.objects.length).toBe(0);
 });
 
 test('Drop Item', async () => {
     let player = new Player();
-    player.datastoreObject.bag.items = [
-        {
-            name: 'Potion',
-            count: 3
-        }
-    ];
+    player.addItemToBag(new Item({
+        name: 'Potion',
+        count: 3
+    }));
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1190,8 +1172,8 @@ test('Drop Item', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerData = await chatrpg.dropItem('player1', 'Potion');
-    expect(playerData.bag.items.length).toBe(0);
+    let playerData = await chatrpg.dropObjectFromBag('player1', player.getData().bag.objects[0].id);
+    expect(playerData.bag.objects.length).toBe(0);
 });
 
 test('Escape from battle', async () => {
@@ -1362,26 +1344,28 @@ test('Buying Items', async () => {
     expect(player).toBeDefined();
 
     player = new Player(player);
-    let newItem = player.findItemByName('Test Product');
+    let newItem = player.findObjectInBagByName('Test Product');
 
     expect(newItem).toBeDefined();
-    expect(newItem.count).toBe(1);
+    expect(newItem.content).toBeDefined();
+    expect(newItem.content.count).toBe(1);
 
     player = await chatrpg.buy('player1', 'daily', shop.getData().products[0].id);
 
     expect(player).toBeDefined();
 
     player = new Player(player);
-    newItem = player.findItemByName('Test Product');
+    newItem = player.findObjectInBagByName('Test Product');
 
     expect(newItem).toBeDefined();
-    expect(newItem.count).toBe(2);
+    expect(newItem.content).toBeDefined();
+    expect(newItem.content.count).toBe(2);
 
     await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPGErrors.insufficientFunds);
 });
 
 test('Buying Weapons', async () => {
-    let player = new Player({coins: 20, bag: {capacity: 1, weapons:[]}});
+    let player = new Player({coins: 20, bag: {capacity: 1, objects: []}});
     const shopItem = new ShopItem(
         {
             type: 'weapon',
@@ -1419,8 +1403,8 @@ test('Buying Weapons', async () => {
     player = new Player(player);
     let playerData = player.getData();
 
-    expect(playerData.bag.weapons.length).toBe(1);
-    expect(playerData.bag.weapons[0].name).toBe('Test Product');
+    expect(playerData.bag.objects.length).toBe(1);
+    expect(playerData.bag.objects[0].content.name).toBe('Test Product');
 
     player = await chatrpg.buy('player1', 'daily', shop.getData().products[0].id);
 
@@ -1429,7 +1413,138 @@ test('Buying Weapons', async () => {
     player = new Player(player);
     playerData = player.getData();
 
-    expect(playerData.bag.weapons.length).toBe(2);
+    expect(playerData.bag.objects.length).toBe(2);
     expect(playerData.bag.capacity).toBe(2);
 
 });
+
+test('Moving objects from bag to inventory', async () => {
+    const player = new Player();
+    player.addWeaponToBag(new Weapon({name: 'weapon 1'}));
+    player.addWeaponToBag(new Weapon({name: 'weapon 2'}));
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    let playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
+
+    expect(playerData).toBeDefined();
+    expect(playerData.bag.objects.length).toBe(1);
+    expect(playerData.id).toMatch('player1');
+
+    let playerId = playerData.id;
+    delete playerData.id;
+
+    expect(playerData).toStrictEqual(dataSource.dataSource[Schema.Collections.Accounts][playerId]);
+
+    playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[1].id);
+    
+    expect(playerData.bag.objects.length).toBe(0);
+
+    const pageData = dataSource.dataSource[Schema.Collections.InventoryPages][playerData.inventory.leger[0].id].objects;
+
+    let i = 0;
+    for(const objectEntry of pageData) {
+        expect(objectEntry.content).toStrictEqual(player.getData().bag.objects[i].content);
+        i++;
+    }
+});
+
+test('Moving objects from bag to inventory: Create new page', async () => {
+    const player = new Player();
+    player.addWeaponToBag(new Weapon({name: 'weapon'}));
+    const page = new InventoryPage();
+    const page1Id = 'page1';
+
+    for(let i = 0; i < InventoryPage.PAGE_CAPACITY; i++) {
+        page.addObjectToInventory({name: `weapon ${i}`}, 'weapon');
+        player.onObjectAddedToInventory(page1Id);
+    }
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [page1Id]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    const playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
+
+    let count = 0;
+    for(const pageEntry in dataSource.dataSource[Schema.Collections.InventoryPages]) {
+        count += 1;
+    }
+
+    expect(count).toBe(2)
+    expect(playerData).toBeDefined();
+    expect(playerData.bag.objects.length).toBe(0);
+    expect(playerData.id).toMatch('player1');
+
+    let playerId = playerData.id;
+    delete playerData.id;
+
+    expect(playerData).toStrictEqual(dataSource.dataSource[Schema.Collections.Accounts][playerId]);
+});
+
+test('Moving objects from inventory to bag', async () => {
+    const player = new Player();
+    const page = new InventoryPage();
+    const inventoryObject = page.addObjectToInventory({name: 'weapon'}, 'weapon');
+    const page1Id = 'page1';
+    player.onObjectAddedToInventory(page1Id);
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [page1Id]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    let {player: playerData, page: pageData} = await chatrpg.moveObjectFromInventoryToBag('player1', page1Id, inventoryObject.id);
+
+    expect(playerData.bag.objects.length).toBe(1);
+    expect(pageData.objects.length).toBe(0);
+    expect(playerData.bag.objects[0].content).toStrictEqual(inventoryObject.content);
+});
+
+test('Dropping objects from inventory to bag', async () => {
+    const player = new Player();
+    const page = new InventoryPage();
+    const inventoryObject = page.addObjectToInventory({name: 'weapon'}, 'weapon');
+    const page1Id = 'page1';
+    player.onObjectAddedToInventory(page1Id);
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [page1Id]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    let {player: playerData, page: pageData} = await chatrpg.dropObjectFromInventory('player1', page1Id, inventoryObject.id);
+
+    expect(pageData.objects.length).toBe(0);
+    expect(playerData.id).toMatch('player1');
+});
+

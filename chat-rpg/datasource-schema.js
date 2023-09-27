@@ -5,7 +5,8 @@ const Schema = {
         Games: 'games',
         Monsters: 'monsters',
         Battles: 'battles',
-        Shops: 'shops'
+        Shops: 'shops',
+        InventoryPages: 'inventory_pages'
     },
     
     AvatarDocuments: {

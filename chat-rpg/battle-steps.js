@@ -1,5 +1,4 @@
-const { BattlePlayer } = require("./datastore-objects/battle-agent");
-const { BattleWeapon } = require("./datastore-objects/weapon");
+const { BattlePlayer, BattleWeapon } = require("./datastore-objects/battle-agent");
 const chatRPGUtility = require('./utility');
 
 const WEAPON_SYNERGY_BONUS = 1.2;

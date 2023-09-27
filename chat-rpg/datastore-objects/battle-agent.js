@@ -1,5 +1,6 @@
 const {Agent, Player} = require('./agent');
 const {Monster} = require('./monster-class');
+const { Weapon } = require('./weapon');
 
 const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 2;
@@ -142,16 +143,20 @@ const BattleAgent = {
 class BattlePlayer extends Agent {
     constructor(objectData) {
         super(objectData)
-
-        delete this.datastoreObject.bag.weapons;
-        delete this.datastoreObject.bag.books;
     }
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
         BattleAgent.setFields(agent);
         agent.bag = {};
-        agent.bag.items = [];
+        agent.coins = 0;
+        agent.lastDrops = {
+            objects: []
+        };
+    }
+
+    findObjectInBag(id) {
+        return Player.findObjectInBag(this.datastoreObject, id);
     }
 
     findObjectInBagByName(itemName) {
@@ -212,6 +217,22 @@ class BattlePlayer extends Agent {
 
     consumeEmpowermentValue(type) {
         return BattleAgent.consumeEmpowermentValue(this.datastoreObject, type);
+    }
+
+    addCoins(coins) {
+        Player.addCoins(this.datastoreObject, coins);
+    }
+
+    addObjectToLastDrops(object, type) {
+        Player.addObjectToLastDrops(this.datastoreObject, object, type);
+    }
+
+    clearLastDrops() {
+        Player.clearLastDrops(this.datastoreObject);
+    }
+    
+    addWeaponToBag(weapon) {
+        return Player.addWeaponToBag(this.datastoreObject, weapon);
     }
 }
 
@@ -278,4 +299,19 @@ class BattleMonster extends Monster {
     }
 }
 
-module.exports = {BattlePlayer, BattleMonster, BattleAgent};
+class BattleWeapon extends Weapon {
+    constructNewObject(weapon) {
+        super.constructNewObject(weapon);
+        weapon.speedAmp = 0;
+    }
+
+    speedAmp(stages) {
+        return BattleAgent.statAmp(this.datastoreObject, 'speedAmp', stages)
+    }
+
+    getModifiedSpeed() {
+        return BattleAgent.getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
+    }
+}
+
+module.exports = {BattlePlayer, BattleMonster, BattleWeapon, BattleAgent};

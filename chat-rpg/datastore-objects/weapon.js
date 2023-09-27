@@ -1,5 +1,4 @@
 const DatastoreObject = require('./datastore-object');
-const {BattleAgent} = require('./battle-agent')
 const chatRPGUtility = require('../utility');
 
 class Weapon extends DatastoreObject {
@@ -41,19 +40,4 @@ class Weapon extends DatastoreObject {
     }
 }
 
-class BattleWeapon extends Weapon {
-    constructNewObject(weapon) {
-        super.constructNewObject(weapon);
-        weapon.speedAmp = 0;
-    }
-
-    speedAmp(stages) {
-        return BattleAgent.statAmp(this.datastoreObject, 'speedAmp', stages)
-    }
-
-    getModifiedSpeed() {
-        return BattleAgent.getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
-    }
-}
-
-module.exports = {Weapon, BattleWeapon};
+module.exports = {Weapon};

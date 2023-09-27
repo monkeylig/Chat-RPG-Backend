@@ -52,14 +52,17 @@ const chatRPGUtility = {
     },
     defaultWeapon: {
         name: 'Fists',
-        baseDamage: 20,
+        type: 'physical',
+        style: 'melee',
+        baseDamage: 10,
         speed: 3,
+        icon: 'fist.png',
         strikeAbility: {
             name: 'Heavy Strike',
-            baseDamage: 40
+            baseDamage: 30
         },
         statGrowth: {
-            maxHealth: 1,
+            maxHealth: 2,
             strength: 1,
             magic: 1,
             defence: 1

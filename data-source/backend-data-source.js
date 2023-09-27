@@ -174,6 +174,7 @@ class IBackendDataSourceQuerySnapShot {
 class IBackendDataSourceTransaction {
     async get(refOrQuery){}
     create(documentRef, data){}
+    set(documentRef, data){}
     update(documentRef, updateObject){}
 }
 

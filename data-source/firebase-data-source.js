@@ -155,6 +155,11 @@ class FirebaseDataSourceTransaction {
         return this;
     }
 
+    set(documentRef, data) {
+        this.transaction.set(documentRef.docRef, data);
+        return this;
+    }
+
     update(documentRef, updateObject) {
         this.transaction.update(documentRef.docRef, FirebaseDataSourceDocumentRef.convertUpdateObject(updateObject));
         return this;
