@@ -353,7 +353,7 @@ class ChatRPG {
         return shopData;
     }
 
-    async buy(playerId, shopId, productId) {
+    async buy(playerId, shopId, productId, amount) {
         const shopSnapshot = await this.#findShop(shopId);
 
         const shop = new Shop(shopSnapshot.data());
@@ -378,19 +378,26 @@ class ChatRPG {
             }
 
             player.getData().coins -= shopItem.getData().price;
-
-
-            if(player.getData().bag.objects.length >= player.getData().bag.capacity) {
-                player.getData().bag.capacity += 1;
-            }
-
+            let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
-                    player.addWeaponToBag(new Weapon(shopItem.getData().product));
+                    purchacedObject = new Weapon(shopItem.getData().product);
                     break;
                 case 'item':
-                    player.addItemToBag(new Item(shopItem.getData().product));
+                    purchacedObject = new Item({...shopItem.getData().product, count: amount});
                     break;
+                default:
+                    throw new Error(ChatRPGErrors.unrecognizedItemType);
+            }
+
+            if(player.getData().bag.objects.length >= player.getData().bag.capacity) {
+                this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
+            }
+            else {
+                if(shopItem.getData().type === 'item') {
+                    player.addItemToBag(purchacedObject);                    
+                }
+                player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
             }
 
             transaction.update(playerRef, player.getData());
@@ -403,7 +410,7 @@ class ChatRPG {
     async moveObjectFromBagToInventory(playerId, objectId) {
 
         const responceObject = await this.#datasource.runTransaction(async (transaction) => {
-            
+
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
 

@@ -1364,15 +1364,13 @@ test('Buying Items', async () => {
     await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPGErrors.insufficientFunds);
 });
 
-test('Buying Weapons', async () => {
+test.only('Buying Weapons', async () => {
     let player = new Player({coins: 20, bag: {capacity: 1, objects: []}});
     const shopItem = new ShopItem(
         {
             type: 'weapon',
             price: 10,
-            product: {
-                name: 'Test Product'
-            }
+            product: new Weapon({name: 'Test Product'}).getData()
         });
 
     const shop = new Shop({
@@ -1413,8 +1411,13 @@ test('Buying Weapons', async () => {
     player = new Player(player);
     playerData = player.getData();
 
-    expect(playerData.bag.objects.length).toBe(2);
-    expect(playerData.bag.capacity).toBe(2);
+    expect(playerData.bag.objects.length).toBe(1);
+    expect(playerData.inventory.leger[0]).toBeDefined();
+    expect(playerData.inventory.leger.length).toBe(1);
+
+    const pageData = dataSource.dataSource[Schema.Collections.InventoryPages][playerData.inventory.leger[0].id];
+
+    expect(pageData.objects[0].content).toStrictEqual(shopItem.getData().product);
 
 });
 

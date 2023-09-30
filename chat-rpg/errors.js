@@ -21,7 +21,8 @@ const Errors = {
     objectNotInBag: 'Object not found in bag',
     inventoryPageNotFound: 'Inventory page not found',
     objectNotInInventory: 'Object not found in inventory',
-    objectCantBeclaimed: 'Object cannot be claimed'
+    objectCantBeclaimed: 'Object cannot be claimed',
+    unrecognizedItemType: 'Unrecognized item type'
 }
 
 module.exports = Errors;
