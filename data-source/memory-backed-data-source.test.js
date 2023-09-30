@@ -561,6 +561,35 @@ test('Testing creating new documents with transactions', async () => {
     expect(querySnapshot.docs[0].data()).toStrictEqual(user);
 });
 
+test('Testing setting new documents with transactions', async () => {
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource();
+    const user = {
+        name: 'jhard',
+        level: 22,
+        items: {
+            potions: 3
+        },
+        abilities: ['slash', 'block']
+    };
+
+    const playersRef = dataSource.collection('players'); 
+    await dataSource.runTransaction(async (transaction) => {
+        const query = playersRef.where('name', '==', 'jhard');
+        const querySnapshot = await transaction.get(query);
+
+        if(querySnapshot.empty) {
+            const newPlayer = playersRef.doc();
+            transaction.set(newPlayer, user);
+        }
+    });
+
+    const querySnapshot = await playersRef.where('name', '==', 'jhard').get();
+
+    expect(querySnapshot.empty).toBeFalsy();
+    expect(querySnapshot.docs[0].data()).toStrictEqual(user);
+});
+
 test('Updating arrays with transactions', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource();

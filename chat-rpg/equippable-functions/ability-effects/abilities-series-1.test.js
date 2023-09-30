@@ -1,7 +1,6 @@
 const AbilityEffects = require('./ability-effects');
 const Ability = require('../../datastore-objects/ability');
-const {BattlePlayer} = require('../../datastore-objects/battle-agent');
-const {BattleWeapon, Weapon} = require('../../datastore-objects/weapon');
+const {BattlePlayer, BattleWeapon} = require('../../datastore-objects/battle-agent');
 const chatRPGUtility = require('../../utility');
 const seedrandom = require('seedrandom');
 

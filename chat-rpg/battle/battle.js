@@ -1,13 +1,13 @@
-const { BattlePlayer, BattleMonster } = require('../datastore-objects/battle-agent');
+const { BattlePlayer, BattleMonster, BattleWeapon } = require('../datastore-objects/battle-agent');
 const monsterAi = require('../monster-ai/monster-ai')
 const BattleSteps = require('../battle-steps');
 const AbilityFunctions = require('../equippable-functions/ability-functions');
 const ItemFunctions = require('../equippable-functions/item-functions');
 const chatRPGUtility = require('../utility');
-const { BattleWeapon } = require('../datastore-objects/weapon');
 const Ability = require('../datastore-objects/ability');
 const ChatRPGErrors = require('../errors');
 const Item = require('../datastore-objects/item');
+const { Weapon } = require('../datastore-objects/weapon');
 
 const ESCAPE_PRIORITY = 100000;
 const ITEM_PRIORITY = 10000;
@@ -125,21 +125,23 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
         result.winner = battlePlayer.getData().id;
         result.expAward = expGain;
         result.drops = [];
+        battlePlayer.clearLastDrops();
 
         // Compute the monster drops
         const willDropWeapon = chatRPGUtility.chance(battleMonster.getData().weaponDropRate)/* && !player.hasWeapon(monsterData.weapon)*/; //To Do: Need to have the player bring bag into battle
 
         if(willDropWeapon) {
+            const monsterWeapon = new Weapon(battleMonster.getData().weapon);
             const drop = {
                 type: 'weapon',
-                content: battleMonster.getData().weapon,
+                content: monsterWeapon.getData(),
                 bagFull: false
             };
 
-            /*if(!player.addWeapon(monsterData.weapon)) { //To Do: Need to have the player bring bag into battle
+            if(!battlePlayer.addWeaponToBag(monsterWeapon)) { //To Do: Need to have the player bring bag into battle
                 drop.bagFull = true;
-                lastDrop.weapons.push(monsterData.weapon);
-            }*/
+                battlePlayer.addObjectToLastDrops(monsterWeapon.getData(), 'weapon');
+            }
             result.drops.push(drop);
         }
 
@@ -152,7 +154,7 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
                     icon: 'coin.png'
                 }
             };
-            //player.addCoins(battleMonster.getData().coinDrop);
+            battlePlayer.addCoins(battleMonster.getData().coinDrop);
             result.drops.push(drop);
         }
 
@@ -274,11 +276,11 @@ function createBattleAction(actionRequest, battlePlayer) {
     }
 
     else if(actionRequest.type === 'item') {
-        const itemData = battlePlayer.findItemByName(actionRequest.itemName);
-        if(!itemData) {
+        const itemObject = battlePlayer.findObjectInBag(actionRequest.itemId);
+        if(!itemObject) {
             throw new Error(ChatRPGErrors.itemNotEquipped);
         }
-        const item = new Item(itemData);
+        const item = new Item(itemObject.content);
 
         playerBattleAction = {
             type: 'item',

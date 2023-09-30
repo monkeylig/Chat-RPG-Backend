@@ -1,5 +1,5 @@
 const BattleSteps = require('../../battle-steps');
-const {BattleWeapon} = require('../../datastore-objects/weapon');
+const { BattleWeapon } = require('../../datastore-objects/battle-agent');
 
 const chatRPGUtility = require('../../utility');
 

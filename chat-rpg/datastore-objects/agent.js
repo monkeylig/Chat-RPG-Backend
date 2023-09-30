@@ -2,6 +2,8 @@ const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
 const utility = require("../../utility");
 const Item = require('./item');
+const { Weapon } = require('./weapon');
+const { InventoryPage } = require('./inventory-page');
 
 function expFunc(level) {
     if (level == 1) {
@@ -50,25 +52,7 @@ class Agent extends DatastoreObject {
         agent.name = 'Unknown';
         agent.avatar = 'unknown.png';
         agent.abilities = [];
-        agent.weapon = {
-            name: 'Fists',
-            type: 'physical',
-            style: 'melee',
-            baseDamage: 10,
-            speed: 3,
-            icon: 'fist.png',
-            strikeAbility: {
-                name: 'Heavy Strike',
-                baseDamage: 30
-            },
-            statGrowth: {
-                maxHealth: 2,
-                strength: 1,
-                magic: 1,
-                defence: 1
-            }
-        }
-
+        agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.reviveReady = false;
         agent.maxHealth = 0;
         agent.health = 0;
@@ -172,7 +156,6 @@ class Agent extends DatastoreObject {
 }
 
 class Player extends Agent {
-    static MAXWEAPONS = 10;
     constructor(objectData) {
         super(objectData);
     }
@@ -183,14 +166,15 @@ class Player extends Agent {
         agent.currentGameId = '';
         agent.coins = 0;
         agent.abilities = [];
+        agent.inventory = {
+            leger: []
+        };
         agent.bag = {
-            capacity: 20,
-            weapons: [],
-            books: [],
-            items: []
+            capacity: 10,
+            objects: []
         }
         agent.lastDrops = {
-            weapons: []
+            objects: []
         };
         agent.trackers = {
             weaponKills: {
@@ -202,67 +186,124 @@ class Player extends Agent {
         };
     }
 
-    getUnflattenedData() {
-        return this.datastoreObject;
+    static #addObjectToCollection(collection, object, type, limit) {
+        if(limit && collection.length >= limit) {
+            return;
+        }
+
+        const objectContainer = {
+            type,
+            id: utility.genId(),
+            content: object
+        };
+        collection.push(objectContainer);
+        return objectContainer;
     }
 
-    addWeapon(weapon) {
-        const weapons = this.datastoreObject.bag.weapons;
-        if(weapons.length >= this.datastoreObject.bag.capacity) {
+    #dropObjectFromCollection(collection, id) {
+        const objectIndex = collection.findIndex(element => element.id === id);
+
+        if(objectIndex === -1) {
+            return;
+        }
+
+         const objectData = collection.splice(objectIndex, 1);
+
+        return objectData[0];
+    }
+
+    static #findObjectInCollection(collection, id) {
+        const object = chatRPGUtility.findInObjectArray(collection, 'id', id);
+        
+        if (!object) {
+            return;
+        }
+        return object;
+    }
+
+    addObjectToBag(object, type) {
+        const bag = this.datastoreObject.bag;
+        return Player.#addObjectToCollection(bag.objects, object, type, bag.capacity);
+    }
+
+    static addObjectToBag(datastoreObject, object, type) {
+        const bag = datastoreObject.bag;
+        return Player.#addObjectToCollection(bag.objects, object, type, bag.capacity);
+    }
+
+    findObjectInBag(id) {
+        return Player.findObjectInBag(this.datastoreObject, id);
+    }
+
+    static findObjectInBag(datastoreObject, id) {
+        return Player.#findObjectInCollection(datastoreObject.bag.objects, id);
+    }
+
+    findObjectInBagByName(name) {
+        return Player.findObjectInBagByName(this.datastoreObject, name);
+    }
+
+    static findObjectInBagByName(datastoreObject, name) {
+        for(const object of datastoreObject.bag.objects) {
+            if(object.content.name === name) {
+                return object;
+            }
+        }
+    }
+
+    dropObjectFromBag(id) {
+        return this.#dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+    }
+
+    addWeaponToBag(weapon) {
+        return Player.addWeaponToBag(this.datastoreObject, weapon);
+    }
+
+    static addWeaponToBag(datastoreObject, weapon) {
+        return Player.addObjectToBag(datastoreObject, weapon.getData(), 'weapon');
+    }
+
+    equipWeaponFromBag(weaponId) {
+        const weaponObject = this.findObjectInBag(weaponId);
+
+        if(!weaponObject) {
             return false;
         }
 
-        weapon.id = utility.genId();
-        weapons.push(weapon);
+        let equippedWeapon = this.datastoreObject.weapon;
+        this.datastoreObject.weapon = weaponObject.content;
+        this.dropObjectFromBag(weaponId);
+
+        if(equippedWeapon && equippedWeapon.name !== chatRPGUtility.defaultWeapon.name) {
+            this.addWeaponToBag(new Weapon(equippedWeapon));
+        }
+
         return true;
     }
 
-    hasWeapon(weapon) {
-        for(const _weapon of this.datastoreObject.bag.weapons) {
-            if(weapon.name === _weapon.name) {
-                return true;
-            }
-        }
-
-        return false;
+    addObjectToLastDrops(object, type) {
+        Player.addObjectToLastDrops(this.datastoreObject, object, type);
     }
 
-    findWeaponById(weaponId) {
-        const weapon = this.datastoreObject.bag.weapons.find(element => element.id === weaponId);
-
-        if(!weapon) {
-            return;
-        }
-
-        return weapon;
+    static addObjectToLastDrops(datastoreObject, object, type) {
+        const lastDrops = datastoreObject.lastDrops;
+        return Player.#addObjectToCollection(lastDrops.objects, object, type);
     }
 
-    equipWeapon(weapon) {
-        this.datastoreObject.weapon = weapon;
+    removeLastDrop(id) {
+        return this.#dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
     }
 
-    dropWeapon(weaponId) {
-        const weaponIndex = this.datastoreObject.bag.weapons.findIndex(element => element.id === weaponId);
+    clearLastDrops() {
+        Player.clearLastDrops(this.datastoreObject);
+    }
 
-        if(weaponIndex === -1) {
-            return;
-        }
-
-        let currentWeapon = this.datastoreObject.weapon;
-
-        if(currentWeapon.id === weaponId) {
-            currentWeapon = chatRPGUtility.defaultWeapon;
-        }
-
-        this.datastoreObject.bag.weapons.splice(weaponIndex, 1);
+    static clearLastDrops(datastoreObject) {
+        datastoreObject.lastDrops.objects = [];
     }
 
     setLastDrop(lastDrop) {
         this.datastoreObject.lastDrops = lastDrop;
-    }
-
-    isWeaponEquipped(weaponId) {
-        return this.datastoreObject.weapon.id === weaponId
     }
 
     findBookByName(name) {
@@ -290,62 +331,19 @@ class Player extends Agent {
         return true;
     }
 
-    addBook(book) {
-        if(this.datastoreObject.bag.books.length >= this.datastoreObject.bag.capacity) {
-            return false;
-        }
-
-        const existingBookData = this.findBookByName(book.name);
-        if(existingBookData) {
-            return false;
-        }
-
-        this.datastoreObject.bag.books.push(book);
-        return true;
+    addBookToBag(book) {
+        return this.addObjectToBag(book, 'book');
     }
 
-    dropBook(bookName) {
-        const bookIndex = this.datastoreObject.bag.books.findIndex(element => element.name === bookName);
-
-        if(bookIndex === -1) {
-            return;
-        }
-
-        this.datastoreObject.bag.books.splice(bookIndex, 1);
-    }
-
-    addItem(item) {
-        if(this.datastoreObject.bag.items.length >= this.datastoreObject.bag.capacity) {
-            return false;
-        }
-
-        const existingItemData = this.findItemByName(item.getData().name);
+    addItemToBag(item) {
+        const existingItemData = this.findObjectInBagByName(item.getData().name);
 
         if(!existingItemData) {
-            this.datastoreObject.bag.items.push(item.getData());
-            return true;
+            return this.addObjectToBag(item.getData(), 'item');
         }
 
-        existingItemData.count += item.getData().count;
+        existingItemData.content.count += item.getData().count;
         return true;
-    }
-
-    findItemByName(itemName) {
-        return Player.findItemByName(this.datastoreObject, itemName);
-    }
-
-    static findItemByName(datastoreObject, itemName) {
-        return chatRPGUtility.findInObjectArray(datastoreObject.bag.items, 'name', itemName);
-    }
-
-    dropItem(itemName) {
-        const itemIndex = this.datastoreObject.bag.items.findIndex(element => element.name === itemName);
-
-        if(itemIndex === -1) {
-            return;
-        }
-
-        this.datastoreObject.bag.items.splice(itemIndex, 1);
     }
 
     onItemUsed(item) {
@@ -353,19 +351,19 @@ class Player extends Agent {
     }
     static onItemUsed(datastoreObject, item) {
         
-        const itemIndex = datastoreObject.bag.items.findIndex(element => element.name === item.datastoreObject.name);
+        const itemIndex = datastoreObject.bag.objects.findIndex(element => element.content.name === item.getData().name);
         if(itemIndex === -1) {
             return;
         }
 
-        const thisItemData = datastoreObject.bag.items[itemIndex];
+        const thisItemData = datastoreObject.bag.objects[itemIndex].content;
         Item.onUsed(thisItemData);
 
         if(!Item.isDepleted(thisItemData)) {
             return;
         }
 
-        datastoreObject.bag.items.splice(itemIndex, 1);
+        datastoreObject.bag.objects.splice(itemIndex, 1);
     }
 
     mergeBattlePlayer(battlePlayer) {
@@ -382,6 +380,9 @@ class Player extends Agent {
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
         thisPlayerData.bag.items = battlePlayerData.bag.items;
         thisPlayerData.reviveReady = battlePlayerData.reviveReady;
+        thisPlayerData.bag = battlePlayerData.bag;
+        thisPlayerData.coins = battlePlayerData.coins;
+        thisPlayerData.lastDrops = battlePlayerData.lastDrops;
 
         this.revive();
     }
@@ -399,7 +400,55 @@ class Player extends Agent {
     }
 
     addCoins(coins) {
-        this.datastoreObject.coins += coins;
+        Player.addCoins(this.datastoreObject, coins);
+    }
+
+    static addCoins(datastoreObject, coins) {
+        datastoreObject.coins += coins;
+    }
+
+    getNextAvailableInventoryPageId() {
+        const leger = this.datastoreObject.inventory.leger;
+        // Has the inventory been created yet?
+        if (!leger.length === 0) {
+            return;
+        }
+
+        for(const log of leger) {
+            if (log.count < InventoryPage.PAGE_CAPACITY) {
+                return log.id;
+            }
+        }
+    }
+
+    getInventoryPageLog(pageId) {
+        return this.datastoreObject.inventory.leger.find(element => element.id === pageId);
+    }
+
+    onObjectAddedToInventory(pageId) {
+        const leger = this.datastoreObject.inventory.leger;
+        const pageIndex = leger.findIndex(element => element.id === pageId);
+
+        if (pageIndex === -1) {
+            leger.push({
+                id: pageId,
+                count: 1
+            });
+            return;
+        }
+
+        leger[pageIndex].count += 1;
+    }
+
+    onObjectRemovedFromInventory(pageId) {
+        const leger = this.datastoreObject.inventory.leger;
+        const pageIndex = leger.findIndex(element => element.id === pageId);
+
+        if (pageIndex === -1) {
+            return;
+        }
+
+        leger[pageIndex].count -= Math.min(1, leger[pageIndex].count);
     }
 }
 

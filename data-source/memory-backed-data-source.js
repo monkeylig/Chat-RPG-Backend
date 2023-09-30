@@ -299,6 +299,11 @@ class MemoryDataSourceTransaction {
         return this;
     }
 
+    set(documentRef, data) {
+        documentRef.set(data);
+        return this;
+    }
+
     update(documentRef, updateObject) {
         documentRef.update(updateObject);
         return this;

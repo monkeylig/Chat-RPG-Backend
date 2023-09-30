@@ -1,21 +1,17 @@
 const {FieldValue} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
-const monsterAi = require("./monster-ai/monster-ai");
 const chatRPGUtility = require('./utility');
 const {Player} = require('./datastore-objects/agent');
 const Game = require('./datastore-objects/game');
 const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agent");
-const Ability = require('./datastore-objects/ability');
 const Item = require('./datastore-objects/item');
 const {MonsterClass} = require("./datastore-objects/monster-class");
-const BattleSteps = require('./battle-steps');
-const AbilityFunctions = require('./equippable-functions/ability-functions');
-const ItemFunctions = require('./equippable-functions/item-functions');
-const {BattleWeapon} = require("./datastore-objects/weapon");
-const { Shop, ShopItem } = require("./datastore-objects/shop");
+const {Weapon} = require("./datastore-objects/weapon");
+const { Shop } = require("./datastore-objects/shop");
 const BattleFunctions = require('./battle/battle')
-const ChatRPGErrors = require('./errors')
+const ChatRPGErrors = require('./errors');
+const { InventoryPage } = require("./datastore-objects/inventory-page");
 
 class ChatRPG {
     #datasource;
@@ -50,13 +46,12 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.playerExists);
         }
 
-        const player = new Player({name, avatar});
+        const player = new Player({name, avatar, [platformIdProperty]: platformId});
 
-        player.setData(platformIdProperty, platformId);
-        player.addItem(chatRPGUtility.startingItems.items.potion);
-        player.addItem(chatRPGUtility.startingItems.items.phoenixDown);
-        player.addBook(chatRPGUtility.startingItems.books.warriorMasteryI);
-        player.addBook(chatRPGUtility.startingItems.books.wizardMasteryI);
+        player.addItemToBag(chatRPGUtility.startingItems.items.potion);
+        player.addItemToBag(chatRPGUtility.startingItems.items.phoenixDown);
+        player.addBookToBag(chatRPGUtility.startingItems.books.warriorMasteryI);
+        player.addBookToBag(chatRPGUtility.startingItems.books.wizardMasteryI);
 
         const newPlayer = playersRef.doc();
         await newPlayer.set(player.getData());
@@ -198,13 +193,10 @@ class ChatRPG {
                 for (const drop of battle.result.drops) {
                     switch (drop.type) {
                         case 'weapon':
-                            if(!player.addWeapon(monsterData.weapon)) {
+                            if(!player.addWeaponToBag(new Weapon(monsterData.weapon))) {
                                 drop.bagFull = true;
                                 lastDrop.weapons.push(monsterData.weapon);
                             }
-                            break;
-                        case 'coin':
-                            player.addCoins(monsterData.coinDrop);
                             break;
                     }
                 }
@@ -258,23 +250,27 @@ class ChatRPG {
     }
 
     async equipWeapon(playerId, weaponId) {
+        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
+        const player = await this.#datasource.runTransaction(async (transaction) => {
+            const playerSnap = await transaction.get(playerRef);
 
-        const playSnap = await this.#findPlayer(playerId);
-        const player = new Player(playSnap.data());
+            if(!playerSnap.exists) {
+                throw new Error(ChatRPGErrors.playerNotFound);
+            }
 
-        const weaponData = player.findWeaponById(weaponId, false);
+            const player = new Player(playerSnap.data());
+            
+            if(!player.equipWeaponFromBag(weaponId)) {
+                throw new Error(ChatRPGErrors.weaponNotInBag);
+            }
 
-        if(!weaponData) {
-            throw new ChatRPGErrors.weaponNotInBag;
-        }
-
-        await playSnap.ref.update({weapon: weaponData});
-
-        player.equipWeapon(weaponData);
+            transaction.update(playerRef, player.getData());
+            return player;
+        });
         return this.#returnPlayerResponce(player, playerId);
     }
 
-    async dropWeapon(playerId, weaponId) {
+    async dropObjectFromBag(playerId, objectId) {
 
         let player;
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
@@ -287,20 +283,16 @@ class ChatRPG {
 
             player = new Player(playerSnap.data());
 
-            const weaponData = player.findWeaponById(weaponId);
-            if(!weaponData) {
-                throw new ChatRPGErrors.weaponNotInBag;
+            const bagObject = player.findObjectInBag(objectId);
+            if(!bagObject) {
+                throw new ChatRPGErrors.objectNotInBag;
             }
 
-            transaction.update(playerRef, {'bag.weapons': FieldValue.arrayRemove(weaponData)});
-
-            if(player.isWeaponEquipped(weaponId)) {
-                transaction.update(playerRef, {weapon: chatRPGUtility.defaultWeapon});
-            }
+            transaction.update(playerRef, {'bag.objects': FieldValue.arrayRemove(bagObject)});
 
         });
 
-        player.dropWeapon(weaponId);
+        player.dropObjectFromBag(objectId);
         return this.#returnPlayerResponce(player, playerId);
     }
 
@@ -350,38 +342,6 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
-    async dropBook(playerId, abilityBookName) {
-        const playerSnap = await this.#findPlayer(playerId);
-        const player = new Player(playerSnap.data());
-        const book = player.findBookByName(abilityBookName);
-
-        if(!book) {
-            throw new ChatRPGErrors.bookNotInBag;
-        }
-
-        await playerSnap.ref.update({'bag.books': FieldValue.arrayRemove(book)});
-
-        player.dropBook(abilityBookName);
-        const playerData = player.getData();
-        playerData.id = playerId;
-        return playerData;
-    }
-
-    async dropItem(playerId, itemName) {
-        const playerSnap = await this.#findPlayer(playerId);
-        const player = new Player(playerSnap.data());
-        const item = player.findItemByName(itemName);
-
-        if(!item) {
-            throw new ChatRPGErrors.itemNotinBag;
-        }
-
-        await playerSnap.ref.update({'bag.items': FieldValue.arrayRemove(item)});
-
-        player.dropItem(itemName);
-        return this.#returnPlayerResponce(player, playerId);
-    }
-
     async getShop(shopId) {
         const shopSnapshot = await this.#findShop(shopId);
 
@@ -393,7 +353,7 @@ class ChatRPG {
         return shopData;
     }
 
-    async buy(playerId, shopId, productId) {
+    async buy(playerId, shopId, productId, amount) {
         const shopSnapshot = await this.#findShop(shopId);
 
         const shop = new Shop(shopSnapshot.data());
@@ -418,23 +378,26 @@ class ChatRPG {
             }
 
             player.getData().coins -= shopItem.getData().price;
-
-
+            let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
-                    if(player.getData().bag.weapons.length >= player.getData().bag.capacity) {
-                        player.getData().bag.capacity = player.getData().bag.weapons.length + 1;
-                    }
-
-                    player.addWeapon(shopItem.getData().product);
+                    purchacedObject = new Weapon(shopItem.getData().product);
                     break;
                 case 'item':
-                    if(player.getData().bag.items.length >= player.getData().bag.capacity) {
-                        player.getData().bag.capacity = player.getData().bag.items.length + 1;
-                    }
-
-                    player.addItem(new Item(shopItem.getData().product));
+                    purchacedObject = new Item({...shopItem.getData().product, count: amount});
                     break;
+                default:
+                    throw new Error(ChatRPGErrors.unrecognizedItemType);
+            }
+
+            if(player.getData().bag.objects.length >= player.getData().bag.capacity) {
+                this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
+            }
+            else {
+                if(shopItem.getData().type === 'item') {
+                    player.addItemToBag(purchacedObject);                    
+                }
+                player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
             }
 
             transaction.update(playerRef, player.getData());
@@ -444,10 +407,147 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
+    async moveObjectFromBagToInventory(playerId, objectId) {
+
+        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            const objectData = player.dropObjectFromBag(objectId);
+            if (!objectData) {
+                throw new Error(ChatRPGErrors.objectNotInBag);
+            }
+            
+            this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
+            transaction.set(playerSnap.ref, player.getData());
+
+            return {...player.getData(), id: playerSnap.ref.id};
+        });
+
+        return responceObject;
+    }
+
+    async moveObjectFromInventoryToBag(playerId, pageId, objectId) {
+        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            if (!player.getInventoryPageLog(pageId)) {
+                throw new Error(ChatRPGErrors.inventoryPageNotFound);
+            }
+
+            const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+            const pageSnap = await transaction.get(pageRef);
+
+            if(!pageSnap.exists) {
+                throw new Error(ChatRPGErrors.inventoryPageNotFound);
+            }
+
+            const page = new InventoryPage(pageSnap.data());
+            const droppedObject = page.dropObjectFromInventory(objectId);
+
+            if(!droppedObject) {
+                throw new Error(ChatRPGErrors.objectNotInInventory)
+            }
+
+            const addedObject = player.addObjectToBag(droppedObject.content, droppedObject.type);
+
+            if(!addedObject) {
+                throw new Error(ChatRPGErrors.bagFull);
+            }
+
+            player.onObjectRemovedFromInventory(page);
+            transaction.set(pageRef, page.getData());
+            transaction.set(playerSnap.ref, player.getData);
+
+            return {
+                player: {...player.getData(), id: playerSnap.ref.id},
+                page: {...page.getData(), id: pageRef.id}
+            };
+        });
+
+        return responceObject;
+    }
+
+    async dropObjectFromInventory(playerId, pageId, objectId) {
+        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            if (!player.getInventoryPageLog(pageId)) {
+                throw new Error(ChatRPGErrors.inventoryPageNotFound);
+            }
+
+            const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+            const pageSnap = await transaction.get(pageRef);
+
+            if(!pageSnap.exists) {
+                throw new Error(ChatRPGErrors.inventoryPageNotFound);
+            }
+
+            const page = new InventoryPage(pageSnap.data());
+            const droppedObject = page.dropObjectFromInventory(objectId);
+
+            if(!droppedObject) {
+                throw new Error(ChatRPGErrors.objectNotInInventory)
+            }
+
+            player.onObjectRemovedFromInventory(page);
+            transaction.set(pageRef, page.getData());
+            transaction.set(playerSnap.ref, player.getData);
+
+            return {
+                player: {...player.getData(), id: playerSnap.ref.id},
+                page: {...page.getData(), id: pageRef.id}
+            };
+        });
+
+        return responceObject;
+    }
+
+    async claimObject(playerId, objectId) {
+        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            const claimedObject = player.removeLastDrop(objectId);
+
+            if(!claimedObject) {
+                throw new Error(ChatRPGErrors.objectCantBeclaimed);
+            }
+
+            this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
+
+            return this.#returnPlayerResponce(player, playerSnap.ref.id);
+        });
+
+        return responceObject;
+    }
+
+    async getInventoryPage(playerId, pageId) {
+        const playerSnap = await this.#findPlayer(playerId);
+        const player = new Player(playerSnap.data());
+
+        if (!player.getInventoryPageLog(pageId)) {
+            throw new Error(ChatRPGErrors.inventoryPageNotFound);
+        }
+
+        const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+        const pageSnap = await pageRef.get();
+
+        if(!pageSnap.exists) {
+            throw new Error(ChatRPGErrors.inventoryPageNotFound);
+        }
+
+        const page = new InventoryPage(pageSnap.data());
+
+        return {...page.getData(), pageId};
+    }
+
     #returnPlayerResponce(player, id) {
-        const playerData = player.getData();
-        playerData.id = id;
-        return playerData;
+        return {...player.getData(), id};
     }
     async #findPlayer(id) {
         const playerSnapShot = await this.#datasource.collection(Schema.Collections.Accounts).doc(id).get();
@@ -457,6 +557,18 @@ class ChatRPG {
         }
 
         return playerSnapShot;
+    }
+
+    // T mean transaction
+    async #findPlayerT(transaction, playerId) {
+        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
+        const playerSnap = await transaction.get(playerRef);
+
+        if(!playerSnap.exists) {
+            throw new Error(ChatRPGErrors.playerNotFound);
+        }
+
+        return playerSnap;
     }
 
     async #findShop(shopId) {
@@ -497,6 +609,22 @@ class ChatRPG {
         default:
             return '';
         }
+    }
+
+    async #addObjectToPlayerInventoryT(player, object, type, transaction) {
+        let pageId = player.getNextAvailableInventoryPageId();
+        const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+        const page = new InventoryPage();
+        page.addObjectToInventory(object, type);
+        if (!pageId) {
+            pageId = pageRef.id;
+            transaction.set(pageRef, page.getData());
+        }
+        else {
+            transaction.update(pageRef, {objects: FieldValue.arrayUnion(page.datastoreObject.objects[0])});
+        }
+
+        player.onObjectAddedToInventory(pageId);
     }
 }
 
