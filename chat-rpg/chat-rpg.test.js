@@ -10,6 +10,7 @@ const { Weapon, BattleWeapon } = require('./datastore-objects/weapon');
 const ChatRPGErrors = require('./errors');
 const Item = require('./datastore-objects/item');
 const { InventoryPage } = require('./datastore-objects/inventory-page');
+const { BookRequirement, Book } = require('./datastore-objects/book');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -1061,49 +1062,35 @@ test('Player drop weapon', async () => {
 
 test('Equip Ability', async () => {
     let player = new Player();
-    player.datastoreObject.bag.books = [
-        {
-            name: 'Test Book 1',
-            abilities: [
-                {
-                    weaponKillRequirements: {
-                        sword: 0
-                    },
-                    ability: {
-                        name: 'Big Bang',
-                        damage: 50
-                    }
-                },
-                {
-                    weaponKillRequirements: {
-                        sword: 0
-                    },
-                    ability: {
-                        name: 'Super Blast',
-                        damage: 70
-                    }
-                },
-                {
-                    weaponKillRequirements: {
-                        sword: 0
-                    },
-                    ability: {
-                        name: 'Big hit',
-                        damage: 70
-                    }
-                },
-                {
-                    weaponKillRequirements: {
-                        sword: 0
-                    },
-                    ability: {
-                        name: 'Scratch',
-                        damage: 70
-                    }
+    const book1Object = player.addBookToBag({
+        name: 'Test Book 1',
+        abilities: [
+            {
+                ability: {
+                    name: 'Big Bang',
+                    damage: 50
                 }
-            ]
-        }
-    ];
+            },
+            {
+                ability: {
+                    name: 'Super Blast',
+                    damage: 70
+                }
+            },
+            {
+                ability: {
+                    name: 'Big hit',
+                    damage: 70
+                }
+            },
+            {
+                ability: {
+                    name: 'Scratch',
+                    damage: 70
+                }
+            }
+        ]
+    });
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1114,17 +1101,17 @@ test('Equip Ability', async () => {
 
     let chatrpg = new ChatRPG(dataSource);
 
-    let playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 0);
-    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.books[0].abilities[0].ability.name);
+    let playerData = await chatrpg.equipAbility('player1', book1Object.id, 0);
+    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.objects[0].content.abilities[0].ability.name);
     
-    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 1);
-    expect(playerData.abilities[1].name).toMatch(player.datastoreObject.bag.books[0].abilities[1].ability.name);
+    playerData = await chatrpg.equipAbility('player1', book1Object.id, 1);
+    expect(playerData.abilities[1].name).toMatch(player.datastoreObject.bag.objects[0].content.abilities[1].ability.name);
 
-    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 2);
-    expect(playerData.abilities[2].name).toMatch(player.datastoreObject.bag.books[0].abilities[2].ability.name);
+    playerData = await chatrpg.equipAbility('player1', book1Object.id, 2);
+    expect(playerData.abilities[2].name).toMatch(player.datastoreObject.bag.objects[0].content.abilities[2].ability.name);
 
-    playerData = await chatrpg.equipAbility('player1', 'Test Book 1', 3, 'Big Bang');
-    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.books[0].abilities[3].ability.name);
+    playerData = await chatrpg.equipAbility('player1', book1Object.id, 3, 'Big Bang');
+    expect(playerData.abilities[0].name).toMatch(player.datastoreObject.bag.objects[0].content.abilities[3].ability.name);
     expect(playerData.abilities.length).toBe(3);
 
     const updatedPlayer = await chatrpg.findPlayerById('player1');
@@ -1219,54 +1206,63 @@ test('Escape from battle', async () => {
 
 test('Equip Ability with requirements', async () => {
     let player = new Player();
-    player.datastoreObject.bag.books = [
-        {
-            name: 'Test Book 1',
-            abilities: [
-                {
-                    weaponKillRequirements: {
-                        sword: 1
-                    },
-                    ability: {
-                        name: 'Big Bang',
-                        damage: 50
+    const incompleteBookObject = player.addBookToBag({
+        name: 'Test Book 1',
+        abilities: [
+            {
+                requirements:[
+                    {
+                        description: 'Slay 2 monsters with a sword style weapon.',
+                        requiredCount: 1,
+                        count: 0,
+                        tracker: {
+                            type: 'weaponStyleVictory',
+                            value: 'sword'
+                        }
                     }
+                ],
+                ability: {
+                    name: 'Big Bang',
+                    damage: 50
                 }
-            ]
-        }
-    ];
+            }
+        ]
+    });
 
-    let player2 = new Player();
-    player2.datastoreObject.trackers.weaponKills.sword = 1;
-    player2.datastoreObject.bag.books = [
-        {
-            name: 'Test Book 1',
-            abilities: [
-                {
-                    weaponKillRequirements: {
-                        sword: 1
-                    },
-                    ability: {
-                        name: 'Big Bang',
-                        damage: 50
+    const completeBookObject = player.addBookToBag({
+        name: 'Test Book 2',
+        abilities: [
+            {
+                requirements:[
+                    {
+                        description: 'Slay 2 monsters with a sword style weapon.',
+                        requiredCount: 1,
+                        count: 1,
+                        tracker: {
+                            type: 'weaponStyleVictory',
+                            value: 'sword'
+                        }
                     }
+                ],
+                ability: {
+                    name: 'Big Bang',
+                    damage: 50
                 }
-            ]
-        }
-    ];
+            }
+        ]
+    });
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
         accounts: {
-            player1: player.getData(),
-            player2: player2.getData()
+            player1: player.getData()
         }
     });
 
     let chatrpg = new ChatRPG(dataSource);
 
-    await expect(chatrpg.equipAbility('player1', 'Test Book 1', 0)).rejects.toThrow(ChatRPGErrors.abilityRequirementNotMet);
-    await expect(chatrpg.equipAbility('player2', 'Test Book 1', 0)).resolves;
+    await expect(chatrpg.equipAbility('player1', incompleteBookObject.id, 0)).rejects.toThrow(ChatRPGErrors.abilityRequirementNotMet);
+    await expect(chatrpg.equipAbility('player1', completeBookObject.id, 0)).resolves;
 });
 
 test('Getting a shop', async () => {
@@ -1364,7 +1360,7 @@ test('Buying Items', async () => {
     await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPGErrors.insufficientFunds);
 });
 
-test.only('Buying Weapons', async () => {
+test('Buying Weapons', async () => {
     let player = new Player({coins: 20, bag: {capacity: 1, objects: []}});
     const shopItem = new ShopItem(
         {
@@ -1419,6 +1415,61 @@ test.only('Buying Weapons', async () => {
 
     expect(pageData.objects[0].content).toStrictEqual(shopItem.getData().product);
 
+});
+
+test('Buying Books', async () => {
+    let player = new Player({coins: 20});
+    const shopItem = new ShopItem(
+        {
+            type: 'book',
+            price: 10,
+            product: {
+                name: 'Test Product'
+            }
+        });
+
+    const shop = new Shop({
+        title: 'Test Shop',
+        description: 'Testing the shop'
+    });
+
+    shop.addShopItem(shopItem);
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        shops: {
+            daily: {
+                ...shop.getData()
+            }
+        },
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    player = await chatrpg.buy('player1', 'daily', shop.getData().products[0].id);
+
+    expect(player).toBeDefined();
+
+    player = new Player(player);
+    let newItem = player.findObjectInBagByName('Test Product');
+
+    expect(newItem).toBeDefined();
+    expect(newItem.content).toBeDefined();
+
+    player = await chatrpg.buy('player1', 'daily', shop.getData().products[0].id);
+
+    expect(player).toBeDefined();
+
+    player = new Player(player);
+    newItem = player.findObjectInBagByName('Test Product');
+
+    expect(newItem).toBeDefined();
+    expect(newItem.content).toBeDefined();
+
+    await expect(chatrpg.buy('player1', 'daily', shop.getData().products[0].id)).rejects.toThrow(ChatRPGErrors.insufficientFunds);
 });
 
 test('Moving objects from bag to inventory', async () => {
@@ -1551,3 +1602,67 @@ test('Dropping objects from inventory to bag', async () => {
     expect(playerData.id).toMatch('player1');
 });
 
+test('Claim Object', async () => {
+    const player = new Player();
+    player.getData().bag.capacity = 1;
+    const object1 = player.addObjectToLastDrops({name: 'test object'}, 'book');
+    const object2 = player.addObjectToLastDrops({name: 'test object 2'}, 'book');
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    let playerData = await chatrpg.claimObject('player1', object1.id);
+
+    expect(playerData).toBeDefined();
+
+    let player1 = new Player(playerData);
+
+    expect(player1.removeLastDrop(object1.id)).toBeFalsy();
+    expect(player1.getData().bag.objects[0].content).toStrictEqual(object1.content);
+
+    playerData = await chatrpg.claimObject('player1', object2.id);
+
+    expect(playerData).toBeDefined();
+
+    player1 = new Player(playerData);
+
+    expect(player1.removeLastDrop(object2.id)).toBeFalsy();
+
+    const inventoryPageData = dataSource.dataSource[Schema.Collections.InventoryPages][player1.getNextAvailableInventoryPageId()];
+
+    expect(inventoryPageData).toBeDefined();
+    expect(inventoryPageData.objects[0].content).toStrictEqual(object2.content);
+});
+
+test('Get Inventory Page', async () => {
+    const page = new InventoryPage();
+    const object1 = page.addObjectToInventory({name: 'object1'});
+    const object2 = page.addObjectToInventory({name: 'object2'});
+
+    const player = new Player();
+    player.onObjectAddedToInventory('page1');
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            page1: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    let pageData = await chatrpg.getInventoryPage('player1', 'page1');
+
+    expect(pageData).toBeDefined();
+    expect(pageData.objects[0].content).toStrictEqual(object1.content);
+    expect(pageData.objects[1].content).toStrictEqual(object2.content);
+});
