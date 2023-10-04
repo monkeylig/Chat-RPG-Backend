@@ -6,9 +6,17 @@ const warriorMasteryI = {
     icon: 'tome_azure.webp',
     abilities: [
         {
-            weaponKillRequirements: {
-                sword: 10
-            },
+            requirements: [
+                {
+                    description: 'Slay 10 monsters with a sword style weapon.',
+                    requiredCount: 10,
+                    count: 0,
+                    tracker: {
+                        type: 'weaponStyleVictory',
+                        value: 'sword'
+                    }
+                }
+            ],
             ability: new Ability({
                 name: 'Blitz',
                 type: 'physical',

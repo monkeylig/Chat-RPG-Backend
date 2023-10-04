@@ -12,6 +12,7 @@ const { Shop } = require("./datastore-objects/shop");
 const BattleFunctions = require('./battle/battle')
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
+const { Book } = require("./datastore-objects/book");
 
 class ChatRPG {
     #datasource;
@@ -296,26 +297,27 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
-    async equipAbility(playerId, abilityBookName, abilityIndex, replacedAbilityName) {
+    async equipAbility(playerId, abilityBookId, abilityIndex, replacedAbilityName) {
 
         const playerSnap = await this.#findPlayer(playerId);
         const playerData = playerSnap.data();
         const player = new Player(playerData);
-        const book = player.findBookByName(abilityBookName, false);
+        const bookObject = player.findObjectInBag(abilityBookId, false);
+        const book = new Book(bookObject.content);
 
-        if(!book) {
+        if(!bookObject) {
             throw new Error(ChatRPGErrors.bookNotInBag);
         }
 
-        if(abilityIndex >= book.abilities.length || abilityIndex < 0) {
+        if(abilityIndex >= book.getData().abilities.length || abilityIndex < 0) {
             throw new Error(ChatRPGErrors.badAbilityBookIndex);
         }
 
-        if(!player.abilityRequirementMet(book, abilityIndex)) {
+        if(!book.isAbilityRequirementsMet(abilityIndex)) {
             throw new Error(ChatRPGErrors.abilityRequirementNotMet);
         }
 
-        const abilityBookEntry = book.abilities[abilityIndex];
+        const abilityBookEntry = book.getData().abilities[abilityIndex];
 
         let replacedAbility;
 
@@ -381,6 +383,7 @@ class ChatRPG {
             let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
+                case 'book':
                     purchacedObject = new Weapon(shopItem.getData().product);
                     break;
                 case 'item':
@@ -518,7 +521,11 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.objectCantBeclaimed);
             }
 
-            this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
+            if(!player.addObjectToBag(claimedObject.content, claimedObject.type)) {
+                this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
+            }
+
+            transaction.set(playerSnap.ref, player.getData());
 
             return this.#returnPlayerResponce(player, playerSnap.ref.id);
         });

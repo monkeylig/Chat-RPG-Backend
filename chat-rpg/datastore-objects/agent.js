@@ -255,6 +255,10 @@ class Player extends Agent {
         return this.#dropObjectFromCollection(this.datastoreObject.bag.objects, id);
     }
 
+    isBagFull() {
+        return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
+    }
+
     addWeaponToBag(weapon) {
         return Player.addWeaponToBag(this.datastoreObject, weapon);
     }
@@ -282,7 +286,7 @@ class Player extends Agent {
     }
 
     addObjectToLastDrops(object, type) {
-        Player.addObjectToLastDrops(this.datastoreObject, object, type);
+        return Player.addObjectToLastDrops(this.datastoreObject, object, type);
     }
 
     static addObjectToLastDrops(datastoreObject, object, type) {

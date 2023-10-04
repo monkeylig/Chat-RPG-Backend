@@ -159,6 +159,8 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
         }
 
         battle.result = result;
+        battle.player = battlePlayer.getData();
+        battle.monster = battleMonster.getData();
         return BattleSteps.battleEnd(`${battleMonster.getData().name} was defeated!`);
     }
 }
