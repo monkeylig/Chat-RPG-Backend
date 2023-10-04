@@ -187,24 +187,6 @@ class ChatRPG {
             }
             else if(monster.isDefeated()) {
                 const oldLevel = battlePlayer.getData().level;
-                const lastDrop = {
-                    weapons: []
-                };
-
-                for (const drop of battle.result.drops) {
-                    switch (drop.type) {
-                        case 'weapon':
-                            if(!player.addWeaponToBag(new Weapon(monsterData.weapon))) {
-                                drop.bagFull = true;
-                                lastDrop.weapons.push(monsterData.weapon);
-                            }
-                            break;
-                    }
-                }
-
-                if(lastDrop.weapons.length) {
-                    player.setLastDrop(lastDrop);
-                }
 
                 player.onMonsterDefeated();
                 

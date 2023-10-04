@@ -69,6 +69,10 @@ class Book extends DatastoreObject {
     static updateAbilityRequirements(datastoreObject, owner, battleUpdate) {
         const unlockedAbilities = [];
         for(const ability of datastoreObject.abilities) {
+            if(!ability.requirements) {
+                continue;
+            }
+            
             let isAbilityUnlocked = true;
             let justUnlocked = false;
             for(const requirement of ability.requirements) {

@@ -789,6 +789,94 @@ test('Player being revived', async () => {
 
 });
 
+test('Unlocking abilities after battle', async () => {
+    chatRPGUtility.random = seedrandom('0');
+    const testBook = new Book({
+        name: 'test book',
+        icon: 'tome_azure.webp',
+        abilities: [
+            {
+                requirements: [
+                    new BookRequirement({
+                        description: 'Slay 1 monsters with a melee style weapon.',
+                        requiredCount: 1,
+                        tracker: {
+                            type: 'weaponStyleVictory',
+                            value: 'melee'
+                        }
+                    }).getData()
+        
+                ],
+                ability: {
+                    name: 'ability 1'
+                }
+            },
+            {
+                requirements: [
+                    new BookRequirement({
+                        description: 'Slay 1 monsters with a melee style weapon.',
+                        requiredCount: 1,
+                        tracker: {
+                            type: 'weaponStyleVictory',
+                            value: 'melee'
+                        }
+                    }).getData()
+        
+                ],
+                ability: {
+                    name: 'ability 2'
+                }
+            }
+        ]
+    });
+    let player = new Player();
+    player.addBookToBag(testBook.getData());
+    player.setStatsAtLevel(10);
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        monsters: {
+            eye_sack: {
+                monsterNumber: 0,
+                strengthRating: 0,
+                defenceRating: 0.2,
+                healthRating: 0.01,
+                magicRating: 0,
+                expYield: 36,
+                name: "Eye Sack",
+                weapon: new Weapon({
+                    baseDamage: 10,
+                    name: "Cornia",
+                    type: 'physical',
+                    speed: 1,
+                    strikeAbility: {
+                        baseDamage: 20,
+                        name: "X ray"
+                    }
+                }).getData()
+            }
+        },
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let gameState = await chatrpg.joinGame('player1', 'new game');
+    let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
+
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+
+    expect(battleUpdate.result).toBeDefined();
+    expect(battleUpdate.result.drops.length).toBe(2);
+    expect(battleUpdate.result.drops[1].content.length).toBe(2);
+    expect(battleUpdate.result.drops[1].type).toBe('abilitiesUnlock');
+    expect(battleUpdate.result.drops[1].content[0].ability.name).toBe('ability 1');
+    expect(battleUpdate.result.drops[1].content[1].ability.name).toBe('ability 2');
+
+});
+
 test('Monster Drops', async () => {
     chatRPGUtility.random = seedrandom('3');
     let playerId = 'pid';

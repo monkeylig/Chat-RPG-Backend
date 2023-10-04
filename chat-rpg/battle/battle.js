@@ -8,6 +8,7 @@ const Ability = require('../datastore-objects/ability');
 const ChatRPGErrors = require('../errors');
 const Item = require('../datastore-objects/item');
 const { Weapon } = require('../datastore-objects/weapon');
+const { Book } = require('../datastore-objects/book');
 
 const ESCAPE_PRIORITY = 100000;
 const ITEM_PRIORITY = 10000;
@@ -161,6 +162,24 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
         battle.result = result;
         battle.player = battlePlayer.getData();
         battle.monster = battleMonster.getData();
+
+        for(const bagItem of battlePlayer.getData().bag.objects) {
+            if(bagItem.type !== 'book') {
+                continue;
+            }
+
+            const unlockedAbilities = Book.updateAbilityRequirements(bagItem.content, battlePlayer, battle);
+
+            if(unlockedAbilities.length > 0) {
+                const drop = {
+                    type: 'abilitiesUnlock',
+                    content: unlockedAbilities,
+                    description: `You unlocked abilities from ${bagItem.content.name}!`
+                };
+
+                result.drops.push(drop);
+            }
+        }
         return BattleSteps.battleEnd(`${battleMonster.getData().name} was defeated!`);
     }
 }
