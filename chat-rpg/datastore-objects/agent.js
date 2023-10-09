@@ -41,6 +41,94 @@ function addExpAndLevel(player, _exp, growthObject) {
     }
 }
 
+function addObjectToCollection(collection, object, type, limit) {
+    if(limit && collection.length >= limit) {
+        return;
+    }
+
+    const objectContainer = {
+        type,
+        id: utility.genId(),
+        content: object
+    };
+    collection.push(objectContainer);
+    return objectContainer;
+}
+
+function dropObjectFromCollection(collection, id) {
+    const objectIndex = collection.findIndex(element => element.id === id);
+
+    if(objectIndex === -1) {
+        return;
+    }
+
+     const objectData = collection.splice(objectIndex, 1);
+
+    return objectData[0];
+}
+
+function findObjectInCollection(collection, id) {
+    const object = chatRPGUtility.findInObjectArray(collection, 'id', id);
+    
+    if (!object) {
+        return;
+    }
+    return object;
+}
+
+const BagHolderMixin = {
+    constructBagHolderObject(bagHolder) {
+        bagHolder.bag = {
+            capacity: 10,
+            objects: []
+        }
+    },
+
+    addObjectToBag(object, type) {
+        const bag = this.datastoreObject.bag;
+        return addObjectToCollection(bag.objects, object, type, bag.capacity);
+    },
+
+    findObjectInBag(id) {
+        return findObjectInCollection(this.datastoreObject.bag.objects, id);
+    },
+
+    findObjectInBagByName(name) {
+        for(const object of this.datastoreObject.bag.objects) {
+            if(object.content.name === name) {
+                return object;
+            }
+        }
+    },
+
+    dropObjectFromBag(id) {
+        return dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+    },
+
+    isBagFull() {
+        return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
+    },
+
+    addWeaponToBag(weapon) {
+        return this.addObjectToBag(weapon.getData(), 'weapon');
+    },
+
+    addBookToBag(book) {
+        return this.addObjectToBag(book, 'book');
+    },
+
+    addItemToBag(item) {
+        const existingItemData = this.findObjectInBagByName(item.getData().name);
+
+        if(!existingItemData) {
+            return this.addObjectToBag(item.getData(), 'item');
+        }
+
+        existingItemData.content.count += item.getData().count;
+        return true;
+    }
+}
+
 class Agent extends DatastoreObject {
 
     static MAXABILITIES = 3;
@@ -162,6 +250,7 @@ class Player extends Agent {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
+        BagHolderMixin.constructBagHolderObject(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
         agent.coins = 0;
@@ -169,10 +258,6 @@ class Player extends Agent {
         agent.inventory = {
             leger: []
         };
-        agent.bag = {
-            capacity: 10,
-            objects: []
-        }
         agent.lastDrops = {
             objects: []
         };
@@ -184,87 +269,6 @@ class Player extends Agent {
             },
             deaths: 0
         };
-    }
-
-    static #addObjectToCollection(collection, object, type, limit) {
-        if(limit && collection.length >= limit) {
-            return;
-        }
-
-        const objectContainer = {
-            type,
-            id: utility.genId(),
-            content: object
-        };
-        collection.push(objectContainer);
-        return objectContainer;
-    }
-
-    #dropObjectFromCollection(collection, id) {
-        const objectIndex = collection.findIndex(element => element.id === id);
-
-        if(objectIndex === -1) {
-            return;
-        }
-
-         const objectData = collection.splice(objectIndex, 1);
-
-        return objectData[0];
-    }
-
-    static #findObjectInCollection(collection, id) {
-        const object = chatRPGUtility.findInObjectArray(collection, 'id', id);
-        
-        if (!object) {
-            return;
-        }
-        return object;
-    }
-
-    addObjectToBag(object, type) {
-        const bag = this.datastoreObject.bag;
-        return Player.#addObjectToCollection(bag.objects, object, type, bag.capacity);
-    }
-
-    static addObjectToBag(datastoreObject, object, type) {
-        const bag = datastoreObject.bag;
-        return Player.#addObjectToCollection(bag.objects, object, type, bag.capacity);
-    }
-
-    findObjectInBag(id) {
-        return Player.findObjectInBag(this.datastoreObject, id);
-    }
-
-    static findObjectInBag(datastoreObject, id) {
-        return Player.#findObjectInCollection(datastoreObject.bag.objects, id);
-    }
-
-    findObjectInBagByName(name) {
-        return Player.findObjectInBagByName(this.datastoreObject, name);
-    }
-
-    static findObjectInBagByName(datastoreObject, name) {
-        for(const object of datastoreObject.bag.objects) {
-            if(object.content.name === name) {
-                return object;
-            }
-        }
-    }
-
-    dropObjectFromBag(id) {
-        return this.#dropObjectFromCollection(this.datastoreObject.bag.objects, id);
-    }
-
-    isBagFull() {
-        return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
-    }
-
-    addWeaponToBag(weapon) {
-        return Player.addWeaponToBag(this.datastoreObject, weapon);
-    }
-
-    static addWeaponToBag(datastoreObject, weapon) {
-        return Player.addObjectToBag(datastoreObject, weapon.getData(), 'weapon');
     }
 
     equipWeaponFromBag(weaponId) {
@@ -291,11 +295,11 @@ class Player extends Agent {
 
     static addObjectToLastDrops(datastoreObject, object, type) {
         const lastDrops = datastoreObject.lastDrops;
-        return Player.#addObjectToCollection(lastDrops.objects, object, type);
+        return addObjectToCollection(lastDrops.objects, object, type);
     }
 
     removeLastDrop(id) {
-        return this.#dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+        return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
     }
 
     clearLastDrops() {
@@ -308,46 +312,6 @@ class Player extends Agent {
 
     setLastDrop(lastDrop) {
         this.datastoreObject.lastDrops = lastDrop;
-    }
-
-    findBookByName(name) {
-        const book = this.datastoreObject.bag.books.find(element => element.name === name);
-
-        if(!book) {
-            return;
-        }
-
-        return book;
-    }
-
-    abilityRequirementMet(abilityBook, abilityIndex) {
-        if(abilityIndex >= abilityBook.abilities.length) {
-            return false;
-        }
-
-        const abilityEntry = abilityBook.abilities[abilityIndex];
-        for(const requirement in abilityEntry.weaponKillRequirements) {
-            if(this.datastoreObject.trackers.weaponKills[requirement] < abilityEntry.weaponKillRequirements[requirement]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    addBookToBag(book) {
-        return this.addObjectToBag(book, 'book');
-    }
-
-    addItemToBag(item) {
-        const existingItemData = this.findObjectInBagByName(item.getData().name);
-
-        if(!existingItemData) {
-            return this.addObjectToBag(item.getData(), 'item');
-        }
-
-        existingItemData.content.count += item.getData().count;
-        return true;
     }
 
     onItemUsed(item) {
@@ -456,4 +420,6 @@ class Player extends Agent {
     }
 }
 
-module.exports = {Agent, Player};
+Object.assign(Player.prototype, BagHolderMixin);
+
+module.exports = {Agent, Player, BagHolderMixin};

@@ -1,4 +1,4 @@
-const {Agent, Player} = require('./agent');
+const {Agent, Player, BagHolderMixin} = require('./agent');
 const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
@@ -148,19 +148,11 @@ class BattlePlayer extends Agent {
     constructNewObject(agent) {
         super.constructNewObject(agent);
         BattleAgent.setFields(agent);
-        agent.bag = {};
+        BagHolderMixin.constructBagHolderObject(agent);
         agent.coins = 0;
         agent.lastDrops = {
             objects: []
         };
-    }
-
-    findObjectInBag(id) {
-        return Player.findObjectInBag(this.datastoreObject, id);
-    }
-
-    findObjectInBagByName(itemName) {
-        return Player.findObjectInBagByName(this.datastoreObject, itemName);
     }
 
     onStrike() {
@@ -235,6 +227,7 @@ class BattlePlayer extends Agent {
         return Player.addWeaponToBag(this.datastoreObject, weapon);
     }
 }
+Object.assign(BattlePlayer.prototype, BagHolderMixin);
 
 class BattleMonster extends Monster {
     constructor(objectData) {
