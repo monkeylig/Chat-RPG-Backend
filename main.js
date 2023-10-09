@@ -1,18 +1,45 @@
-const LOCAL_TEST_PORT = 3000;
+const LOCAL_TEST_PORT = 4000;
 
 const fs = require('fs');
 const express = require('express');
+const Buffer = require('buffer/').Buffer
+const jwt = require('jsonwebtoken');
 
 const ChatRPG = require('./chat-rpg/chat-rpg');
 const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
-const utility = require('./utility');
 const endpoints = require('./endpoints/endpoints');
+let twitchExtentionSecret;
+
+function twitchJWTValidation(req, res, next) {
+    const authHeader = req.get('Authorization');
+    auth = authHeader.split(' ');
+
+    if(auth[0] !== 'bearer') {
+        res.status(401);
+        res.send('Unauthorized');
+    }
+
+    try {
+        const payload = jwt.verify(auth[1], Buffer.from(twitchExtentionSecret, 'base64'));
+        req.twitchUser = payload;
+    }
+    catch (error) {
+        res.status(401);
+        res.send(error.message);
+        return;
+    }
+    next();
+}
 
 function startServer(dataSource) {
     console.log('starting server');
 
     const app = express();
+
+    if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'pre-production') {
+        app.use(twitchJWTValidation);
+    }
     app.use(express.json());
     app.use(express.urlencoded({ extended: true })) // for parsing query strings
 
@@ -43,11 +70,38 @@ function startServer(dataSource) {
 }
 
 async function initialization() {
-    /*const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource(utility.sampleData);*/
+    
+    let dataSource;
+    if(process.env.LS_DATA_SOURCE === 'memory') {
+        dataSource = new MemoryBackedDataSource();
 
-    const dataSource = new FirebaseDataSource();
-    await dataSource.initializeDataSource();
+        if(process.env.LS_MEMORY_SAMPLE_DATA) {
+            const sampleData = require(process.env.LS_MEMORY_SAMPLE_DATA);
+            await dataSource.initializeDataSource(sampleData);    
+        }
+        else {
+            await dataSource.initializeDataSource();
+        }
+    }
+    else {
+        dataSource = new FirebaseDataSource();
+        await dataSource.initializeDataSource();
+    }
+
+    if(process.env.LS_TWITCH_EXTENTION_SECRET) {
+        twitchExtentionSecret = process.env.LS_TWITCH_EXTENTION_SECRET;
+    }
+    else {
+        const adminConfigSnap = await dataSource.collection('configs').doc('admin').get();
+        
+        if(adminConfigSnap.exists && adminConfigSnap.data()) {
+            twitchExtentionSecret = adminConfigSnap.data().twitchExtentionSecret;
+        }
+    }
+
+    if(!twitchExtentionSecret && process.env.NODE_ENV !== 'developement') {
+        console.warn("Unable to set extension secret.");
+    }
 
     return dataSource;
 }
