@@ -6,36 +6,55 @@ const BATTLE_AP = 3;
 const STRIKE_ABILITY_TRIGGER = 2;
 const MAX_STAT_AMP = 12;
 
-const BattleAgent = {
-    statAmpTable: {
-        '-12': 0.25,
-        '-11': 0.2675,
-        '-10': 0.285,
-        '-9': 0.3075,
-        '-8': 0.33,
-        '-7': 0.365,
-        '-6': 0.4,
-        '-5': 0.45,
-        '-4': 0.5,
-        '-3': 0.58,
-        '-2': 0.66,
-        '-1': 0.83,
-        '0': 1,
-        '1': 1.25,
-        '2': 1.5,
-        '3': 1.75,
-        '4': 2,
-        '5': 2.25,
-        '6': 2.5,
-        '7': 2.75,
-        '8': 3,
-        '9': 3.25,
-        '10': 3.5,
-        '11': 3.75,
-        '12': 4
-    },
+const statAmpTable = {
+    '-12': 0.25,
+    '-11': 0.2675,
+    '-10': 0.285,
+    '-9': 0.3075,
+    '-8': 0.33,
+    '-7': 0.365,
+    '-6': 0.4,
+    '-5': 0.45,
+    '-4': 0.5,
+    '-3': 0.58,
+    '-2': 0.66,
+    '-1': 0.83,
+    '0': 1,
+    '1': 1.25,
+    '2': 1.5,
+    '3': 1.75,
+    '4': 2,
+    '5': 2.25,
+    '6': 2.5,
+    '7': 2.75,
+    '8': 3,
+    '9': 3.25,
+    '10': 3.5,
+    '11': 3.75,
+    '12': 4
+};
 
-    setFields(agent) {
+function statAmp(datastoreObject, statAmp, stages) {
+    let ampAmount = 0;
+    stages = Math.floor(stages);
+    if(stages > 0) {
+        ampAmount = Math.min(stages, MAX_STAT_AMP - datastoreObject[statAmp]);
+    }
+    else if(stages < 0) {
+        ampAmount = Math.max(stages, -MAX_STAT_AMP - datastoreObject[statAmp]);
+    }
+
+    datastoreObject[statAmp] += ampAmount;
+    return ampAmount !== 0;
+}
+
+function getModifiedStat(datastoreObject, stat, statAmp) {
+    return Math.max(datastoreObject[stat] * statAmpTable[datastoreObject[statAmp]], 1);
+}
+
+const BattleAgentMixin = {
+
+    constructObject(agent) {
         agent.ap = BATTLE_AP;
         agent.strikeLevel = 0;
         agent.id = 0;
@@ -52,90 +71,80 @@ const BattleAgent = {
         };
     },
 
-    statAmp(datastoreObject, statAmp, stages) {
-        let ampAmount = 0;
-        stages = Math.floor(stages);
-        if(stages > 0) {
-            ampAmount = Math.min(stages, MAX_STAT_AMP - datastoreObject[statAmp]);
-        }
-        else if(stages < 0) {
-            ampAmount = Math.max(stages, -MAX_STAT_AMP - datastoreObject[statAmp]);
-        }
-
-        datastoreObject[statAmp] += ampAmount;
-        return ampAmount !== 0;
+    statAmp(stat, stages) {
+        return statAmp(this.datastoreObject, stat, stages);
     },
 
-    getModifiedStat(datastoreObject, stat, statAmp) {
-        return Math.max(datastoreObject[stat] * this.statAmpTable[datastoreObject[statAmp]], 1);
+    getModifiedStat(stat, statAmp) {
+        return getModifiedStat(this.datastoreObject, stat, statAmp);
     },
 
-    strengthAmp(datastoreObject, stages) {
-        return this.statAmp(datastoreObject, 'strengthAmp', stages);
+    strengthAmp(stages) {
+        return this.statAmp('strengthAmp', stages);
     },
 
-    getModifiedStrength(datastoreObject) {
-        return this.getModifiedStat(datastoreObject, 'strength', 'strengthAmp');
+    getModifiedStrength() {
+        return this.getModifiedStat('strength', 'strengthAmp');
     },
 
-    defenceAmp(datastoreObject, stages) {
-        return this.statAmp(datastoreObject, 'defenceAmp', stages);
+    defenceAmp(stages) {
+        return this.statAmp('defenceAmp', stages);
     },
 
-    getModifiedDefence(datastoreObject) {
-        return this.getModifiedStat(datastoreObject, 'defence', 'defenceAmp');
+    getModifiedDefence() {
+        return this.getModifiedStat('defence', 'defenceAmp');
     },
 
-    magicAmp(datastoreObject, stages) {
-        return this.statAmp(datastoreObject, 'magicAmp', stages);
+    magicAmp(stages) {
+        return this.statAmp('magicAmp', stages);
     },
 
-    getModifiedMagic(datastoreObject) {
-        return this.getModifiedStat(datastoreObject, 'magic', 'magicAmp');
+    getModifiedMagic() {
+        return this.getModifiedStat('magic', 'magicAmp');
     },
 
-    onStrike(datastoreObject) {
-        if (datastoreObject.strikeLevel < STRIKE_ABILITY_TRIGGER) {
-            datastoreObject.strikeLevel += 1;
+    onStrike() {
+        if (this.datastoreObject.strikeLevel < STRIKE_ABILITY_TRIGGER) {
+            this.datastoreObject.strikeLevel += 1;
         }
 
-        if(datastoreObject.ap < BATTLE_AP) {
-            datastoreObject.ap += 1;
+        if(this.datastoreObject.ap < BATTLE_AP) {
+            this.datastoreObject.ap += 1;
         }
     },
 
-    onStrikeAbility(datastoreObject) {
-        this.onStrike(datastoreObject);
-        datastoreObject.strikeLevel = 0;
+    onStrikeAbility() {
+        this.onStrike();
+        this.datastoreObject.strikeLevel = 0;
     },
 
-    strikeAbilityReady(datastoreObject) {
-        return datastoreObject.strikeLevel >= STRIKE_ABILITY_TRIGGER
+    strikeAbilityReady() {
+        return this.datastoreObject.strikeLevel >= STRIKE_ABILITY_TRIGGER
     },
 
-    onAbilityUsed(datastoreObject, ability) {
+    onAbilityUsed(ability) {
     
     },
 
-    addEmpowerment(datastoreObject, type, value) {
-        if(!datastoreObject.empowerment.hasOwnProperty(type)) {
-            datastoreObject.empowerment[type] = 0;
+    addEmpowerment(type, value) {
+        if(!this.datastoreObject.empowerment.hasOwnProperty(type)) {
+            this.datastoreObject.empowerment[type] = 0;
         }
 
-        datastoreObject.empowerment[type] += value;
+        this.datastoreObject.empowerment[type] += value;
     },
 
-    getEmpowermentValue(datastoreObject, type) {
-        if(!datastoreObject.empowerment.hasOwnProperty(type)) {
-            datastoreObject.empowerment[type] = 0;
+    getEmpowermentValue(type) {
+        if(!this.datastoreObject.empowerment.hasOwnProperty(type)) {
+            this.datastoreObject.empowerment[type] = 0;
         }
 
-        return datastoreObject.empowerment[type];
+        return this.datastoreObject.empowerment[type];
     },
 
-    consumeEmpowermentValue(datastoreObject, type) {
-        const value = BattleAgent.getEmpowermentValue(datastoreObject, type);
-        datastoreObject.empowerment[type] = 0;
+    consumeEmpowermentValue(type) {
+        const value = this.getEmpowermentValue(type);
+        this.datastoreObject.empowerment[type] = 0;
         return value;
     }
 }
@@ -147,86 +156,11 @@ class BattlePlayer extends Agent {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BattleAgent.setFields(agent);
-        BagHolderMixin.constructBagHolderObject(agent);
-        agent.coins = 0;
-        agent.lastDrops = {
-            objects: []
-        };
-    }
-
-    onStrike() {
-        BattleAgent.onStrike(this.datastoreObject);
-    }
-
-    onStrikeAbility() {
-        BattleAgent.onStrikeAbility(this.datastoreObject);
-    }
-
-    strikeAbilityReady() {
-        return BattleAgent.strikeAbilityReady(this.datastoreObject);
-    }
-
-    onItemUsed(item) {
-        Player.onItemUsed(this.datastoreObject, item);
-    }
-
-    onAbilityUsed(ability) {
-        BattleAgent.onAbilityUsed(this.datastoreObject, ability);
-    }
-
-    strengthAmp(stages) {
-        return BattleAgent.strengthAmp(this.datastoreObject, stages);
-    }
-
-    getModifiedStrength() {
-        return BattleAgent.getModifiedStrength(this.datastoreObject);
-    }
-
-    defenceAmp(stages) {
-        return BattleAgent.defenceAmp(this.datastoreObject, stages);
-    }
-
-    getModifiedDefence() {
-        return BattleAgent.getModifiedDefence(this.datastoreObject);
-    }
-
-    magicAmp(stages) {
-        return BattleAgent.magicAmp(this.datastoreObject, stages);
-    }
-
-    getModifiedMagic() {
-        return BattleAgent.getModifiedMagic(this.datastoreObject);
-    }
-
-    addEmpowerment(type, value) {
-        BattleAgent.addEmpowerment(this.datastoreObject, type, value);
-    }
-
-    getEmpowermentValue(type) {
-        return BattleAgent.getEmpowermentValue(this.datastoreObject, type);
-    }
-
-    consumeEmpowermentValue(type) {
-        return BattleAgent.consumeEmpowermentValue(this.datastoreObject, type);
-    }
-
-    addCoins(coins) {
-        Player.addCoins(this.datastoreObject, coins);
-    }
-
-    addObjectToLastDrops(object, type) {
-        Player.addObjectToLastDrops(this.datastoreObject, object, type);
-    }
-
-    clearLastDrops() {
-        Player.clearLastDrops(this.datastoreObject);
-    }
-    
-    addWeaponToBag(weapon) {
-        return Player.addWeaponToBag(this.datastoreObject, weapon);
+        BattleAgentMixin.constructObject(agent);
+        BagHolderMixin.constructObject(agent);
     }
 }
+Object.assign(BattlePlayer.prototype, BattleAgentMixin);
 Object.assign(BattlePlayer.prototype, BagHolderMixin);
 
 class BattleMonster extends Monster {
@@ -236,61 +170,10 @@ class BattleMonster extends Monster {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BattleAgent.setFields(agent);
-    }
-
-    onStrike() {
-        BattleAgent.onStrike(this.datastoreObject);
-    }
-
-    onStrikeAbility() {
-        BattleAgent.onStrikeAbility(this.datastoreObject);
-    }
-
-    strikeAbilityReady() {
-        return BattleAgent.strikeAbilityReady(this.datastoreObject);
-    }
-    
-    onAbilityUsed(ability) {
-        BattleAgent.onAbilityUsed(this.datastoreObject, ability);
-    }
-
-    strengthAmp(stage) {
-        return BattleAgent.strengthAmp(this.datastoreObject, stage);
-    }
-
-    getModifiedStrength() {
-        return BattleAgent.getModifiedStrength(this.datastoreObject);
-    }
-
-    defenceAmp(stages) {
-        return BattleAgent.defenceAmp(this.datastoreObject, stages);
-    }
-
-    getModifiedDefence() {
-        return BattleAgent.getModifiedDefence(this.datastoreObject);
-    }
-
-    magicAmp(stages) {
-        return BattleAgent.magicAmp(this.datastoreObject, stages);
-    }
-
-    getModifiedMagic() {
-        return BattleAgent.getModifiedMagic(this.datastoreObject);
-    }
-
-    addEmpowerment(type, value) {
-        BattleAgent.addEmpowerment(this.datastoreObject, type, value);
-    }
-
-    getEmpowermentValue(type) {
-        return BattleAgent.getEmpowermentValue(this.datastoreObject, type);
-    }
-
-    consumeEmpowermentValue(type) {
-        return BattleAgent.consumeEmpowermentValue(this.datastoreObject, type);
+        BattleAgentMixin.constructObject(agent);
     }
 }
+Object.assign(BattleMonster.prototype, BattleAgentMixin);
 
 class BattleWeapon extends Weapon {
     constructNewObject(weapon) {
@@ -299,12 +182,12 @@ class BattleWeapon extends Weapon {
     }
 
     speedAmp(stages) {
-        return BattleAgent.statAmp(this.datastoreObject, 'speedAmp', stages)
+        return statAmp(this.datastoreObject, 'speedAmp', stages)
     }
 
     getModifiedSpeed() {
-        return BattleAgent.getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
+        return getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
     }
 }
 
-module.exports = {BattlePlayer, BattleMonster, BattleWeapon, BattleAgent};
+module.exports = {BattlePlayer, BattleMonster, BattleWeapon};

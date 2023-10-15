@@ -77,11 +77,15 @@ function findObjectInCollection(collection, id) {
 }
 
 const BagHolderMixin = {
-    constructBagHolderObject(bagHolder) {
+    constructObject(bagHolder) {
         bagHolder.bag = {
             capacity: 10,
             objects: []
-        }
+        };
+        bagHolder.lastDrops = {
+            objects: []
+        };
+        bagHolder.coins = 0;
     },
 
     addObjectToBag(object, type) {
@@ -126,6 +130,40 @@ const BagHolderMixin = {
 
         existingItemData.content.count += item.getData().count;
         return true;
+    },
+
+    addObjectToLastDrops(object, type) {
+        const lastDrops = this.datastoreObject.lastDrops;
+        return addObjectToCollection(lastDrops.objects, object, type);
+    },
+
+    removeLastDrop(id) {
+        return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+    },
+
+    clearLastDrops() {
+        this.datastoreObject.lastDrops.objects = [];
+    },
+
+    onItemUsed(item) {
+        const bag = this.datastoreObject.bag;
+        const itemIndex = bag.objects.findIndex(element => element.content.name === item.getData().name);
+        if(itemIndex === -1) {
+            return;
+        }
+
+        const thisItemData = bag.objects[itemIndex].content;
+        Item.onUsed(thisItemData);
+
+        if(!Item.isDepleted(thisItemData)) {
+            return;
+        }
+
+        bag.objects.splice(itemIndex, 1);
+    },
+
+    addCoins(coins) {
+        this.datastoreObject.coins += coins;
     }
 }
 
@@ -250,16 +288,12 @@ class Player extends Agent {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BagHolderMixin.constructBagHolderObject(agent);
+        BagHolderMixin.constructObject(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
-        agent.coins = 0;
         agent.abilities = [];
         agent.inventory = {
             leger: []
-        };
-        agent.lastDrops = {
-            objects: []
         };
         agent.trackers = {
             weaponKills: {
@@ -287,51 +321,6 @@ class Player extends Agent {
         }
 
         return true;
-    }
-
-    addObjectToLastDrops(object, type) {
-        return Player.addObjectToLastDrops(this.datastoreObject, object, type);
-    }
-
-    static addObjectToLastDrops(datastoreObject, object, type) {
-        const lastDrops = datastoreObject.lastDrops;
-        return addObjectToCollection(lastDrops.objects, object, type);
-    }
-
-    removeLastDrop(id) {
-        return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
-    }
-
-    clearLastDrops() {
-        Player.clearLastDrops(this.datastoreObject);
-    }
-
-    static clearLastDrops(datastoreObject) {
-        datastoreObject.lastDrops.objects = [];
-    }
-
-    setLastDrop(lastDrop) {
-        this.datastoreObject.lastDrops = lastDrop;
-    }
-
-    onItemUsed(item) {
-        Player.onItemUsed(this.datastoreObject, item);
-    }
-    static onItemUsed(datastoreObject, item) {
-        
-        const itemIndex = datastoreObject.bag.objects.findIndex(element => element.content.name === item.getData().name);
-        if(itemIndex === -1) {
-            return;
-        }
-
-        const thisItemData = datastoreObject.bag.objects[itemIndex].content;
-        Item.onUsed(thisItemData);
-
-        if(!Item.isDepleted(thisItemData)) {
-            return;
-        }
-
-        datastoreObject.bag.objects.splice(itemIndex, 1);
     }
 
     mergeBattlePlayer(battlePlayer) {
@@ -365,14 +354,6 @@ class Player extends Agent {
 
     onPlayerDefeated() {
         this.datastoreObject.trackers.deaths += 1;
-    }
-
-    addCoins(coins) {
-        Player.addCoins(this.datastoreObject, coins);
-    }
-
-    static addCoins(datastoreObject, coins) {
-        datastoreObject.coins += coins;
     }
 
     getNextAvailableInventoryPageId() {
