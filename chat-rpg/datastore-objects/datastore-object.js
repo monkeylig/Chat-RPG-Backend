@@ -8,7 +8,12 @@ class DatastoreObject {
             this.constructNewObject(this.datastoreObject);
         }
         else {
-            objectData = utility.deepCopy(objectData);
+            try {
+                objectData = utility.deepCopy(objectData);
+            }
+            catch (error) {
+                throw new Error(error);
+            }
             this.constructNewObject(this.datastoreObject);
             for(const property in this.datastoreObject) {
                 if(objectData.hasOwnProperty(property)) {
