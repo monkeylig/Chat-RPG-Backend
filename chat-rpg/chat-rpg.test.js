@@ -258,7 +258,7 @@ test('Starting a battle', async () => {
     expect(battleState.gameId).toBe('new game');
     expect(battleState.monster.id).toBe(gameState.monsters[0].id);
     expect(battleState.monster.id).not.toBe(gameState.monsters[1].id);
-    expect(battleState.monster.weaponDropRate).toBe(0.5);
+    expect(battleState.monster.weaponDropRate).toBe(0.2);
     expect(battleState.monster.health).toBeTruthy();
     expect(battleState.monster.maxHealth).toBeTruthy();
 });
@@ -726,12 +726,12 @@ test('Player being defeated', async () => {
 
     const player = await chatrpg.findPlayerById(playerId);
 
-    expect(player.health).toBe(Math.floor(player.maxHealth * 0.75));
+    expect(player.health).toBe(Math.floor(player.maxHealth));
     expect(player.trackers.deaths).toBe(1);
 });
 
 test('Player being revived', async () => {
-    let player = new Player({reviveReady: true});
+    let player = new Player({autoRevive: 0.75});
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
@@ -775,7 +775,7 @@ test('Player being revived', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.result).not.toBeDefined();
-    expect(battleUpdate.player.reviveReady).toBe(false);
+    expect(battleUpdate.player.autoRevive).toBe(0);
 
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
@@ -785,7 +785,7 @@ test('Player being revived', async () => {
 
     const playerData = await chatrpg.findPlayerById('player1');
 
-    expect(playerData.reviveReady).toBe(false);
+    expect(playerData.autoRevive).toBe(0);
 
 });
 
@@ -878,7 +878,7 @@ test('Unlocking abilities after battle', async () => {
 });
 
 test('Monster Drops', async () => {
-    chatRPGUtility.random = seedrandom('3');
+    chatRPGUtility.random = seedrandom('5');
     let playerId = 'pid';
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
@@ -991,7 +991,7 @@ test('Low level monster coin drop rate', async () => {
 });
 
 test('Monster Drops with bag full', async () => {
-    chatRPGUtility.random = seedrandom('3');
+    chatRPGUtility.random = seedrandom('5');
     const defaultPlayer = new Player({name: 'jhard', avatar: 'big-bad.png', twitchId: 'fr4wt4'});
     const fillerWeapon = new Weapon({
         baseDamage: 10,

@@ -5,8 +5,9 @@ const WEAPON_SYNERGY_BONUS = 1.2;
 
 function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, stepResults = {}) {
     if(!style) {
-        throw new Error('Missing param!');
+        throw new Error('Missing style param!');
     }
+
     if(baseDamage <= 0) {
         return [];
     }
@@ -36,7 +37,6 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     steps.push(damageStep);
 
     return steps;
-
 }
 
 function damageStep(targetPlayer, damage) {
@@ -192,7 +192,8 @@ function reviveStep(battlePlayer) {
         return BattleSteps.info(`${battlePlayer.getData().name} is not defeated.`);
     }
 
-    battlePlayer.revive();
+    battlePlayer.revive(battlePlayer.getData().autoRevive);
+    battlePlayer.getData().autoRevive = 0;
 
     return {
         type: 'revive',
@@ -215,8 +216,8 @@ function apCostStep(battlePlayer, apCost) {
     };
 }
 
-function readyReviveStep(battlePlayer) {
-    battlePlayer.getData().reviveReady = true;
+function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
+    battlePlayer.getData().autoRevive = reviveAmount;
     return {
         type: 'readyRevive',
         actorId: battlePlayer.getData().id,

@@ -80,7 +80,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     return steps;
 }
 
-function EffectSteps (ability, battle, user, opponent, contextControl) {
+function EffectSteps(ability, battle, user, opponent, contextControl) {
 
     const effectName = ability.getData().effectName;
 

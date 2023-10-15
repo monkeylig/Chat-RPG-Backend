@@ -1,6 +1,19 @@
 const { Player } = require("./agent");
 const { InventoryPage } = require("./inventory-page");
 
+test('Revive', () => {
+    const player = new Player();
+    player.getData().health = 1;
+    player.revive();
+
+    expect(player.getData().health).toBe(1);
+
+    player.getData().health = 0;
+    player.revive(0.5);
+
+    expect(player.getData().health).toBe(Math.floor(player.getData().maxHealth / 2));
+});
+
 test('Updating the inventory leger', () => {
     const player = new Player();
     player.onObjectAddedToInventory("page1");

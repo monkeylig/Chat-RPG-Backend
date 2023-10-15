@@ -190,30 +190,24 @@ class ChatRPG {
 
                 player.onMonsterDefeated();
                 
-                // Remove the monster from the game
-                const gameSnap = await this.#findGame(battle.gameId);
-                let game = new Game(gameSnap.data());
-                
-                // Skip transaction if it is unnessesary
-                if(game.findMonsterById(monsterData.id, false)) {
-                    try {
-                        await this.#datasource.runTransaction(async (transaction) => {
-                            const transGameSnap = await transaction.get(gameSnap.ref);
-                            
-                            game = new Game(transGameSnap.data());
-                            game.onPlayerLevelUp(oldLevel, player);
-                            const transMonster = game.findMonsterById(monsterData.id);
-                            if(!transMonster) {
-                                return;
-                            }
-                            
-                            game.removeMonster(monsterData.id);
-                            await GameModes.arena.onMonsterDefeated(game, monster, this.#datasource);
-                            transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
-                        });
-                    } catch(error) {
-                        console.error(error);
-                    }
+                try {
+                    await this.#datasource.runTransaction(async (transaction) => {
+
+                        const transGameSnap = await this.#findGameT(transaction, battle.gameId);
+                        
+                        const game = new Game(transGameSnap.data());
+                        game.onPlayerLevelUp(oldLevel, player);
+                        const transMonster = game.findMonsterById(monsterData.id);
+                        if(!transMonster) {
+                            return;
+                        }
+                        
+                        game.removeMonster(monsterData.id);
+                        await GameModes.arena.onMonsterDefeated(this.#datasource, game, battlePlayer, monster);
+                        transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
+                    });
+                } catch(error) {
+                    console.error(error);
                 }
             }
 
@@ -548,7 +542,7 @@ class ChatRPG {
         return playerSnapShot;
     }
 
-    // T mean transaction
+    // T means transaction
     async #findPlayerT(transaction, playerId) {
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
         const playerSnap = await transaction.get(playerRef);
@@ -571,6 +565,17 @@ class ChatRPG {
 
     async #findGame(id) {
         const gameSnapshot = await this.#datasource.collection(Schema.Collections.Games).doc(id).get();
+
+        if(!gameSnapshot.exists) {
+            throw new Error(ChatRPGErrors.gameNotFound);
+        }
+
+        return gameSnapshot;
+    }
+
+    async #findGameT(transaction, id) {
+        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(id);
+        const gameSnapshot = await transaction.get(gameRef);
 
         if(!gameSnapshot.exists) {
             throw new Error(ChatRPGErrors.gameNotFound);

@@ -19,7 +19,7 @@ class MonsterClass extends DatastoreObject {
         monster.monsterNumber = 0;
         monster.name = '';
         monster.weapon = {};
-        monster.weaponDropRate = 0.5;
+        monster.weaponDropRate = 0.2;
         monster.class = '';
         monster.coinDrop = 3;
         monster.description = '';

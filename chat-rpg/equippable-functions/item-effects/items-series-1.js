@@ -12,7 +12,7 @@ function PheonixDownIsReady(item, battle, user, opponent) {
 }
 
 function PheonixDownOnBattleActivate(item, battle, user, opponent, contextControl) {
-    return [BattleSteps.readyRevive(user)];
+    return [BattleSteps.readyRevive(user, 0.5)];
 }
 //#endregion
 

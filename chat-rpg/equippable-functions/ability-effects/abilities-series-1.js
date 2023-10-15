@@ -5,9 +5,9 @@ const chatRPGUtility = require('../../utility');
 
 //#region skyscraper 
 function skyscraperOverrideBaseDamage(ability, battle, user, opponent) {
-    const damageScalar = 10;
+    const damageScalar = ability.getSpecialStat('damageMultiplier');
     const weapon = new BattleWeapon(user.getData().weapon);
-    return Math.max(ability.getData().baseDamage, ability.getData().baseDamage + weapon.getModifiedSpeed() * damageScalar - weapon.getData().speed * damageScalar);
+    return Math.max(ability.getData().baseDamage, ability.getData().baseDamage + (weapon.getModifiedSpeed() - weapon.getData().speed) * damageScalar);
 }
 //#endregion
 
@@ -25,7 +25,7 @@ function decadeBlastOverrideBaseDamage(ability, battle, user, opponent) {
 
 //#region rapidSlash
 function rapidSlashOnActivate(ability, battle, user, opponent, contextControl) {
-    const hits = chatRPGUtility.getRandomIntInclusive(0, ability.getSpecialStat('maxHits'));
+    const hits = chatRPGUtility.getRandomIntInclusive(ability.getSpecialStat('minHits'), ability.getSpecialStat('maxHits'));
     const steps = [];
 
     let hitCount = 1;

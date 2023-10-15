@@ -97,6 +97,7 @@ test('Revive step', () => {
     const player1 = new BattlePlayer();
 
     player1.getData().health = 0;
+    player1.getData().autoRevive = 0.5;
     const reviveStep = BattleSteps.revive(player1);
 
     expect(reviveStep).toBeDefined();
@@ -124,12 +125,12 @@ test('ApCost step', () => {
 test('ReadyRevive Step', () => {
     const player1 = new BattlePlayer();
 
-    let apCostStep = BattleSteps.readyRevive(player1);
+    let apCostStep = BattleSteps.readyRevive(player1, 0.5);
 
     expect(apCostStep).toBeDefined();
     expect(apCostStep.type).toMatch('readyRevive');
     expect(apCostStep.description).toMatch(`will be revived if they are defeated.`);
-    expect(player1.getData().reviveReady).toBeTruthy(); 
+    expect(player1.getData().autoRevive).toBe(0.5); 
 });
 
 test('Generate Hit Steps: damage', ()=>{

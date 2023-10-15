@@ -17,7 +17,7 @@ test('Potion', () => {
     expect(ItemEffects.potion.isReady(item, {}, player, {})).toBeTruthy();
 });
 
-test('Peonix Down', () => {
+test('Phoenix Down', () => {
     expect(ItemEffects.pheonixDown).toBeDefined();
     expect(ItemEffects.pheonixDown.isReady).toBeDefined();
     expect(ItemEffects.pheonixDown.notReadyMessage).toBeDefined();
@@ -34,5 +34,5 @@ test('Peonix Down', () => {
     expect(battleSteps.length).toBe(1);
     expect(battleSteps[0].type).toBe('readyRevive');
     
-    expect(player.getData().reviveReady).toBeTruthy();
+    expect(player.getData().autoRevive).toBe(0.5);
 });

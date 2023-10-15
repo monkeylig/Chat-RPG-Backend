@@ -59,12 +59,12 @@ function executeActionPhase(battlePlayer, battlePlayerAction, battleMonster, bat
     }
 
     const checkRevive = (player) => {
-        if(!player.isDefeated() || !player.getData().reviveReady) {
+        if(!player.isDefeated() || !player.getData().autoRevive) {
             return false;
         }
 
         steps.push(BattleSteps.revive(player));
-        player.getData().reviveReady = false;
+        player.getData().autoRevive = 0;
         return true
     };
 

@@ -1,5 +1,5 @@
 const Schema = require("./datasource-schema");
-const {MonsterClass} = require('./datastore-objects/monster-class')
+const {MonsterClass, Monster} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');
 
@@ -7,7 +7,35 @@ function randomInt(upper) {
     return Math.floor(Math.random() * upper);
 }
 
-async function ArenaCreateGame(name, numberOfStartingMonsters, dataSource) {
+async function getMonsterClassesByNumber(dataSource, monsterNumbers) {
+    const monstersClasses = [];
+    const monstersRef = dataSource.collection(Schema.Collections.Monsters);
+
+    const monsterPromises = [];
+    for(const monsterNumber of monsterNumbers) {
+        monsterPromises.push(monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', monsterNumber).get());
+    }
+
+    const querySnapshots = await Promise.all(monsterPromises);
+
+    for(const querySnapshot of querySnapshots) {
+        if(querySnapshot.empty) {
+            continue;
+        }
+        
+        const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
+        monstersClasses.push(monsterClass);
+    }
+
+    return monstersClasses;
+}
+
+async function getMonsterClassByNumber(dataSource, monsterNumber) {
+    const monstersClasses = await getMonsterClassesByNumber(dataSource, [monsterNumber]);
+    return monstersClasses[0];
+}
+
+async function ArenaCreateGame(dataSource, name, numberOfStartingMonsters) {
     const monstersClasses = [];
     const monstersRef = dataSource.collection(Schema.Collections.Monsters);
 
@@ -30,7 +58,7 @@ async function ArenaCreateGame(name, numberOfStartingMonsters, dataSource) {
     return arenaGame;
 }
 
-async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
+async function ArenaOnMonsterDefeated(dataSource, game, player, monster) {
     const monstersRef = dataSource.collection(Schema.Collections.Monsters);
 
     const querySnapshot = await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get();
@@ -40,42 +68,64 @@ async function ArenaOnMonsterDefeated(game, levelBias, dataSource) {
 
     const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
 
-    //We have our monster class, now we need to determine what level it should be
-    const monsterLevelGrace = 5;
-    let averageMonsters = 0;
-    let minimumMonsters = 0;
-    let maximumMonsters = 0;
+    const newMonster = monsterClass.createMonsterInstance(utility.getRandomIntInclusive(1, player.getData().level + 2));
+    game.addMonster(newMonster);
+}
 
-    const gameData = game.datastoreObject;
-    for(const monster of gameData.monsters) {
-        //Do we have a monster at average level?
-        if(Math.abs(monster.level - gameData.trackers.averageLevel) <= monsterLevelGrace) {
-            averageMonsters += 1;
+async function ArenaPostProcessGameState(dataSource, game, player) {
+    const numberOfMonsters = 3;
+    const monstersRef = dataSource.collection(Schema.Collections.Monsters);
+
+    const monsterPromises = [];
+    for(let i = 0; i < numberOfMonsters; i++) {
+        monsterPromises.push(monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get());
+    }
+    const querySnapshots = await Promise.all(monsterPromises);
+
+    let monsterCount = 0;
+    for(const querySnapshot of querySnapshots) {
+        if(querySnapshot.empty) {
+            continue;
         }
-        //Do we have a monster at minimum level?
-        if(Math.abs(monster.level - gameData.trackers.minLevel) <= monsterLevelGrace) {
-            minimumMonsters += 1;
-        }
-        //Do we have a monster at maximum level?
-        if(Math.abs(monster.level - gameData.trackers.maxLevel) <= monsterLevelGrace) {
-            maximumMonsters += 1;
-        }
+        
+        const monsterClass = new MonsterClass(querySnapshot.docs[0].data());
+        const newLevel = Math.max(1, player.getData().level + Math.floor(numberOfMonsters / 2) - monsterCount)
+        game.addMonster(monsterClass.createMonsterInstance(newLevel));
+        monsterCount += 1;
+    }
+}
+
+async function BattleRoyalCreateGame(dataSource) {
+    const battleRoyalGame = new Game({mode: 'battleRoyal'});
+    const classNumbers = [];
+
+    for(let i = 0; i < 10; i++) {
+        classNumbers.push(randomInt(GameModes.numberOfMonsters));
     }
 
-    const minLevel = Math.max(1, gameData.trackers.minLevel + levelBias);
-    const maxLevel = Math.max(1, gameData.trackers.maxLevel + levelBias);
+    const monsterClasses = await getMonsterClassesByNumber(dataSource, classNumbers);
 
-    let newMonster = monsterClass.createMonsterInstance(utility.getRandomIntInclusive(Math.max(1, minLevel - 5), maxLevel));
-    if(averageMonsters === 0) {
-        newMonster = monsterClass.createMonsterInstance(Math.max(1, gameData.trackers.averageLevel + levelBias));
-    }
-    else if(minimumMonsters === 0) {
-        newMonster = monsterClass.createMonsterInstance(minLevel);
-    }
-    else if(maximumMonsters === 0) {
-        newMonster = monsterClass.createMonsterInstance(maxLevel);
+    for(const monsterClass of monsterClasses) {
+        const newMonster = monsterClass.createMonsterInstance(1);        
+        battleRoyalGame.addMonster(newMonster);
     }
 
+    return battleRoyalGame;
+}
+
+async function BattleRoyalOnMonsterDefeated(dataSource, game, player, monster) {
+    const newMonster = new Monster(player.getData());
+    newMonster.getData().weaponDropRate = 0;
+    game.addMonster(newMonster);
+}
+
+async function BattleRoyalPostProcessGameState(dataSource, game, player) {
+    const monsterClass = await getMonsterClassByNumber(dataSource, randomInt(GameModes.numberOfMonsters));
+    if(!monsterClass) {
+        return;
+    }
+
+    const newMonster = monsterClass.createMonsterInstance(player.getData().level);
     game.addMonster(newMonster);
 }
 
@@ -86,11 +136,17 @@ const GameModes = {
         numberOfStartingMonsters: 5,
         levelBias: 0,
         async createGame(dataSource) {
-            return await ArenaCreateGame(this.name, this.numberOfStartingMonsters, dataSource);
+            return await ArenaCreateGame(dataSource, this.name, this.numberOfStartingMonsters);
         },
-        async onMonsterDefeated(game, monster, dataSource) {
-            return await ArenaOnMonsterDefeated(game, this.levelBias, dataSource);
-        }
+        onMonsterDefeated: ArenaOnMonsterDefeated,
+        postProcessGameState: ArenaPostProcessGameState
+    },
+    battleRoyal: {
+        name: 'battleRoyal',
+        createGame: BattleRoyalCreateGame,
+        onMonsterDefeated: BattleRoyalOnMonsterDefeated,
+        postProcessGameState: BattleRoyalPostProcessGameState
+
     }
 }
 

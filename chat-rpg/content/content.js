@@ -15,7 +15,7 @@ const pheonixDown = new Item({
     effectName: 'pheonixDown',
     icon: 'phoenix_down.webp',
     count: 1,
-    description: 'If the user is defeated, they will be revived with 75% of their maximum HP instead.'
+    description: 'If the user is defeated, they will be revived with half of their maximum HP instead.'
 });
 
 const content = {

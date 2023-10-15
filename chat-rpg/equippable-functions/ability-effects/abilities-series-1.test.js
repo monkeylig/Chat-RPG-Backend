@@ -9,19 +9,24 @@ test('Skyscraper', () => {
     expect(AbilityEffects.skyscraper.overrideBaseDamage).toBeDefined();
 
     const player = new BattlePlayer();
-    const ability = new Ability({baseDamage: 10});
+    const ability = new Ability({
+        baseDamage: 80,
+        specialStats: {
+            damageMultiplier: 4
+        }
+    });
 
     let baseDamage = AbilityEffects.skyscraper.overrideBaseDamage(ability, {}, player, {});
 
-    expect(baseDamage).toBe(10);
+    expect(baseDamage).toBe(80);
 
     const weapon = new BattleWeapon(player.getData().weapon);
-    weapon.speedAmp(2);
+    weapon.speedAmp(4);
     player.getData().weapon = weapon.getData();
 
     baseDamage = AbilityEffects.skyscraper.overrideBaseDamage(ability, {}, player, {});
 
-    expect(baseDamage).toBe(25);
+    expect(baseDamage).toBe(92);
 });
 
 test('Knight\'s Honor', () => {

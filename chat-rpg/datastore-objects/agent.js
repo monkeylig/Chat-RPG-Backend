@@ -53,7 +53,7 @@ class Agent extends DatastoreObject {
         agent.avatar = 'unknown.png';
         agent.abilities = [];
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
-        agent.reviveReady = false;
+        agent.autoRevive = 0;
         agent.maxHealth = 0;
         agent.health = 0;
         agent.strength = 0;
@@ -144,13 +144,13 @@ class Agent extends DatastoreObject {
         return this.datastoreObject;
     }
 
-    revive() {
-        Agent.revive(this.datastoreObject);
+    revive(healPercent = 1) {
+        Agent.revive(this.datastoreObject, healPercent);
     }
 
-    static revive(datastoreObject) {
+    static revive(datastoreObject, healPercent = 1) {
         if(Agent.isDefeated(datastoreObject)) {
-            datastoreObject.health = Math.floor(datastoreObject.maxHealth * 0.75);
+            datastoreObject.health = Math.floor(datastoreObject.maxHealth * healPercent);
         }
     }
 }
@@ -383,7 +383,7 @@ class Player extends Agent {
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
         thisPlayerData.bag.items = battlePlayerData.bag.items;
-        thisPlayerData.reviveReady = battlePlayerData.reviveReady;
+        thisPlayerData.autoRevive = battlePlayerData.autoRevive;
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
         thisPlayerData.lastDrops = battlePlayerData.lastDrops;

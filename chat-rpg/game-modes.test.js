@@ -50,28 +50,83 @@ test('Arena game onMonsterDefeated', async () => {
     let player = new Player();
     player.setStatsAtLevel(30);
     arenaGame.onPlayerJoin(player);
-    player = new Player();
-    player.setStatsAtLevel(15);
-    arenaGame.onPlayerJoin(player);
 
-    await GameModes.arena.onMonsterDefeated(arenaGame, {}, datasource);
+    await GameModes.arena.onMonsterDefeated(datasource, arenaGame, player, {});
 
     const game = arenaGame.datastoreObject;
     expect(game.monsters[5]).toBeDefined();
-    expect(game.monsters[5].level).toBe(22);
+    expect(game.monsters[5].level).toBeLessThanOrEqual(32);
+    expect(game.monsters[5].level).toBeGreaterThanOrEqual(1);
+});
 
-    await GameModes.arena.onMonsterDefeated(arenaGame, {}, datasource);
+test('Arena game postProcessGameState', async () => {
+    let datasource = new MemoryBackedDataSource();
+    await datasource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                strengthRating: 0.5
+            }
+        }
+    });
 
-    expect(game.monsters[6]).toBeDefined();
-    expect(game.monsters[6].level).toBe(15);
+    let arenaGame = (await GameModes.arena.createGame(datasource));
+    let player = new Player();
+    player.setStatsAtLevel(30);
+    arenaGame.onPlayerJoin(player);
 
-    await GameModes.arena.onMonsterDefeated(arenaGame, {}, datasource);
+    await GameModes.arena.postProcessGameState(datasource, arenaGame, player);
 
-    expect(game.monsters[7]).toBeDefined();
-    expect(game.monsters[7].level).toBe(30);
+    const game = arenaGame.datastoreObject;
+    expect(game.monsters[5].level).toBe(31);
+    expect(game.monsters[6].level).toBe(30);
+    expect(game.monsters[7].level).toBe(29);
+});
 
-    await GameModes.arena.onMonsterDefeated(arenaGame, {}, datasource);
+test('Battle Royal Create Game', async () => {
+    let datasource = new MemoryBackedDataSource();
+    await datasource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                strengthRating: 0.5
+            }
+        }
+    });
 
-    expect(game.monsters[8]).toBeDefined();
-    expect(game.monsters[8].level).toBeLessThanOrEqual(30);
+    let battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
+
+    expect(battleRoyal.mode).toMatch(GameModes.battleRoyal.name);
+    expect(battleRoyal.monsters.length).toBe(10);
+    expect(battleRoyal.monsters[0].strengthRating).toBe(0.5);
+
+    datasource = new MemoryBackedDataSource();
+    await datasource.initializeDataSource();
+
+    battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
+
+    expect(battleRoyal.mode).toMatch(GameModes.battleRoyal.name);
+    expect(battleRoyal.monsters.length).toBe(0);
+});
+
+test('Battle Royal OnMonsterDefeated', async () => {
+    let datasource = new MemoryBackedDataSource();
+    await datasource.initializeDataSource({
+        monsters: {
+            skellington: {
+                monsterNumber: 0,
+                strengthRating: 0.5
+            }
+        }
+    });
+
+    const player = new Player();
+    player.setStatsAtLevel(30);
+
+    let battleRoyal = await GameModes.battleRoyal.createGame(datasource);
+    GameModes.battleRoyal.onMonsterDefeated(datasource, battleRoyal, player, {});
+
+    expect(battleRoyal.getData().monsters[10].name).toBe(player.getData().name);
+    expect(battleRoyal.getData().monsters[10].weaponDropRate).toBe(0);
+
 });

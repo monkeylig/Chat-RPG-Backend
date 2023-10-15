@@ -195,7 +195,7 @@ class MemoryDataSourceDocumentRef {
 
             const targetAttribute = dottedFields[dottedFields.length - 1];
 
-            if(object[field].hasOwnProperty('fieldType')) {
+            if(object[field] && object[field].hasOwnProperty('fieldType')) {
                 if(object[field].fieldType == FieldValue.Arraytype) {
                     switch(object[field].arrayOp) {
                         case FieldValue.UnionOp: {
