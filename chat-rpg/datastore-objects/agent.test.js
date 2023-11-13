@@ -1,3 +1,4 @@
+const Ability = require("./ability");
 const { Player } = require("./agent");
 const { InventoryPage } = require("./inventory-page");
 
@@ -102,6 +103,28 @@ test('Get inventory page log', () => {
     expect(pageLog).toBeDefined();
     expect(pageLog.count).toBe(1);
     expect(pageLog.id).toBe('page1');
-
     expect(player.getInventoryPageLog("page2")).not.toBeDefined()
+});
+
+test('Add and remove abilities', () => {
+    const player = new Player();
+    const ability1 = new Ability({name: "ability1"});
+    const ability2 = new Ability({name: "ability2"});
+    const ability3 = new Ability({name: "ability3"});
+
+    player.addAbility(ability1.getData());
+    player.addAbility(ability2.getData());
+    player.addAbility(ability3.getData());
+    const abilities = player.getData().abilities;
+
+    expect(abilities.length).toBe(3);
+    expect(abilities[0].name).toBe("ability1");
+    expect(abilities[1].name).toBe("ability2");
+    expect(abilities[2].name).toBe("ability3");
+
+    player.removeAbility(ability2.getData().name);
+
+    expect(abilities.length).toBe(2);
+    expect(abilities[0].name).toBe("ability1");
+    expect(abilities[1].name).toBe("ability3");
 });

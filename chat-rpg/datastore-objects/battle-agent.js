@@ -1,3 +1,4 @@
+const Ability = require('./ability');
 const {Agent, Player, BagHolderMixin} = require('./agent');
 const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
@@ -66,9 +67,24 @@ const BattleAgentMixin = {
         agent.magicAmp = 0;
         agent.reviveReady = false;
         agent.empowerment = {
-            strike: 0,
+            magical: 0,
             physical: 0
         };
+        agent.protection = {
+            magical: 0,
+            physical: 0
+        };
+        agent.statusEffects = {};
+        agent.fireResist = 1;
+        agent.lighteningResist = 1;
+        agent.waterResist = 1;
+        agent.iceResist = 1;
+        agent.fireResistAmp = 0;
+        agent.lighteningResistAmp = 0;
+        agent.waterResistAmp = 0;
+        agent.iceResistAmp = 0;
+        agent.counter = null;
+        agent.abilityStrikes = [];
     },
 
     statAmp(stat, stages) {
@@ -101,6 +117,38 @@ const BattleAgentMixin = {
 
     getModifiedMagic() {
         return this.getModifiedStat('magic', 'magicAmp');
+    },
+
+    fireResistAmp(stages) {
+        return this.statAmp('fireResistAmp', stages);
+    },
+
+    getModifiedFireResist() {
+        return this.getModifiedStat('fireResist', 'fireResistAmp');
+    },
+
+    lighteningResistAmp(stages) {
+        return this.statAmp('lighteningResistAmp', stages);
+    },
+
+    getModifiedLighteningResist() {
+        return this.getModifiedStat('lighteningResist', 'lighteningResistAmp');
+    },
+
+    waterResistAmp(stages) {
+        return this.statAmp('waterResistAmp', stages);
+    },
+
+    getModifiedWaterResist() {
+        return this.getModifiedStat('waterResist', 'waterResistAmp');
+    },
+
+    iceResistAmp(stages) {
+        return this.statAmp('iceResistAmp', stages);
+    },
+
+    getModifiedIceResist() {
+        return this.getModifiedStat('iceResist', 'iceResistAmp');
     },
 
     onStrike() {
@@ -142,10 +190,95 @@ const BattleAgentMixin = {
         return this.datastoreObject.empowerment[type];
     },
 
+    addProtection(type, value) {
+        if(!this.datastoreObject.protection.hasOwnProperty(type)) {
+            this.datastoreObject.protection[type] = 0;
+        }
+
+        const hpValue = Math.floor(this.datastoreObject.maxHealth * (value/100));
+        this.datastoreObject.protection[type] += hpValue;
+    },
+
+    getProtectionValue(type) {
+        const protection = this.datastoreObject.protection;
+        if(!protection.hasOwnProperty(type)) {
+            protection[type] = 0;
+        }
+
+        return protection[type] / this.datastoreObject.maxHealth * 100;
+    },
+
+    dealDamage(initialDamage, type) {
+        let damage = Math.floor(initialDamage);
+        const protection = this.datastoreObject.protection;
+        if(type && protection[type]) {
+            const protectedDamage = Math.min(protection[type], damage);
+            protection[type] -= protectedDamage;
+            damage -= protectedDamage;
+        }
+
+        this.datastoreObject.health -= Math.min(this.datastoreObject.health, damage);
+    },
+
     consumeEmpowermentValue(type) {
         const value = this.getEmpowermentValue(type);
         this.datastoreObject.empowerment[type] = 0;
         return value;
+    },
+
+    addStatusEffect(name, statusEffect) {
+        this.datastoreObject.statusEffects[name] = Object.assign({}, statusEffect);
+    },
+
+    getStatusEffect(name) {
+        return this.datastoreObject.statusEffects[name];
+    },
+
+    removeStatusEffect(name) {
+        delete this.datastoreObject.statusEffects[name];
+    },
+
+    /**
+     * 
+     * @param {Ability} counterAbility The ability to be used as a counter
+     * @param {string} counterType The type of counter. 'strike' to counter a strike
+     */
+    setCounter(counterAbility, counterType) {
+        this.datastoreObject.counter = {
+            type: counterType,
+            ability: counterAbility.getData()
+        };
+    },
+
+    getCounter(counterType) {
+        if(this.datastoreObject.counter && this.datastoreObject.counter.type === counterType) {
+            return this.datastoreObject.counter;
+        }
+    },
+
+    clearCounter() {
+        this.datastoreObject.counter = null;
+    },
+
+    addAbilityStrike(ability, durationCondition) {
+        this.datastoreObject.abilityStrikes.push({
+            durationCondition,
+            ability: ability.getData()
+        });
+    },
+
+    removeAbilityStrike(abilityIndex) {
+        const abilityStrikes = this.datastoreObject.abilityStrikes;
+
+        if(abilityIndex >= abilityStrikes.length) {
+            return;
+        }
+
+        abilityStrikes.splice(abilityIndex, 1);
+    },
+
+    getAbilityStrikes() {
+        return this.datastoreObject.abilityStrikes;
     }
 }
 
@@ -179,6 +312,7 @@ class BattleWeapon extends Weapon {
     constructNewObject(weapon) {
         super.constructNewObject(weapon);
         weapon.speedAmp = 0;
+        weapon.imbuements = {};
     }
 
     speedAmp(stages) {
@@ -187,6 +321,32 @@ class BattleWeapon extends Weapon {
 
     getModifiedSpeed() {
         return getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
+    }
+
+    /**
+     * Imbue a weapon with an element
+     * @param {string} element The element to add to this weapon 
+     * @param {string} durationCondition How long this weapon stays imbued. null(default) for infinite or 'strikeAbility' until the next strike ability
+     */
+    imbue(element, durationCondition = null) {
+        this.datastoreObject.imbuements[element] = {durationCondition};
+    }
+
+    removeImbue(element) {
+        this.datastoreObject.imbuements[element] = null;
+    }
+
+    getImbuedElements() {
+        const elements = [];
+        const imbuements = this.datastoreObject.imbuements;
+
+        for(const element in imbuements) {
+            if(imbuements[element]) {
+                elements.push(element);
+            }
+        }
+
+        return elements;
     }
 }
 

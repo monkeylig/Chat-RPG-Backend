@@ -243,23 +243,40 @@ class Agent extends DatastoreObject {
         return chatRPGUtility.findInObjectArray(this.datastoreObject.abilities, 'name', name);
     }
 
-    equipAbility(ability, replacedAbilityName)
+    addAbility(abilityData) {
+        this.datastoreObject.abilities.push(abilityData);
+    }
+
+    equipAbility(abilityData, replacedAbilityName)
     {
         const abilities = this.datastoreObject.abilities;
-        let abilityIndex;
 
         if(replacedAbilityName) {
-            abilityIndex = abilities.findIndex(element => element.name === replacedAbilityName)
+            const abilityIndex = abilities.findIndex(element => element.name === replacedAbilityName)
 
             if(abilityIndex === -1) {
                 return;
             }
 
-            abilities[abilityIndex] = ability;
+            abilities[abilityIndex] = abilityData;
         }
         else if (this.hasOpenAbilitySlot()) {
-            abilities.push(ability);
+            this.addAbility(abilityData);
         }
+    }
+
+    removeAbility(abilityName) {
+        const abilities = this.datastoreObject.abilities;
+        const abilityIndex = abilities.findIndex(element => element.name === abilityName);
+        
+        if(abilityIndex === -1) {
+            return;
+        }
+
+        const abilityData = abilities[abilityIndex];
+        abilities.splice(abilityIndex, 1);
+
+        return abilityData;
     }
 
     hasOpenAbilitySlot() {

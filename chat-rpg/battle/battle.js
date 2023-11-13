@@ -9,9 +9,11 @@ const ChatRPGErrors = require('../errors');
 const Item = require('../datastore-objects/item');
 const { Weapon } = require('../datastore-objects/weapon');
 const { Book } = require('../datastore-objects/book');
+const gameplayObjects = require('../gameplay-objects');
 
 const ESCAPE_PRIORITY = 100000;
 const ITEM_PRIORITY = 10000;
+const COUNTER_PRIORITY = 1000;
 const LOW_LEVEL_COIN_DROP_RATE = 0.3;
 
 function singlePlayerBattleIteration(battle, playerActionRequest) {
@@ -30,6 +32,15 @@ function singlePlayerBattleIteration(battle, playerActionRequest) {
 
     const steps = [];
     steps.push(...executeActionPhase(battlePlayer, playerAction, battleMonster, monsterAction, battle));
+
+    // Post Action Phase
+    steps.push(...executePostActionPhase(battlePlayer, battleMonster, battle));
+
+    const endStep = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
+
+    if(endStep) {
+        steps.push(endStep);
+    }
 
     battle.player = battlePlayer.getData();
     battle.monster = battleMonster.getData();
@@ -58,37 +69,147 @@ function executeActionPhase(battlePlayer, battlePlayerAction, battleMonster, bat
         secondPlayer = battlePlayer;
     }
 
-    const checkRevive = (player) => {
-        if(!player.isDefeated() || !player.getData().autoRevive) {
-            return false;
-        }
-
-        steps.push(BattleSteps.revive(player));
-        player.getData().autoRevive = 0;
-        return true
-    };
-
     const steps = [];
+
     steps.push(...applyAction(firstAction, firstPlayer, secondPlayer, battle));
-
-    checkRevive(battlePlayer);
-    checkRevive(battleMonster);
-    let endStep = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
-    if(endStep) {
-        steps.push(endStep);
-        return steps;
-    }
-
     steps.push(...applyAction(secondAction, secondPlayer, firstPlayer, battle));
 
-    checkRevive(battlePlayer);
-    checkRevive(battleMonster);
-    endStep = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
-    if(endStep) {
-        steps.push(endStep);
+    firstPlayer.clearCounter();
+    secondPlayer.clearCounter();
+
+    return steps;
+}
+
+function executePostActionPhase(battlePlayer, battleMonster, battle) {
+    const steps = [];
+    
+    steps.push(...checkInflame(battleMonster));
+    steps.push(...checkInflame(battlePlayer));
+
+    steps.push(...checkSurged(battleMonster));
+    steps.push(...checkSurged(battlePlayer));
+    
+    steps.push(...checkDrenched(battleMonster));
+    steps.push(...checkDrenched(battlePlayer));
+
+    steps.push(...checkFrozen(battleMonster));
+    steps.push(...checkFrozen(battlePlayer));
+
+    return steps;
+}
+
+function checkInflame(battleAgent) {
+    if(battleAgent.isDefeated()) {
+        return [];
+    }
+
+    const inflamed = battleAgent.getStatusEffect(gameplayObjects.statusEffects.inflamed.name);
+    if(!inflamed) {
+        return [];
+    }
+
+    const steps = [];
+    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const inflameDamage = battleAgent.getData().maxHealth * inflamed.damagePercentage;
+
+    steps.push(BattleSteps.damage(battleAgent, Math.min(1, inflameDamage * defensiveRatio)));
+    steps.push(BattleSteps.info(`${battleAgent.getData().name} was hurt from being inflamed.`, 'inflameDamage'));
+
+    const tickStep = tickStatusEffectStep(battleAgent, inflamed);
+    if(tickStep) {
+        steps.push(tickStep);
+    }
+
+    const reviveStep = createReviveStep(battleAgent);
+    if(reviveStep) {
+        steps.push(reviveStep);
+    }
+    return steps;
+}
+
+function checkSurged(battleAgent) {
+    if(battleAgent.isDefeated()) {
+        return [];
+    }
+
+    const surged = battleAgent.getStatusEffect(gameplayObjects.statusEffects.surged.name);
+    if(!surged) {
+        return [];
+    }
+
+    const steps = [];
+
+    const tickStep = tickStatusEffectStep(battleAgent, surged);
+    if(tickStep) {
+        steps.push(tickStep);
     }
 
     return steps;
+}
+
+function checkDrenched(battleAgent) {
+    if(battleAgent.isDefeated()) {
+        return [];
+    }
+
+    const drenched = battleAgent.getStatusEffect(gameplayObjects.statusEffects.drenched.name);
+    if(!drenched) {
+        return [];
+    }
+
+    const steps = [];
+    const tickStep = tickStatusEffectStep(battleAgent, drenched);
+    if(tickStep) {
+        steps.push(tickStep);
+    }
+
+    return steps;
+}
+
+function checkFrozen(battleAgent) {
+    if(battleAgent.isDefeated()) {
+        return [];
+    }
+
+    const frozen = battleAgent.getStatusEffect(gameplayObjects.statusEffects.frozen.name);
+    if(!frozen) {
+        return [];
+    }
+
+    const steps = [];
+    const tickStep = tickStatusEffectStep(battleAgent, frozen);
+    if(tickStep) {
+        steps.push(tickStep);
+    }
+
+    return steps;
+}
+
+function popSurged(battleAgent) {
+    const surged = battleAgent.getStatusEffect(gameplayObjects.statusEffects.surged.name);
+    if(!surged) {
+        return [];
+    }
+
+    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const surgeDamage = battleAgent.getData().maxHealth * surged.damagePercentage;
+
+    const steps = [
+        BattleSteps.damage(battleAgent, Math.min(1, surgeDamage * defensiveRatio)),
+        BattleSteps.info(`${battleAgent.getData().name} was discharged!`, 'surchedPop', undefined, battleAgent.getData().id),
+        BattleSteps.removeStatusEffect(gameplayObjects.statusEffects.surged, battleAgent)
+    ];
+
+
+    return steps;
+}
+
+function tickStatusEffectStep(battleAgent, statusEffect) {
+
+    statusEffect.roundsLeft -= 1;
+    if(statusEffect.roundsLeft <= 0) {
+        return BattleSteps.removeStatusEffect(statusEffect, battleAgent);
+    }
 }
 
 function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
@@ -129,7 +250,7 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
         battlePlayer.clearLastDrops();
 
         // Compute the monster drops
-        const willDropWeapon = chatRPGUtility.chance(battleMonster.getData().weaponDropRate)/* && !player.hasWeapon(monsterData.weapon)*/; //To Do: Need to have the player bring bag into battle
+        const willDropWeapon = chatRPGUtility.chance(battleMonster.getData().weaponDropRate);
 
         if(willDropWeapon) {
             const monsterWeapon = new Weapon(battleMonster.getData().weapon);
@@ -139,7 +260,7 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
                 bagFull: false
             };
 
-            if(!battlePlayer.addWeaponToBag(monsterWeapon)) { //To Do: Need to have the player bring bag into battle
+            if(!battlePlayer.addWeaponToBag(monsterWeapon)) {
                 drop.bagFull = true;
                 battlePlayer.addObjectToLastDrops(monsterWeapon.getData(), 'weapon');
             }
@@ -185,30 +306,84 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
 }
 
 function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
+    if(srcPlayer.isDefeated() || targetPlayer.isDefeated()) {
+        return [];
+    }
     const steps = [];
+
+    if(battleAction.type === 'strike' || battleAction.type === 'ability') {
+        if(srcPlayer.getStatusEffect(gameplayObjects.statusEffects.frozen.name) && chatRPGUtility.chance(gameplayObjects.statusEffects.frozen.attackChance)) {
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} is frozen and can't attack.`, 'frozen attack', '', srcPlayer.getData().id));
+            return steps;
+        }
+    }
+
     // Damage step
     if(battleAction.type === 'strike') {
         
         if(srcPlayer.strikeAbilityReady()) {
             srcPlayer.getData().strikeLevel = 0;
+            const weapon = new BattleWeapon(srcPlayer.getData().weapon);
+            const elements = weapon.getImbuedElements();
             const strikeAbility = new Ability(srcPlayer.getData().weapon.strikeAbility);
+            strikeAbility.getData().elements.push(...elements);
             const abilitySteps = createAbilitySteps(strikeAbility, srcPlayer, targetPlayer, battle);
-            steps.push(...abilitySteps);
+            steps.push(...abilitySteps); 
             srcPlayer.onStrikeAbility();
+
+            for(const element of elements) {
+                if(weapon.getData().imbuements[element].durationCondition === 'strikeAbility') {
+                    steps.push(BattleSteps.removeImbue(srcPlayer, element));
+                }
+            }
         }
         else {
-            const infoStep = BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, chatRPGUtility.strikeAnim);
-            const hitSteps = BattleSteps.genHitSteps(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage, srcPlayer.getData().weapon.type, srcPlayer.getData().weapon.style, null);
-            steps.push(infoStep);
-            steps.push(...hitSteps);
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, chatRPGUtility.strikeAnim));
+            counter = targetPlayer.getCounter('strike');
+            if(counter) {
+                targetPlayer.clearCounter();
+                steps.push(BattleSteps.info(`But it was countered!`))
+                steps.push(...createAbilitySteps(counter.ability, targetPlayer, srcPlayer, battle));
+            }
+            else {
+                steps.push(...BattleSteps.genStrikeSteps(srcPlayer, targetPlayer));
+
+                const abilityStrikes = srcPlayer.getAbilityStrikes();
+                const abilitiesToRemove = [];
+
+                abilityStrikes.forEach((abilityStrike, index) => {
+                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer, targetPlayer, abilityStrike.ability.animation));
+                    steps.push(...activateAbility(new Ability(abilityStrike.ability), srcPlayer, targetPlayer, battle));
+
+                    if(abilityStrike.durationCondition && abilityStrike.durationCondition.type === 'strikes') {
+                        abilityStrike.durationCondition.value -= 1;
+                        if(abilityStrike.durationCondition.value <= 0) {
+                            abilitiesToRemove.push(index);
+                        }
+                    }
+                });
+
+                abilitiesToRemove.forEach(abilityIndex => {
+                    srcPlayer.removeAbilityStrike(abilityIndex);
+                });
+            }
             srcPlayer.onStrike();
         }
 
     }
 
     else if(battleAction.type === 'ability') {
-        steps.push(...createAbilitySteps(battleAction.ability, srcPlayer, targetPlayer, battle));
-        steps.push(BattleSteps.apCost(srcPlayer, battleAction.ability.getData().apCost))
+        const ability = battleAction.ability;
+        steps.push(...createAbilitySteps(ability, srcPlayer, targetPlayer, battle));
+        if(ability.getData().charges !== null) {
+            ability.getData().charges -= 1;
+            if(ability.getData().charges <= 0) {
+                steps.push(BattleSteps.removeAbility(srcPlayer, ability.getData().name));
+            }
+        }
+
+        steps.push(BattleSteps.apCost(srcPlayer, battleAction.ability.getData().apCost));
+        steps.push(...popSurged(srcPlayer));
         srcPlayer.onAbilityUsed(battleAction.ability);
     }
 
@@ -242,21 +417,21 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
         };
     }
 
+    steps.push(...createReviveSteps(srcPlayer, targetPlayer));
     return steps;
 }
 
-function createAbilitySteps(ability, srcPlayer, targetPlayer, battle, isStrikeAbility) {
+function createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
     const steps = [];
-    const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
-    const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer, isStrikeAbility);
-    const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
 
-    steps.push(infoStep);
-    if(standardSteps) {
-        steps.push(...standardSteps);
+    if(ability.getData().isCounter) {
+        steps.push(BattleSteps.setCounter(srcPlayer, ability, ability.getData().counter.type));
     }
-    if(abilitySteps) {
-        steps.push(...abilitySteps);
+    else {
+        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
+
+        steps.push(infoStep);
+        steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
     }
     return steps;
 }
@@ -292,7 +467,7 @@ function createBattleAction(actionRequest, battlePlayer) {
         playerBattleAction = {
             type: 'ability',
             ability: ability,
-            speed: ability.getData().speed
+            speed: ability.getData().isCounter ? COUNTER_PRIORITY : ability.getData().speed
         }
     }
 
@@ -312,6 +487,47 @@ function createBattleAction(actionRequest, battlePlayer) {
     }
 
     return playerBattleAction;
+}
+
+function createReviveStep(player) {
+    if(!player.isDefeated() || !player.getData().autoRevive) {
+        return;
+    }
+
+    const reviveStep = BattleSteps.revive(player);
+    player.getData().autoRevive = 0;
+    return reviveStep;
+}
+
+function createReviveSteps(player1, player2) {
+    const steps = [];
+    let reviveStep = createReviveStep(player1);
+
+    if(reviveStep) {
+        steps.push(player1);
+    }
+
+    reviveStep = createReviveStep(player2);
+
+    if(reviveStep) {
+        steps.push(player2);
+    }
+    return steps;
+}
+
+function activateAbility(ability, srcPlayer, targetPlayer, battle) {
+    const steps = [];
+
+    const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer);
+    const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
+
+    if(standardSteps) {
+        steps.push(...standardSteps);
+    }
+    if(abilitySteps) {
+        steps.push(...abilitySteps);
+    }
+    return [...steps];
 }
 
 module.exports = {

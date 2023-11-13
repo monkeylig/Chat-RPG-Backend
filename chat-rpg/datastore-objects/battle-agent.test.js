@@ -1,5 +1,5 @@
 const Ability = require('./ability');
-const {BattlePlayer, BattleMonster} = require('./battle-agent');
+const {BattlePlayer, BattleMonster, BattleWeapon} = require('./battle-agent');
 const MAX_STAT_AMP = 12;
 
 const statAmpTable = {
@@ -34,6 +34,10 @@ describe.each([
     ['strength', 'getModifiedStrength', 'strengthAmp'],
     ['defence', 'getModifiedDefence', 'defenceAmp'],
     ['magic', 'getModifiedMagic', 'magicAmp'],
+    ['fireResist', 'getModifiedFireResist', 'fireResistAmp'],
+    ['lighteningResist', 'getModifiedLighteningResist', 'lighteningResistAmp'],
+    ['waterResist', 'getModifiedWaterResist', 'waterResistAmp'],
+    ['iceResist', 'getModifiedIceResist', 'iceResistAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {
     test('Basic mod test', () => {
         const startingStat = 50;
@@ -79,4 +83,117 @@ describe.each([
         expect(player.getEmpowermentValue(empowermentType)).toBe(0);
         expect(player.consumeEmpowermentValue(empowermentType)).toBe(0);
     });
+});
+
+test('Gain Status Effects', () => {
+    const player = new BattlePlayer();
+    const inflamed = {
+        name: 'inflamed',
+        turns: 5
+    };
+
+    player.addStatusEffect(inflamed.name, inflamed);
+    let statusEffect = player.getStatusEffect(inflamed.name);
+
+    expect(statusEffect).toBeDefined();
+    expect(statusEffect).toStrictEqual(inflamed);
+
+    const noEffect = player.getStatusEffect('random');
+
+    expect(noEffect).not.toBeDefined();
+
+    player.removeStatusEffect(inflamed.name);
+    statusEffect = player.getStatusEffect(inflamed.name);
+
+    expect(statusEffect).not.toBeDefined();
+});
+
+describe.each([
+    ['physical'],
+    ['magical']
+])('%s protection', (protectionType) => {
+    test('Basic test', () => {
+        const player = new BattlePlayer();
+        player.setStatsAtLevel(20);
+        player.addProtection(protectionType, 10);
+
+        expect(player.getProtectionValue(protectionType)).toBe(10);
+
+        player.dealDamage(player.getData().protection[protectionType] + 5, protectionType);
+
+        expect(player.getData().health).toBe(player.getData().maxHealth - 5);
+    })
+});
+
+test("Add Ability Strike", () => {
+    const player = new BattlePlayer();
+
+    const ability1 = new Ability({name: "ability1"});
+    const ability2 = new Ability({name: "ability2"});
+    const ability3 = new Ability({name: "ability3"});
+
+    player.addAbilityStrike(ability1, {type: 'strikes', value: 2});
+    player.addAbilityStrike(ability2, {type: 'strikes', value: 2});
+    player.addAbilityStrike(ability3, {type: 'strikes', value: 2});
+
+    const abilityStrikes = player.getAbilityStrikes();
+
+    expect(abilityStrikes.length).toBe(3);
+    expect(abilityStrikes[0].ability.name).toBe("ability1");
+    expect(abilityStrikes[0].durationCondition.type).toBe("strikes");
+    expect(abilityStrikes[0].durationCondition.value).toBe(2);
+    expect(abilityStrikes[1].ability.name).toBe("ability2");
+    expect(abilityStrikes[1].durationCondition.type).toBe("strikes");
+    expect(abilityStrikes[1].durationCondition.value).toBe(2);
+    expect(abilityStrikes[2].ability.name).toBe("ability3");
+    expect(abilityStrikes[2].durationCondition.type).toBe("strikes");
+    expect(abilityStrikes[2].durationCondition.value).toBe(2);
+
+    player.removeAbilityStrike(1);
+
+    expect(abilityStrikes.length).toBe(2);
+    expect(abilityStrikes[0].ability.name).toBe("ability1");
+    expect(abilityStrikes[0].durationCondition.type).toBe("strikes");
+    expect(abilityStrikes[0].durationCondition.value).toBe(2);
+    expect(abilityStrikes[1].ability.name).toBe("ability3");
+    expect(abilityStrikes[1].durationCondition.type).toBe("strikes");
+    expect(abilityStrikes[1].durationCondition.value).toBe(2);
+});
+
+test("Counters", () => {
+    const player = new BattlePlayer();
+
+    const ability = new Ability({name: "counter ability"});
+    player.setCounter(ability, 'strike');
+    const counterAbility = player.getCounter('strike');
+
+    expect(player.getCounter('random')).not.toBeDefined();
+    expect(counterAbility).toBeDefined();
+    expect(counterAbility.type).toBe('strike');
+    expect(counterAbility.ability.name).toBe('counter ability');
+
+    player.clearCounter();
+
+    expect(player.getCounter('strike')).not.toBeDefined();
+});
+
+test('Imbue Weapon', () => {
+    const weapon = new BattleWeapon();
+
+    weapon.imbue('fire');
+    weapon.imbue('lightning', 'strikeAbility');
+    let elements = weapon.getImbuedElements();
+
+    expect(elements.length).toBe(2);
+    expect(elements[0]).toBe('fire');
+    expect(elements[1]).toBe('lightning');
+    expect(weapon.getData().imbuements['fire'].durationCondition).toBeNull();
+    expect(weapon.getData().imbuements['lightning'].durationCondition).toBe('strikeAbility');
+
+    weapon.removeImbue('fire');
+    elements = weapon.getImbuedElements();
+
+    expect(weapon.getData().imbuements['fire']).toBeNull();
+    expect(elements.length).toBe(1);
+    expect(elements[0]).toBe('lightning');
 });

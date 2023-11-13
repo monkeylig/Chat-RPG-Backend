@@ -21,7 +21,7 @@ function StandardBattleSteps(item, srcPlayer, targetPlayer) {
     const steps = [];
 
     if(item.baseDamage > 0) {
-        const damageStep = BattleSteps.damage(srcPlayer, targetPlayer, item.baseDamage);
+        const damageStep = BattleSteps.damage(srcPlayer, item.baseDamage);
         steps.push(damageStep);
     }
 

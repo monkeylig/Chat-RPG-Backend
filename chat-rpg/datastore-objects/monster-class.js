@@ -2,6 +2,8 @@ const DatastoreObject = require('./datastore-object');
 const {Agent} = require('./agent');
 
 const utility = require("../../utility");
+const { Weapon } = require('./weapon');
+const chatRPGUtility = require('../utility');
 
 class MonsterClass extends DatastoreObject {
     constructor(objectData) {
@@ -10,15 +12,15 @@ class MonsterClass extends DatastoreObject {
 
     static setFields(monster) {
         monster.abilities = [];
-        monster.strengthRating = 0;
-        monster.magicRating = 0;
-        monster.defenceRating = 0;
-        monster.healthRating = 0;
+        monster.strengthRating = 0.25;
+        monster.magicRating = 0.25;
+        monster.defenceRating = 0.25;
+        monster.healthRating = 0.25;
         monster.avatar = '';
         monster.expYield = 0;
         monster.monsterNumber = 0;
-        monster.name = '';
-        monster.weapon = {};
+        monster.name = 'Unknown Monster';
+        monster.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         monster.weaponDropRate = 0.2;
         monster.class = '';
         monster.coinDrop = 3;

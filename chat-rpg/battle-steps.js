@@ -1,9 +1,10 @@
 const { BattlePlayer, BattleWeapon } = require("./datastore-objects/battle-agent");
+const gameplayObjects = require('./gameplay-objects');
 const chatRPGUtility = require('./utility');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
 
-function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, stepResults = {}) {
+function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, stepResults = {}, options = {}) {
     if(!style) {
         throw new Error('Missing style param!');
     }
@@ -15,7 +16,10 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     const steps = [];
     baseDamage += srcPlayer.consumeEmpowermentValue(type);
 
-    const power = type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
+    let power = type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
+    if(options.overrideDamageModifier) {
+        power = srcPlayer.getModifiedStat(options.overrideDamageModifier, `${options.overrideDamageModifier}Amp`);
+    }
     
     const srcPlayerData = srcPlayer.getData();
 
@@ -25,6 +29,11 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         defence = targetPlayer.getModifiedDefence();
     }
 
+    let defencePen = 0;
+    if(options.defencePen) {
+        defencePen = options.defencePen;
+    }
+    defence *= 1 - defencePen;
     let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defence);
 
     //Weapon Synergy Bonus
@@ -32,23 +41,96 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         damage *= WEAPON_SYNERGY_BONUS;
     }
 
-    const damageStep = BattleSteps.damage(targetPlayer, Math.floor(damage));
+    let searchElements = () => {};
+    if(Array.isArray(elements)) {
+        searchElements = element => elements.find(e => e === element);
+        // Lightning attacking drenched targets bonus
+        if(searchElements('lightning') && targetPlayer.getStatusEffect(gameplayObjects.statusEffects.drenched.name)) {
+            damage *= 1 + gameplayObjects.statusEffects.drenched.lightningAmp;
+        }
+    }
+
+    const damageStep = BattleSteps.damage(targetPlayer, damage, type);
     stepResults.damage = damageStep.damage;
     steps.push(damageStep);
+
+    if(Array.isArray(elements)) {
+        const inflamed = gameplayObjects.statusEffects.inflamed;
+        const surged = gameplayObjects.statusEffects.surged;
+        const drenched = gameplayObjects.statusEffects.drenched;
+        const frozen = gameplayObjects.statusEffects.frozen;
+
+        if(searchElements('fire')) {
+            if(targetPlayer.getStatusEffect(drenched.name)) {
+                steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer));
+            }
+
+            if(chatRPGUtility.chance(inflamed.inflictChance)) {
+                const inflamedStep = BattleSteps.gainStatusEffect(inflamed, targetPlayer);
+                if(inflamedStep) {
+                    steps.push(inflamedStep);
+                    stepResults.targetInflamed = true;
+                }
+            }
+
+            if(srcPlayer.getStatusEffect(drenched.name)) {
+                steps.push(BattleSteps.removeStatusEffect(drenched, srcPlayer));
+            }
+        }
+        if(searchElements('lightning') && chatRPGUtility.chance(surged.inflictChance)) {
+            const surgedStep = BattleSteps.gainStatusEffect(surged, targetPlayer);
+            if(surgedStep) {
+                steps.push(surgedStep);
+                stepResults.targetSurged = true;
+            }
+        }
+        if(searchElements('water')) {
+            if(targetPlayer.getStatusEffect(inflamed.name)) {
+                steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer));
+            }
+
+            if(!targetPlayer.getStatusEffect(frozen.name) && damage >= targetPlayer.getData().maxHealth * drenched.healthThreshold) {
+                const drenchedStep = BattleSteps.gainStatusEffect(drenched, targetPlayer);
+                if(drenchedStep) {
+                    steps.push(drenchedStep);
+                    stepResults.targetDrenched = true;
+                }
+            }
+
+            if(srcPlayer.getStatusEffect(inflamed.name)) {
+                steps.push(BattleSteps.removeStatusEffect(drenched, srcPlayer));
+            }
+        }
+        if(searchElements('ice')) {
+            if(targetPlayer.getStatusEffect(drenched.name) && chatRPGUtility.chance(frozen.drenchedInflict)) {
+                steps.push(BattleSteps.gainStatusEffect(frozen, targetPlayer));
+                steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer, true));
+            }
+        }
+    }
 
     return steps;
 }
 
-function damageStep(targetPlayer, damage) {
+function genStrikeSteps(srcPlayer, targetPlayer) {
+    const weapon = new BattleWeapon(srcPlayer.getData().weapon);
+    const elements = weapon.getImbuedElements();
+    const hitSteps = BattleSteps.genHitSteps(srcPlayer, targetPlayer, srcPlayer.getData().weapon.baseDamage, srcPlayer.getData().weapon.type, srcPlayer.getData().weapon.style, elements);
+
+    return [...hitSteps];
+}
+
+function damageStep(targetPlayer, damage, type) {
+    const netDamage = Math.floor(damage);
     const targetPlayerData = targetPlayer.getData();
     const damageStep = {
         type: 'damage',
         targetId: targetPlayerData.id,
-        damage: damage
+        damage: netDamage
     };
 
     //Apply damage step
-    targetPlayerData.health -= Math.min(damage, targetPlayerData.health);
+    targetPlayer.dealDamage(netDamage, type)
 
     return damageStep;
 }
@@ -167,6 +249,22 @@ function magicAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'magic', 'magicAmp', stages);
 }
 
+function fireResistAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'fireResist', 'fireResistAmp', stages);
+}
+
+function lighteningResistAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'lighteningResist', 'lighteningResistAmp', stages);
+}
+
+function waterResistAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'waterResist', 'waterResistAmp', stages);
+}
+
+function iceResistAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'iceResist', 'iceResistAmp', stages);
+}
+
 function weaponSpeedAmpStep(battlePlayer, stages) {
     const weapon = new BattleWeapon(battlePlayer.getData().weapon);
     const speedAmpStep = statAmpStep(weapon, 'speed', 'speedAmp', stages, `${battlePlayer.getData().name}'s weapon speed`);
@@ -175,15 +273,18 @@ function weaponSpeedAmpStep(battlePlayer, stages) {
 }
 
 function empowermentStep(battlePlayer, empowerType, empowerValue) {
-    if(!battlePlayer.getData().empowerment.hasOwnProperty(empowerType)){
-        battlePlayer.getData().empowerment[empowerType] = 0;
-    }
-
-    battlePlayer.getData().empowerment[empowerType] += empowerValue;
-
+    battlePlayer.addEmpowerment(empowerType, empowerValue)
     return {
         type: 'empowerment',
         description: `${battlePlayer.getData().name} gained ${empowerValue} ${empowerType} empowerment!`
+    };
+}
+
+function protectionStep(battlePlayer, type, value) {
+    battlePlayer.addProtection(type, value);
+    return {
+        type: 'protection',
+        description: `${battlePlayer.getData().name} gained ${value}% ${type} protection!`
     };
 }
 
@@ -225,6 +326,106 @@ function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
     };
 }
 
+function gainStatusEffectStep(statusEffect, targetPlayer, refreshEffect = false) {
+    if(!refreshEffect && targetPlayer.getStatusEffect(statusEffect.name)) {
+        return;
+    }
+
+    targetPlayer.addStatusEffect(statusEffect.name, statusEffect);
+    return {
+        type: 'gainStatusEffect',
+        targetId: targetPlayer.getData().id,
+        description: `${targetPlayer.getData().name} is now ${statusEffect.name}!`,
+        statusEffect
+    };
+}
+
+function removeStatusEffectStep(statusEffect, targetPlayer, noDescription = false) {
+    if(!targetPlayer.getStatusEffect(statusEffect.name)) {
+        return;
+    }
+
+    targetPlayer.removeStatusEffect(statusEffect.name);
+
+    const step = {
+        type: 'removeStatusEffect',
+        targetId: targetPlayer.getData().id,
+        statusEffect
+    };
+
+    if(!noDescription) {
+        step.description = `${targetPlayer.getData().name} is no longer ${statusEffect.name}!`
+    }
+    return step;
+}
+
+function imbueStep(targetAgent, element, durationCondition) {
+    const weapon = new BattleWeapon(targetAgent.getData().weapon);
+    weapon.imbue(element, durationCondition);
+
+    return {
+        type: 'imbue',
+        targetId: targetAgent.getData().id,
+        description: `${targetAgent.getData().name}'s weapon is imbued with ${element}!`,
+        element
+    };
+}
+
+function removeImbueStep(targetAgent, element) {
+    const weapon = new BattleWeapon(targetAgent.getData().weapon);
+    weapon.removeImbue(element);
+
+    return {
+        type: 'removeImbue',
+        targetId: targetAgent.getData().id,
+        element
+    };
+}
+
+function setCounterStep(targetAgent, counterAbility, counterType) {
+    targetAgent.setCounter(counterAbility, counterType);
+
+    return {
+        type: 'setCounter',
+        targetId: targetAgent.getData().id,
+        counter: {
+            type: counterType,
+            ability: counterAbility.getData(),
+        },
+        description: `${targetAgent} is ready to defend.`
+    };
+}
+
+function addAbilityStep(targetAgent, ability) {
+    targetAgent.addAbility(ability.getData());
+
+    return {
+        type: 'addAbility',
+        ability: ability.getData(),
+        targetId: targetAgent.getData().id,
+    };
+}
+
+function removeAblityStep(targetAgent, abilityName) {
+    const abilityData = targetAgent.removeAbility(abilityName);
+
+    return {
+        type: 'removeAblity',
+        targetId: targetAgent.getData().id,
+        ability: abilityData
+    };
+}
+
+function addAbilityStrikeStep(targetAgent, ability, durationCondition) {
+    targetAgent.addAbilityStrike(ability, durationCondition);
+
+    return {
+        type: 'addAbilityStrike',
+        targetId: targetAgent.getData().id,
+        ability: ability.getData()
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -233,12 +434,26 @@ const BattleSteps = {
     strengthAmp: strengthAmpStep,
     defenceAmp: defenceAmpStep,
     magicAmp: magicAmpStep,
+    fireResistAmp: fireResistAmpStep,
+    lighteningResistAmp: lighteningResistAmpStep,
+    waterResistAmp: waterResistAmpStep,
+    iceResistAmp: iceResistAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep,
+    protection: protectionStep,
     revive: reviveStep,
     apCost: apCostStep,
     readyRevive: readyReviveStep,
-    genHitSteps
+    gainStatusEffect: gainStatusEffectStep,
+    removeStatusEffect: removeStatusEffectStep,
+    imbue: imbueStep,
+    removeImbue: removeImbueStep,
+    setCounter: setCounterStep,
+    addAbility: addAbilityStep,
+    removeAbility: removeAblityStep,
+    addAbilityStrike: addAbilityStrikeStep,
+    genHitSteps,
+    genStrikeSteps
 };
 
 module.exports = BattleSteps;

@@ -26,12 +26,39 @@ class Ability extends DatastoreObject {
         ability.absorb = 0;
         ability.recoil = 0;
         ability.empowerment = {
-            strike: 0
+            magical: 0,
+            physical: 0
+        };
+        ability.protection = {
+            magical: 0,
+            physical: 0
         };
         ability.description = 'This is an empty default ability.';
         ability.effectName = '';
         ability.animation = animations.yellowHit;
         ability.specialStats = {};
+        ability.elements = [];
+        ability.inflameChance = 0;
+        ability.fireResistAmp = 0;
+        ability.targetFireResistAmp = 0;
+        ability.lighteningResistAmp = 0;
+        ability.targetLighteningResistAmp = 0;
+        ability.waterResistAmp = 0;
+        ability.targetWaterResistAmp = 0;
+        ability.iceResistAmp = 0;
+        ability.targetIceResistAmp = 0;
+        ability.defencePen = 0;
+        ability.imbue = {
+            fire: null,
+            lightning: null,
+            water: null,
+            ice: null,
+        };
+        ability.isCounter = false;
+        ability.overrideDamageModifier = null;
+        ability.charges = null;
+        ability.addAbilities = []
+        ability.addAbilityStrikes = [];
     }
 
     getSpecialStat(stat, defaultValue = 0) {
@@ -40,6 +67,14 @@ class Ability extends DatastoreObject {
         }
 
         return this.datastoreObject.specialStats[stat];
+    }
+
+    hasElement(element) {
+        if(this.datastoreObject.elements.find((e) => e === element)) {
+            return true;
+        }
+
+        return false;
     }
 }
 
