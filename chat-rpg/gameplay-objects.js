@@ -1,3 +1,6 @@
+const Item = require("./datastore-objects/item");
+const content = require("./content/content");
+
 const gameplayObjects = {
     statusEffects: {
         inflamed: {
@@ -23,6 +26,20 @@ const gameplayObjects = {
             drenchedInflict: 0.5,
             attackChance: 0.5,
             roundsLeft: 3,
+        }
+    },
+    startingWeapons: {
+        physical: content.swords.braveCutlass,
+        magical: content.staffs.duelistsBane
+    },
+    startingItems: {
+        items: {
+            potion: new Item({...content.items.potion.getData(), count: 10}),
+            phoenixDown: new Item({...content.items.pheonixDown.getData(), count: 10})
+        },
+        books: {
+            warriorMasteryI: content.books.warriorMasteryI,
+            wizardMasteryI: content.books.wizardMasteryI
         }
     }
 };

@@ -1,6 +1,3 @@
-const content = require("./content/content");
-const Item = require("./datastore-objects/item");
-
 
 const EXP_MODIFIER = 6;
 
@@ -66,16 +63,6 @@ const chatRPGUtility = {
             strength: 1,
             magic: 1,
             defence: 1
-        }
-    },
-    startingItems: {
-        items: {
-            potion: new Item({...content.items.potion.getData(), count: 10}),
-            phoenixDown: new Item({...content.items.pheonixDown.getData(), count: 10})
-        },
-        books: {
-            warriorMasteryI: content.books.warriorMasteryI,
-            wizardMasteryI: content.books.wizardMasteryI
         }
     },
     setStatsAtLevel(player, growthObject, level) {

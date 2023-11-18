@@ -13,6 +13,7 @@ const BattleFunctions = require('./battle/battle')
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
+const gameplayObjects = require("./gameplay-objects");
 
 class ChatRPG {
     #datasource;
@@ -36,7 +37,18 @@ class ChatRPG {
         return [];
     }
 
-    async addNewPlayer(name, avatar, platformId, platform) {
+    async getGameInfo() {
+        const gameInfoSnap = await this.#datasource.collection(Schema.Collections.Configs).doc('gameInfo').get();
+        const gameInfo = gameInfoSnap.data();
+
+        if(gameInfo) {
+            return gameInfo;
+        }
+
+        return {};
+    }
+
+    async addNewPlayer(name, avatar, weaponType, vitalityBonus, platformId, platform) {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
 
@@ -49,15 +61,26 @@ class ChatRPG {
 
         const player = new Player({name, avatar, [platformIdProperty]: platformId});
 
-        player.addItemToBag(chatRPGUtility.startingItems.items.potion);
-        player.addItemToBag(chatRPGUtility.startingItems.items.phoenixDown);
-        player.addBookToBag(chatRPGUtility.startingItems.books.warriorMasteryI);
-        player.addBookToBag(chatRPGUtility.startingItems.books.wizardMasteryI);
+        if(weaponType) {
+            player.getData().weapon = gameplayObjects.startingWeapons[weaponType];    
+        }
 
-        const newPlayer = playersRef.doc();
-        await newPlayer.set(player.getData());
+        if(vitalityBonus === 'health') {
+            player.getData().health += 2;
+        }
+        else if(vitalityBonus === 'defence') {
+            player.getData().defence += 1;
+        }
 
-        return newPlayer.id;
+        player.addItemToBag(gameplayObjects.startingItems.items.potion);
+        player.addItemToBag(gameplayObjects.startingItems.items.phoenixDown);
+        player.addBookToBag(gameplayObjects.startingItems.books.warriorMasteryI);
+        player.addBookToBag(gameplayObjects.startingItems.books.wizardMasteryI);
+
+        const playerRef = playersRef.doc();
+        await playerRef.set(player.getData());
+
+        return this.#returnPlayerResponce(player, playerRef.id);
     }
 
     async findPlayerById(id, platform) {

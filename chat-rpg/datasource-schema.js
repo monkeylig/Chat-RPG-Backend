@@ -1,6 +1,7 @@
 const Schema = {
     Collections: {
         Avatars: 'avatars',
+        Configs: 'configs',
         Accounts: 'accounts',
         Games: 'games',
         Monsters: 'monsters',

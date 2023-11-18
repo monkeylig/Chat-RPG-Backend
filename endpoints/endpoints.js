@@ -68,11 +68,19 @@ function welcome(req, res) {
 }
 
 function get_starting_avatars(req, res, chatrpg) {
-    setStandardHeaders(res);    
+    setStandardHeaders(res);
     chatrpg.getStartingAvatars().then((avatars) => {
         res.status(200);
         avatars = avatars ? avatars : [];
         res.send(JSON.stringify(avatars));
+    })
+    .catch((error) => {internalErrorCatch(req, res, error);});
+}
+
+function get_game_info(req, res, chatrpg) {
+    setStandardHeaders(res);
+    chatrpg.getGameInfo().then((gameInfo) => {
+        sendResponceObject(res, gameInfo);
     })
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
@@ -92,7 +100,9 @@ function create_new_player(req, res, chatrpg) {
     const payloadParams = [
         {name: 'name', type: 'string'},
         {name: 'playerId', type: 'string'},
-        {name: 'avatar', type: 'string'}
+        {name: 'avatar', type: 'string'},
+        {name: 'vitalityBonus', type: 'string'},
+        {name: 'weaponType', type: 'string'}
     ];
     
     if(!validatePayloadParameters(req.body, payloadParams))
@@ -113,10 +123,10 @@ function create_new_player(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
-    .then(playerId => {
+    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.weaponType, req.body.vitalityBonus, req.body.playerId, req.query.platform)
+    .then(player => {
             res.status(200);
-            res.send(JSON.stringify({playerId: playerId}));
+            res.send(JSON.stringify(player));
     }).catch(error => {
         if(error.message === ChatRPGErrors.playerExists) {
             res.status(400);
@@ -437,6 +447,7 @@ function buy(req, res, chatrpg) {
 module.exports = {
     welcome,
     get_starting_avatars,
+    get_game_info,
     create_new_player_options,
     create_new_player,
     get_player,
