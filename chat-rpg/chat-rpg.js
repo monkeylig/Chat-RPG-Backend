@@ -66,10 +66,11 @@ class ChatRPG {
         }
 
         if(vitalityBonus === 'health') {
+            player.getData().maxHealth += 2;
             player.getData().health += 2;
         }
-        else if(vitalityBonus === 'defence') {
-            player.getData().defence += 1;
+        else if(vitalityBonus === 'defense') {
+            player.getData().defense += 1;
         }
 
         player.addItemToBag(gameplayObjects.startingItems.items.potion);
@@ -79,6 +80,7 @@ class ChatRPG {
 
         const playerRef = playersRef.doc();
         await playerRef.set(player.getData());
+        const jjson = JSON.stringify(player.getData());
 
         return this.#returnPlayerResponce(player, playerRef.id);
     }
@@ -399,7 +401,9 @@ class ChatRPG {
                 if(shopItem.getData().type === 'item') {
                     player.addItemToBag(purchacedObject);                    
                 }
-                player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
+                else {
+                    player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
+                }
             }
 
             transaction.update(playerRef, player.getData());
@@ -460,9 +464,9 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.bagFull);
             }
 
-            player.onObjectRemovedFromInventory(page);
+            player.onObjectRemovedFromInventory(pageId);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData);
+            transaction.set(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -549,7 +553,7 @@ class ChatRPG {
 
         const page = new InventoryPage(pageSnap.data());
 
-        return {...page.getData(), pageId};
+        return {...page.getData(), id: pageId};
     }
 
     #returnPlayerResponce(player, id) {
@@ -628,20 +632,28 @@ class ChatRPG {
         }
     }
 
+    // WARNING: This function reads first then writes. Remember not to do a transaction write before calling this function 
     async #addObjectToPlayerInventoryT(player, object, type, transaction) {
         let pageId = player.getNextAvailableInventoryPageId();
         const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
-        const page = new InventoryPage();
-        page.addObjectToInventory(object, type);
         if (!pageId) {
+            const page = new InventoryPage();
+            page.addObjectToInventory(object, type);
             pageId = pageRef.id;
             transaction.set(pageRef, page.getData());
+            player.onObjectAddedToInventory(pageId);
         }
         else {
-            transaction.update(pageRef, {objects: FieldValue.arrayUnion(page.datastoreObject.objects[0])});
+            const pageData = (await transaction.get(pageRef)).data();
+            const page = new InventoryPage(pageData);
+            page.addObjectToInventory(object, type);
+            transaction.update(pageRef, page.getData());
+            const oldSize = pageData.objects.length;
+            const newSize = page.getData().objects.length;
+            if(oldSize != newSize) {
+                player.onObjectAddedToInventory(pageId);
+            }
         }
-
-        player.onObjectAddedToInventory(pageId);
     }
 }
 

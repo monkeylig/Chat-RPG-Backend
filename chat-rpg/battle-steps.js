@@ -24,17 +24,17 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     const srcPlayerData = srcPlayer.getData();
 
     // make sure we don't devide by 0
-    let defence = 1;
-    if(targetPlayer.getModifiedDefence()) {
-        defence = targetPlayer.getModifiedDefence();
+    let defense = 1;
+    if(targetPlayer.getModifiedDefense()) {
+        defense = targetPlayer.getModifiedDefense();
     }
 
-    let defencePen = 0;
-    if(options.defencePen) {
-        defencePen = options.defencePen;
+    let defensePen = 0;
+    if(options.defensePen) {
+        defensePen = options.defensePen;
     }
-    defence *= 1 - defencePen;
-    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defence);
+    defense *= 1 - defensePen;
+    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defense);
 
     //Weapon Synergy Bonus
     if(srcPlayerData.weapon.style === style) {
@@ -241,8 +241,8 @@ function strengthAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'strength', 'strengthAmp', stages);
 }
 
-function defenceAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'defence', 'defenceAmp', stages);
+function defenseAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'defense', 'defenseAmp', stages);
 }
 
 function magicAmpStep(battlePlayer, stages) {
@@ -432,7 +432,7 @@ const BattleSteps = {
     info: infoStep,
     battleEnd: battleEndStep,
     strengthAmp: strengthAmpStep,
-    defenceAmp: defenceAmpStep,
+    defenseAmp: defenseAmpStep,
     magicAmp: magicAmpStep,
     fireResistAmp: fireResistAmpStep,
     lighteningResistAmp: lighteningResistAmpStep,

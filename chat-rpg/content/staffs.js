@@ -19,9 +19,9 @@ const duelistsBane = new Weapon({
     },
     statGrowth: {
         maxHealth: 2,
-        attack: 1,
+        strength: 1,
         magic: 2,
-        defence: 1
+        defense: 1
     },
     description: 'A difficult weapon to duel against.',
     icon: 'duelists_bane.png'

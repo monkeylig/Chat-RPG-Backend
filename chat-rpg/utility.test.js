@@ -23,7 +23,7 @@ test('Set Player Level', () => {
         maxHealth: 3,
         strength: 2,
         magic: 4,
-        defence: 1
+        defense: 1
     };
 
     let level = 78;
@@ -33,7 +33,7 @@ test('Set Player Level', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 
     level = 1;
@@ -43,7 +43,7 @@ test('Set Player Level', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 
     level = 0;
@@ -53,7 +53,7 @@ test('Set Player Level', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 });
 
@@ -63,7 +63,7 @@ test('Level Up Player', () => {
         maxHealth: 3,
         strength: 2,
         magic: 4,
-        defence: 1
+        defense: 1
     };
 
     let level = 1;
@@ -75,7 +75,7 @@ test('Level Up Player', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 
     chatRPGUtility.levelUpPlayer(player, growthObject);
@@ -85,7 +85,7 @@ test('Level Up Player', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 
     chatRPGUtility.levelUpPlayer(player, growthObject);
@@ -97,7 +97,7 @@ test('Level Up Player', () => {
     expect(player.health).toBe(player.maxHealth);
     expect(player.strength).toBe(growthObject.strength * level);
     expect(player.magic).toBe(growthObject.magic * level);
-    expect(player.defence).toBe(growthObject.defence * level);
+    expect(player.defense).toBe(growthObject.defense * level);
     expect(player.level).toBe(level);
 });
 
@@ -108,7 +108,7 @@ test('Gaining Experience', () => {
         maxHealth: 3,
         strength: 2,
         magic: 4,
-        defence: 1
+        defense: 1
     };
 
     let level = 1;

@@ -1,8 +1,8 @@
 
 const EXP_MODIFIER = 6;
 
-function calcHitDamge(srclevel, baseDamage, attack, defence) {
-    return ((2 * srclevel / 5 + 2) * baseDamage * attack / defence) / 50 + 2;
+function calcHitDamge(srclevel, baseDamage, attack, defense) {
+    return ((2 * srclevel / 5 + 2) * baseDamage * attack / defense) / 50 + 2;
 }
 
 function expFunc(level) {
@@ -62,7 +62,7 @@ const chatRPGUtility = {
             maxHealth: 2,
             strength: 1,
             magic: 1,
-            defence: 1
+            defense: 1
         }
     },
     setStatsAtLevel(player, growthObject, level) {
@@ -70,7 +70,7 @@ const chatRPGUtility = {
         player.health = player.maxHealth;
         player.strength = Math.floor(growthObject.strength * level);
         player.magic = Math.floor(growthObject.magic * level);
-        player.defence = Math.floor(growthObject.defence * level);
+        player.defense = Math.floor(growthObject.defense * level);
         player.level = level;
         player.exp = 0;
         player.expToNextLevel = getExpToNextLevel(player.level);
@@ -81,7 +81,7 @@ const chatRPGUtility = {
         player.health = player.maxHealth;
         player.strength += growthObject.strength;
         player.magic +=  growthObject.magic;
-        player.defence += growthObject.defence;
+        player.defense += growthObject.defense;
         player.level += 1;
         player.exp = 0;
         player.expToNextLevel = getExpToNextLevel(player.level);

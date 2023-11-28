@@ -109,7 +109,7 @@ function checkInflame(battleAgent) {
     }
 
     const steps = [];
-    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
     const inflameDamage = battleAgent.getData().maxHealth * inflamed.damagePercentage;
 
     steps.push(BattleSteps.damage(battleAgent, Math.min(1, inflameDamage * defensiveRatio)));
@@ -191,7 +191,7 @@ function popSurged(battleAgent) {
         return [];
     }
 
-    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
     const surgeDamage = battleAgent.getData().maxHealth * surged.damagePercentage;
 
     const steps = [

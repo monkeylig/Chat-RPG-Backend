@@ -30,8 +30,8 @@ beforeAll(() => {
   });
 
 describe.each([
-    ['physical', 'defence'],
-    ['magical', 'defence'],
+    ['physical', 'defense'],
+    ['magical', 'defense'],
     ['physical', 'health'],
     ['magical', 'health'],
 ])('%s - %s New twitch player options', (weaponType, vitalityBonus) => {
@@ -55,11 +55,12 @@ describe.each([
         expect(newPlayer.name).toMatch(defaultPlayer.getData().name);
         expect(newPlayer.weapon).toStrictEqual(gameplayObjects.startingWeapons[weaponType]);
 
-        if(vitalityBonus === 'defence') {
-            expect(newPlayer.defence).toBe(defaultPlayer.getData().defence + 1);
+        if(vitalityBonus === 'defense') {
+            expect(newPlayer.defense).toBe(defaultPlayer.getData().defense + 1);
         }
 
         if(vitalityBonus === 'health') {
+            expect(newPlayer.maxHealth).toBe(defaultPlayer.getData().maxHealth + 2);
             expect(newPlayer.health).toBe(defaultPlayer.getData().health + 2);
         }
 
@@ -168,14 +169,14 @@ test('Testing joining a Twitch game', async () => {
     expect(gameState.id).toEqual('new game2');
     expect(gameState.monsters.length).toBeGreaterThan(0);
     expect(gameState.monsters[0]).toHaveProperty("strength");
-    expect(gameState.monsters[0]).toHaveProperty("defence");
+    expect(gameState.monsters[0]).toHaveProperty("defense");
 
     gameState = await chatrpg.joinGame(playerId2.id, 'new game2');
 
     expect(gameState.id).toEqual('new game2');
     expect(gameState.monsters.length).toBe(oldMonsterCount);
     expect(gameState.monsters[0]).toHaveProperty("strength");
-    expect(gameState.monsters[0]).toHaveProperty("defence");
+    expect(gameState.monsters[0]).toHaveProperty("defense");
 
     players = dataSource.dataSource.accounts;
 
@@ -214,7 +215,7 @@ test('Getting a game update', async () => {
     expect(gameUpdate.id).toEqual('new game');
     expect(gameUpdate.monsters.length).toBeGreaterThan(0);
     expect(gameUpdate.monsters[0]).toHaveProperty("strength");
-    expect(gameUpdate.monsters[0]).toHaveProperty("defence");
+    expect(gameUpdate.monsters[0]).toHaveProperty("defense");
 });
 
 test('Starting a battle', async () => {
@@ -327,7 +328,7 @@ test('Battle Actions: Strike', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -370,7 +371,7 @@ test('Battle Actions: Strike', async () => {
     const playerLevel = battleUpdate.player.level;
     const playerBaseDamage = battleUpdate.player.weapon.baseDamage;
     const playerStrength = battleUpdate.player.strength;
-    const playerDefence = battleUpdate.player.defence;
+    const playerDefense = battleUpdate.player.defense;
     const monster = gameState.monsters[0];
     expect(battleUpdate.steps[1].damage).toBeGreaterThan(0);
     expect(battleUpdate.steps[3].damage).toBeGreaterThan(0);
@@ -384,7 +385,7 @@ test('Battle Actions: Strike Ability', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 1,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -425,7 +426,7 @@ test('Magic Strike', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -457,7 +458,7 @@ test('Magic Strike', async () => {
             maxHealth: 2,
             strength: 1,
             magic: 1,
-            defence: 1
+            defense: 1
         }
     }).getData();
 
@@ -498,7 +499,7 @@ test('Battle Actions: Ability', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 40,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -567,7 +568,7 @@ test('Battle Actions: Item', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -632,7 +633,7 @@ test('Defeating a monster', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.1,
                 magicRating: 0.2,
                 expYield: 36,
@@ -694,7 +695,7 @@ test('Player being defeated', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 20,
                 magicRating: 0.2,
                 expYield: 36,
@@ -744,7 +745,7 @@ test('Player being revived', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 20,
                 magicRating: 0.2,
                 expYield: 36,
@@ -844,7 +845,7 @@ test('Unlocking abilities after battle', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.01,
                 magicRating: 0,
                 expYield: 36,
@@ -892,7 +893,7 @@ test('Monster Drops', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.1,
                 magicRating: 0.2,
                 expYield: 36,
@@ -955,7 +956,7 @@ test('Low level monster coin drop rate', async () => {
                 eye_sack: {
                     monsterNumber: 0,
                     strengthRating: 0.2,
-                    defenceRating: 0.2,
+                    defenseRating: 0.2,
                     healthRating: 0.1,
                     magicRating: 0.2,
                     expYield: 36,
@@ -1020,7 +1021,7 @@ test('Monster Drops with bag full', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.1,
                 magicRating: 0.2,
                 expYield: 36,
@@ -1066,7 +1067,7 @@ test('Monster does not drop weapon', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.1,
                 magicRating: 0.2,
                 expYield: 36,
@@ -1264,7 +1265,7 @@ test('Escape from battle', async () => {
             eye_sack: {
                 monsterNumber: 0,
                 strengthRating: 0.2,
-                defenceRating: 0.2,
+                defenseRating: 0.2,
                 healthRating: 0.4,
                 magicRating: 0.2,
                 name: "Eye Sack",
@@ -1438,6 +1439,7 @@ test('Buying Items', async () => {
     expect(newItem).toBeDefined();
     expect(newItem.content).toBeDefined();
     expect(newItem.content.count).toBe(1);
+    expect(player.getData().bag.objects.length).toBe(1);
 
     player = await chatrpg.buy('player1', 'daily', shop.getData().products[0].id);
 
@@ -1668,9 +1670,30 @@ test('Moving objects from inventory to bag', async () => {
     expect(playerData.bag.objects.length).toBe(1);
     expect(pageData.objects.length).toBe(0);
     expect(playerData.bag.objects[0].content).toStrictEqual(inventoryObject.content);
+    expect(playerData.inventory.leger[0].count).toBe(0);
 });
 
-test('Dropping objects from inventory to bag', async () => {
+test('Move to inventory then to bag bug', async () => {
+    const player = new Player();
+    player.addWeaponToBag(new Weapon({name: 'weapon 1'}));
+    const page = new InventoryPage();
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+    const playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
+    let pageData = await chatrpg.getInventoryPage('player1', playerData.inventory.leger[0].id);
+    const collection = await chatrpg.moveObjectFromInventoryToBag('player1', pageData.id, pageData.objects[0].id);
+    pageData = await chatrpg.getInventoryPage('player1', pageData.id);
+    expect(pageData).toBeDefined();
+});
+
+test('Dropping objects from inventory', async () => {
     const player = new Player();
     const page = new InventoryPage();
     const inventoryObject = page.addObjectToInventory({name: 'weapon'}, 'weapon');

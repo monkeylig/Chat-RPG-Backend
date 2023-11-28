@@ -13,15 +13,15 @@ const braveCutlass = new Weapon({
         type: 'physical',
         style: 'sword',
         baseDamage: 65,
-        defenceAmp: 2,
+        defenseAmp: 2,
         description: 'Slightly increases defense.',
         animation: animations.blueStab1
     },
     statGrowth: {
         maxHealth: 2,
-        attack: 1,
+        strength: 1,
         magic: 1,
-        defence: 2
+        defense: 2
     },
     description: 'A dependable weapon to take into any fight.',
     icon: 'brave_cutlass.webp'

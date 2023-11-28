@@ -33,7 +33,7 @@ class Weapon extends DatastoreObject {
             maxHealth: 1,
             strength: 1,
             magic: 1,
-            defence: 1
+            defense: 1
         };
         weapon.description = 'Unknown',
         weapon.icon = 'sword-icon.png'

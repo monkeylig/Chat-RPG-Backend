@@ -17,7 +17,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     if(baseDamage > 0) {
         const hitStepResults = {};
         const options = {
-            defencePen: ability.getData().defencePen,
+            defensePen: ability.getData().defensePen,
             overrideDamageModifier: ability.getData().overrideDamageModifier
         };
         steps.push(...BattleSteps.genHitSteps(srcPlayer, targetPlayer, baseDamage, ability.getData().type, ability.getData().style, ability.getData().elements, hitStepResults, options));
@@ -62,14 +62,14 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(magicAmpStep);
     }
 
-    if(ability.getData().defenceAmp !== 0) {
-        const defenceAmpStep = BattleSteps.defenceAmp(srcPlayer, ability.getData().defenceAmp);
-        steps.push(defenceAmpStep);
+    if(ability.getData().defenseAmp !== 0) {
+        const defenseAmpStep = BattleSteps.defenseAmp(srcPlayer, ability.getData().defenseAmp);
+        steps.push(defenseAmpStep);
     }
 
-    if(ability.getData().targetDefenceAmp !== 0) {
-        const defenceAmpStep = BattleSteps.defenceAmp(targetPlayer, ability.getData().targetDefenceAmp);
-        steps.push(defenceAmpStep);
+    if(ability.getData().targetDefenseAmp !== 0) {
+        const defenseAmpStep = BattleSteps.defenseAmp(targetPlayer, ability.getData().targetDefenseAmp);
+        steps.push(defenseAmpStep);
     }
 
     if(ability.getData().weaponSpeedAmp !== 0) {

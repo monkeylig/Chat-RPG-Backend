@@ -27,7 +27,7 @@ test('Damage Step', ()=>{
     expect(battleStep).toBeDefined();
     expect(battleStep.type).toMatch('damage');
 
-    //const damage = Math.floor(((2 * player1.getData().level / 5 + 2) * baseDamage * player1.getData().strength / player2.getData().defence) / 50 + 2);
+    //const damage = Math.floor(((2 * player1.getData().level / 5 + 2) * baseDamage * player1.getData().strength / player2.getData().defense) / 50 + 2);
 
     expect(battleStep.damage).toBe(damage);
     expect(player1.getData().maxHealth - player1.getData().health).toBe(damage);
@@ -70,7 +70,7 @@ test('Battle End', ()=>{
 
 describe.each([
     ['strength', BattleSteps.strengthAmp],
-    ['defence', BattleSteps.defenceAmp],
+    ['defense', BattleSteps.defenseAmp],
     ['magic', BattleSteps.magicAmp],
     ['fireResist', BattleSteps.fireResistAmp],
     ['lighteningResist', BattleSteps.lighteningResistAmp],
@@ -174,7 +174,7 @@ test('Generate Hit Steps: damage', ()=>{
     const hitResult = {};
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', null, hitResult);
 
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defence));
+    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -194,7 +194,7 @@ test('Generate Hit Steps: empowerment', () => {
     const hitResult = {};
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', null, hitResult);
 
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defence));
+    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -214,7 +214,7 @@ test('Generate Hit Steps: weapon synergy', () => {
     const hitResult = {};
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', null, hitResult);
 
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defence));
+    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -333,7 +333,7 @@ test('Generate Hit Steps: override damage modifier', () => {
 
     const baseDamage = 50;
     const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {overrideDamageModifier: 'defence'});
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {overrideDamageModifier: 'defense'});
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -345,11 +345,11 @@ test('Generate Hit Steps: defense pen', () => {
     player1.setStatsAtLevel(10);
     const player2 = new BattlePlayer();
     player2.setStatsAtLevel(10);
-    player2.getData().defence = 1000000000;
+    player2.getData().defense = 1000000000;
 
     const baseDamage = 50;
     const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {defencePen: 0.999999999});
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {defensePen: 0.999999999});
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');

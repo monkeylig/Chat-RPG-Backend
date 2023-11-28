@@ -4,12 +4,12 @@ const { BattlePlayer } = require('../datastore-objects/battle-agent');
 
 describe.each([
     ['damage', {baseDamage: 50}],
-    ['damage', {baseDamage: 50, overrideDamageModifier: 'defence'}],
-    ['damage', {baseDamage: 50, defencePen: 0.5}],
+    ['damage', {baseDamage: 50, overrideDamageModifier: 'defense'}],
+    ['damage', {baseDamage: 50, defensePen: 0.5}],
     ['heal', {baseDamage: 50, absorb: 0.5}, 1],
     ['damage', {baseDamage: 50, recoil: 0.5}],
     ['strengthAmp', {strengthAmp: 1}],
-    ['defenceAmp', {defenceAmp: 1}],
+    ['defenseAmp', {defenseAmp: 1}],
     ['magicAmp', {magicAmp: 1}],
     ['speedAmp', {weaponSpeedAmp: 1}],
     ['empowerment', {empowerment: {pysical: 50}}],

@@ -16,8 +16,8 @@ class Ability extends DatastoreObject {
         ability.style = 'sword';
         ability.strengthAmp = 0;
         ability.targetStrengthAmp = 0;
-        ability.defenceAmp = 0;
-        ability.targetDefenceAmp = 0;
+        ability.defenseAmp = 0;
+        ability.targetDefenseAmp = 0;
         ability.magicAmp = 0;
         ability.targetMagicAmp = 0;
         ability.speedAmp = 0;
@@ -47,7 +47,7 @@ class Ability extends DatastoreObject {
         ability.targetWaterResistAmp = 0;
         ability.iceResistAmp = 0;
         ability.targetIceResistAmp = 0;
-        ability.defencePen = 0;
+        ability.defensePen = 0;
         ability.imbue = {
             fire: null,
             lightning: null,

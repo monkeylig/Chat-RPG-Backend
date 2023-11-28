@@ -60,10 +60,10 @@ const BattleAgentMixin = {
         agent.strikeLevel = 0;
         agent.id = 0;
         agent.strength = 0;
-        agent.defence = 0;
+        agent.defense = 0;
         agent.magic = 0;
         agent.strengthAmp = 0;
-        agent.defenceAmp = 0;
+        agent.defenseAmp = 0;
         agent.magicAmp = 0;
         agent.reviveReady = false;
         agent.empowerment = {
@@ -103,12 +103,12 @@ const BattleAgentMixin = {
         return this.getModifiedStat('strength', 'strengthAmp');
     },
 
-    defenceAmp(stages) {
-        return this.statAmp('defenceAmp', stages);
+    defenseAmp(stages) {
+        return this.statAmp('defenseAmp', stages);
     },
 
-    getModifiedDefence() {
-        return this.getModifiedStat('defence', 'defenceAmp');
+    getModifiedDefense() {
+        return this.getModifiedStat('defense', 'defenseAmp');
     },
 
     magicAmp(stages) {

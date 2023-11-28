@@ -63,6 +63,9 @@ function startServer(dataSource) {
     app.post('/drop_item', (req, res) => endpoints.drop_item(req, res, chatrpg));
     app.get('/get_shop', (req, res) => endpoints.get_shop(req, res, chatrpg));
     app.post('/buy', (req, res) => endpoints.buy(req, res, chatrpg));
+    app.post('/move_object_from_bag_to_inventory', (req, res) => endpoints.move_object_from_bag_to_inventory(req, res, chatrpg));
+    app.get('/get_inventory_page', (req, res) => endpoints.get_inventory_page(req, res, chatrpg));
+    app.post('/move_object_from_inventory_to_bag', (req, res) => endpoints.move_object_from_inventory_to_bag(req, res, chatrpg));
 
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {
