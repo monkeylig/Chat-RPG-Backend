@@ -1291,6 +1291,7 @@ test('Escape from battle', async () => {
     let playerOldHealth = battleState.player.health;
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'escape'});
+    //TODO check to see if the monster did not make a move before the player escaped
     expect(battleUpdate.result).toBeDefined();
     expect(battleUpdate.result.winner).toBeNull();
 

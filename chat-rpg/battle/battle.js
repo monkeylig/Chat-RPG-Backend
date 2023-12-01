@@ -36,11 +36,9 @@ function singlePlayerBattleIteration(battle, playerActionRequest) {
     // Post Action Phase
     steps.push(...executePostActionPhase(battlePlayer, battleMonster, battle));
 
-    const endStep = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
+    const endSteps = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
 
-    if(endStep) {
-        steps.push(endStep);
-    }
+    steps.push(...endSteps);
 
     battle.player = battlePlayer.getData();
     battle.monster = battleMonster.getData();
@@ -82,6 +80,9 @@ function executeActionPhase(battlePlayer, battlePlayerAction, battleMonster, bat
 
 function executePostActionPhase(battlePlayer, battleMonster, battle) {
     const steps = [];
+    if(!battle.active) {
+        return steps;
+    }
     
     steps.push(...checkInflame(battleMonster));
     steps.push(...checkInflame(battlePlayer));
@@ -215,14 +216,11 @@ function tickStatusEffectStep(battleAgent, statusEffect) {
 function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
 
     if(!battle.active && battle.result.status === 'escape') {
-        return {
-            type: "battle_end",
-            description: `${battle.player.name} escaped.`
-        };
+        return [BattleSteps.battleEnd()];
     }
 
     if(!battlePlayer.isDefeated() && !battleMonster.isDefeated()) {
-        return;
+        return [];
     }
 
     battle.active = false;
@@ -232,20 +230,28 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
     if(battlePlayer.isDefeated() && battleMonster.isDefeated()) {
         result.winner = null;
         result.status = 'draw';
-        return BattleSteps.battleEnd("The battle ended in a draw.");
+        return [
+            BattleSteps.info("The battle ended in a draw."),
+            BattleSteps.battleEnd()
+        ];
     }
     else if(battlePlayer.isDefeated()) {
         result.winner = battleMonster.getData().id;
         result.status = 'defeat';
-        return BattleSteps.battleEnd(`${battlePlayer.getData().name} was defeated.`);
+        return [
+            BattleSteps.info(`${battlePlayer.getData().name} was defeated.`),
+            BattleSteps.battleEnd()
+        ];
     }
     else if(battleMonster.isDefeated()) {
         result.status = 'victory';
         const expGain = battleMonster.getExpGain();
+        const oldLevel = battlePlayer.getData().level;
         battlePlayer.addExpAndLevel(expGain);
 
         result.winner = battlePlayer.getData().id;
         result.expAward = expGain;
+        result.levelGain = battlePlayer.getData().level - oldLevel;
         result.drops = [];
         battlePlayer.clearLastDrops();
 
@@ -301,12 +307,15 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
                 result.drops.push(drop);
             }
         }
-        return BattleSteps.battleEnd(`${battleMonster.getData().name} was defeated!`);
+        return [
+            BattleSteps.info(`${battleMonster.getData().name} was defeated!`),
+            BattleSteps.battleEnd()
+        ];
     }
 }
 
 function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
-    if(srcPlayer.isDefeated() || targetPlayer.isDefeated()) {
+    if(srcPlayer.isDefeated() || targetPlayer.isDefeated() || !battle.active) {
         return [];
     }
     const steps = [];
@@ -410,6 +419,7 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
     }
 
     else if(battleAction.type === 'escape') {
+        steps.push(BattleSteps.info(`${battle.player.name} escaped.`, 'escape', srcPlayer.getData().id))
         battle.active = false;
         battle.result = {
             status: 'escape',

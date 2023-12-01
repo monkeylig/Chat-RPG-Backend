@@ -42,10 +42,9 @@ const chatRPGUtility = {
         spriteSheet: 'Hit-Yellow.webp',
         frameWidth: 1024,
         frameHeight: 1024,
-        frameCount: 16,
-        duration: 0.5,
-        positioning: 'opponent',
-        imageRendering: 'smooth'
+        columns: 16,
+        rows: 1,
+        duration: 500,
     },
     defaultWeapon: {
         name: 'Fists',

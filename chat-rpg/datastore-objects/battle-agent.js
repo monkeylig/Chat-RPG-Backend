@@ -217,7 +217,9 @@ const BattleAgentMixin = {
             damage -= protectedDamage;
         }
 
-        this.datastoreObject.health -= Math.min(this.datastoreObject.health, damage);
+        const totalDamage = Math.min(this.datastoreObject.health, damage);
+        this.datastoreObject.health -= totalDamage;
+        return totalDamage;
     },
 
     consumeEmpowermentValue(type) {

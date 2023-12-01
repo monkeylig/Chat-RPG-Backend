@@ -123,14 +123,15 @@ function genStrikeSteps(srcPlayer, targetPlayer) {
 function damageStep(targetPlayer, damage, type) {
     const netDamage = Math.floor(damage);
     const targetPlayerData = targetPlayer.getData();
+
+    //Apply damage step
+    const totalDamage = targetPlayer.dealDamage(netDamage, type);
+
     const damageStep = {
         type: 'damage',
         targetId: targetPlayerData.id,
-        damage: netDamage
+        damage: totalDamage
     };
-
-    //Apply damage step
-    targetPlayer.dealDamage(netDamage, type)
 
     return damageStep;
 }

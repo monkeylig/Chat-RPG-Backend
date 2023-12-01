@@ -37,7 +37,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     }
 
     if(ability.getData().recoil > 0) {
-        const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer, baseDamage * ability.getData().recoil, ability.getData().type);
+        const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer.getData().maxHealth * ability.getData().recoil, ability.getData().type);
         steps.push(recoilStep);
         steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id, targetPlayer.getData().id))
     }

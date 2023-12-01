@@ -80,7 +80,6 @@ class ChatRPG {
 
         const playerRef = playersRef.doc();
         await playerRef.set(player.getData());
-        const jjson = JSON.stringify(player.getData());
 
         return this.#returnPlayerResponce(player, playerRef.id);
     }
@@ -237,12 +236,24 @@ class ChatRPG {
             }
 
             await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
-            return {player: battlePlayerData, monster: monsterData, steps, result: battle.result};
+
+            const updatedPlayer = player.getData();
+            updatedPlayer.id = battlePlayerData.id;
+            return {
+                ...battle,
+                updatedPlayer,
+                player: battlePlayerData,
+                monster: monsterData,
+                steps, 
+                result: battle.result};
         }
 
         await battleSnap.ref.set(battle);
 
-        return {player: battle.player, monster: battle.monster, turn: battle.round - 1, steps};
+        return {
+            ...battle,
+            turn: battle.round - 1,
+            steps};
     }
 
     async #finishBattle(battleRef, playerRef, player, battlePlayer) {
