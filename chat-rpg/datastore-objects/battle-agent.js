@@ -57,6 +57,7 @@ const BattleAgentMixin = {
 
     constructObject(agent) {
         agent.ap = BATTLE_AP;
+        agent.maxAp = BATTLE_AP;
         agent.strikeLevel = 0;
         agent.id = 0;
         agent.strength = 0;
@@ -151,10 +152,21 @@ const BattleAgentMixin = {
         return this.getModifiedStat('iceResist', 'iceResistAmp');
     },
 
-    onStrike() {
-        if (this.datastoreObject.strikeLevel < STRIKE_ABILITY_TRIGGER) {
-            this.datastoreObject.strikeLevel += 1;
+    setStrikeLevel(value) {
+        if (value > STRIKE_ABILITY_TRIGGER || value < 0) {
+            return;
         }
+
+        this.datastoreObject.strikeLevel = value;
+    },
+
+    changeStrikeLevel(value) {
+        const newValue = Math.max(0, Math.min(STRIKE_ABILITY_TRIGGER, this.datastoreObject.strikeLevel + value));
+        this.setStrikeLevel(newValue);
+    },
+
+    onStrike() {
+        this.setStrikeLevel(this.datastoreObject.strikeLevel + 1);
 
         if(this.datastoreObject.ap < BATTLE_AP) {
             this.datastoreObject.ap += 1;
@@ -162,7 +174,7 @@ const BattleAgentMixin = {
     },
 
     onStrikeAbility() {
-        this.onStrike();
+        //this.onStrike(); Testing balance without this
         this.datastoreObject.strikeLevel = 0;
     },
 
@@ -197,6 +209,7 @@ const BattleAgentMixin = {
 
         const hpValue = Math.floor(this.datastoreObject.maxHealth * (value/100));
         this.datastoreObject.protection[type] += hpValue;
+        return hpValue;
     },
 
     getProtectionValue(type) {
@@ -211,15 +224,16 @@ const BattleAgentMixin = {
     dealDamage(initialDamage, type) {
         let damage = Math.floor(initialDamage);
         const protection = this.datastoreObject.protection;
+        let protectedDamage = 0;
         if(type && protection[type]) {
-            const protectedDamage = Math.min(protection[type], damage);
+            protectedDamage = Math.min(protection[type], damage);
             protection[type] -= protectedDamage;
             damage -= protectedDamage;
         }
 
         const totalDamage = Math.min(this.datastoreObject.health, damage);
         this.datastoreObject.health -= totalDamage;
-        return totalDamage;
+        return {totalDamage, protectedDamage};
     },
 
     consumeEmpowermentValue(type) {
@@ -328,7 +342,7 @@ class BattleWeapon extends Weapon {
     /**
      * Imbue a weapon with an element
      * @param {string} element The element to add to this weapon 
-     * @param {string} durationCondition How long this weapon stays imbued. null(default) for infinite or 'strikeAbility' until the next strike ability
+     * @param {string} durationCondition How long this weapon stays imbued. null(default) or 'infinite' for infinite or 'strikeAbility' until the next strike ability
      */
     imbue(element, durationCondition = null) {
         this.datastoreObject.imbuements[element] = {durationCondition};

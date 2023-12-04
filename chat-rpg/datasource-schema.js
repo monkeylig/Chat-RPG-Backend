@@ -7,7 +7,8 @@ const Schema = {
         Monsters: 'monsters',
         Battles: 'battles',
         Shops: 'shops',
-        InventoryPages: 'inventory_pages'
+        InventoryPages: 'inventory_pages',
+        Products: 'products'
     },
     
     AvatarDocuments: {

@@ -113,7 +113,7 @@ function checkInflame(battleAgent) {
     const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
     const inflameDamage = battleAgent.getData().maxHealth * inflamed.damagePercentage;
 
-    steps.push(BattleSteps.damage(battleAgent, Math.min(1, inflameDamage * defensiveRatio)));
+    steps.push(BattleSteps.damage(battleAgent, Math.max(1, inflameDamage * defensiveRatio)));
     steps.push(BattleSteps.info(`${battleAgent.getData().name} was hurt from being inflamed.`, 'inflameDamage'));
 
     const tickStep = tickStatusEffectStep(battleAgent, inflamed);
@@ -397,10 +397,12 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
     }
 
     else if(battleAction.type === 'item') {
-        const itemData = battleAction.item.datastoreObject;
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${itemData.name}!`, 'item', srcPlayer.getData().id);
+        const item = battleAction.item;
+        const itemData = item.getData();
+        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used a ${item.getData().name}!`, 'item', srcPlayer.getData().id);
         if(ItemFunctions.isItemReady(itemData, battle, srcPlayer, targetPlayer)) {
-            const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+            //const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+            const standardSteps = AbilityFunctions.standardSteps(item, battle, srcPlayer, targetPlayer);
             const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayer, targetPlayer, {});
             srcPlayer.onItemUsed(battleAction.item);
 
@@ -438,7 +440,8 @@ function createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
         steps.push(BattleSteps.setCounter(srcPlayer, ability, ability.getData().counter.type));
     }
     else {
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
+        const actionWord = ability.getData().type === 'magical' ? 'casts' : 'used'
+        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} ${actionWord} ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
 
         steps.push(infoStep);
         steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
@@ -514,13 +517,13 @@ function createReviveSteps(player1, player2) {
     let reviveStep = createReviveStep(player1);
 
     if(reviveStep) {
-        steps.push(player1);
+        steps.push(reviveStep);
     }
 
     reviveStep = createReviveStep(player2);
 
     if(reviveStep) {
-        steps.push(player2);
+        steps.push(reviveStep);
     }
     return steps;
 }

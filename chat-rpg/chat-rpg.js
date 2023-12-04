@@ -256,12 +256,6 @@ class ChatRPG {
             steps};
     }
 
-    async #finishBattle(battleRef, playerRef, player, battlePlayer) {
-        player.mergeBattlePlayer(battlePlayer);
-        await playerRef.set(player.getData());
-        await battleRef.delete();
-    }
-
     async equipWeapon(playerId, weaponId) {
         const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
         const player = await this.#datasource.runTransaction(async (transaction) => {
@@ -315,11 +309,12 @@ class ChatRPG {
         const playerData = playerSnap.data();
         const player = new Player(playerData);
         const bookObject = player.findObjectInBag(abilityBookId, false);
-        const book = new Book(bookObject.content);
 
         if(!bookObject) {
             throw new Error(ChatRPGErrors.bookNotInBag);
         }
+
+        const book = new Book(bookObject.content);
 
         if(abilityIndex >= book.getData().abilities.length || abilityIndex < 0) {
             throw new Error(ChatRPGErrors.badAbilityBookIndex);
@@ -395,8 +390,10 @@ class ChatRPG {
             let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
-                case 'book':
                     purchacedObject = new Weapon(shopItem.getData().product);
+                    break;
+                case 'book':
+                    purchacedObject = new Book(shopItem.getData().product);
                     break;
                 case 'item':
                     purchacedObject = new Item({...shopItem.getData().product, count: amount});
@@ -409,12 +406,7 @@ class ChatRPG {
                 this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
             }
             else {
-                if(shopItem.getData().type === 'item') {
-                    player.addItemToBag(purchacedObject);                    
-                }
-                else {
-                    player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
-                }
+                player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
             }
 
             transaction.update(playerRef, player.getData());
@@ -513,7 +505,7 @@ class ChatRPG {
 
             player.onObjectRemovedFromInventory(page);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData);
+            transaction.set(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -565,6 +557,35 @@ class ChatRPG {
         const page = new InventoryPage(pageSnap.data());
 
         return {...page.getData(), id: pageId};
+    }
+
+    async productPurchase(playerId, productSku) {
+        const productSnap = await this.#datasource.collection(Schema.Collections.Products).doc(productSku).get();
+
+        if (!productSnap.exists) {
+            throw new Error(ChatRPGErrors.productSkuNotFound);
+        }
+
+        const productData = productSnap.data();
+
+        const playerData = await this.#datasource.runTransaction(async (transaction) =>{
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            switch(productSku) {
+                case 'Tier1CoinPackage':
+                case 'Tier2CoinPackage':
+                case 'Tier3CoinPackage':
+                case 'Tier4CoinPackage':
+                    player.getData().coins += productData.coins;
+                    break;
+            }
+
+            transaction.set(playerSnap.ref, player.getData());
+            return this.#returnPlayerResponce(player, playerId);
+        });
+
+        return playerData;
     }
 
     #returnPlayerResponce(player, id) {
@@ -665,6 +686,12 @@ class ChatRPG {
                 player.onObjectAddedToInventory(pageId);
             }
         }
+    }
+
+    async #finishBattle(battleRef, playerRef, player, battlePlayer) {
+        player.mergeBattlePlayer(battlePlayer);
+        await playerRef.set(player.getData());
+        await battleRef.delete();
     }
 }
 

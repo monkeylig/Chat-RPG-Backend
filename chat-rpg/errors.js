@@ -22,7 +22,9 @@ const Errors = {
     inventoryPageNotFound: 'Inventory page not found',
     objectNotInInventory: 'Object not found in inventory',
     objectCantBeclaimed: 'Object cannot be claimed',
-    unrecognizedItemType: 'Unrecognized item type'
+    unrecognizedItemType: 'Unrecognized item type',
+    productSkuNotFound: 'Product SKU not found',
+    bagFull: 'The player\'s bag is full'
 }
 
 module.exports = Errors;

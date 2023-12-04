@@ -416,6 +416,7 @@ test('Adding and removing abilities', () => {
 });
 
 test('Adding and removing Imbue', () => {
+    //TODO test to make sure the imbue works
     const player1 = new BattlePlayer({id: 'player'});
 
     const imbueStep = BattleSteps.imbue(player1, 'fire');

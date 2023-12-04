@@ -3,6 +3,7 @@ const gameplayObjects = require('./gameplay-objects');
 const chatRPGUtility = require('./utility');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
+const ELEMENTAL_BURST_BONUS = 1.5;
 
 function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, stepResults = {}, options = {}) {
     if(!style) {
@@ -48,6 +49,11 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         if(searchElements('lightning') && targetPlayer.getStatusEffect(gameplayObjects.statusEffects.drenched.name)) {
             damage *= 1 + gameplayObjects.statusEffects.drenched.lightningAmp;
         }
+
+        // Elemental burst
+        if(elements.length > 1) {
+            damage *= ELEMENTAL_BURST_BONUS * (elements.length - 1);
+        }
     }
 
     const damageStep = BattleSteps.damage(targetPlayer, damage, type);
@@ -59,6 +65,20 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         const surged = gameplayObjects.statusEffects.surged;
         const drenched = gameplayObjects.statusEffects.drenched;
         const frozen = gameplayObjects.statusEffects.frozen;
+
+        if(elements.length > 1) {
+            let infoText = ''; 
+            elements.forEach((element, index) => {
+                if(elements.length === 2) {    
+                    infoText += index === elements.length - 1 ? `and ${element}` : `${element} `;
+                }
+                else {
+                    infoText += index === elements.length - 1 ? `and ${element}` : `${element}, `;
+                }
+            });
+
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} combined ${infoText} for an elemental burst!`, 'elementalBurst'));
+        }
 
         if(searchElements('fire')) {
             if(targetPlayer.getStatusEffect(drenched.name)) {
@@ -125,12 +145,14 @@ function damageStep(targetPlayer, damage, type) {
     const targetPlayerData = targetPlayer.getData();
 
     //Apply damage step
-    const totalDamage = targetPlayer.dealDamage(netDamage, type);
+    const {totalDamage, protectedDamage} = targetPlayer.dealDamage(netDamage, type);
 
     const damageStep = {
         type: 'damage',
         targetId: targetPlayerData.id,
-        damage: totalDamage
+        damage: totalDamage,
+        protectedDamage: protectedDamage,
+        protectedDamageType: type
     };
 
     return damageStep;
@@ -151,7 +173,7 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
     return healStep;
 }
 
-function infoStep(description, action, actorId='', targetId='', animation={}) {
+function infoStep(description, action, actorId='', targetId='', animation) {
     const infoStep = {
         type: 'info',
         description,
@@ -216,7 +238,7 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
                 description: `${descBeginning} fell suddenly!`
             };
         }
-        case 4: {
+        case  4: {
             return {
                 type: ampFunctionName,
                 description: `${descBeginning} rose greatly!`
@@ -226,6 +248,12 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
             return {
                 type: ampFunctionName,
                 description: `${descBeginning} fell greatly!`
+            };
+        }
+        case 12: {
+            return {
+                type: ampFunctionName,
+                description: `${descBeginning} was maximized!`
             };
         }
         case 2:
@@ -282,9 +310,14 @@ function empowermentStep(battlePlayer, empowerType, empowerValue) {
 }
 
 function protectionStep(battlePlayer, type, value) {
-    battlePlayer.addProtection(type, value);
+    const protectionGained = battlePlayer.addProtection(type, value);
     return {
         type: 'protection',
+        targetId: battlePlayer.getData().id,
+        protection: {
+            type,
+            value: protectionGained
+        },
         description: `${battlePlayer.getData().name} gained ${value}% ${type} protection!`
     };
 }
@@ -313,8 +346,20 @@ function apCostStep(battlePlayer, apCost) {
 
     return {
         type: 'apCost',
-        actorId: battlePlayer.getData().id,
+        targetId: battlePlayer.getData().id,
         apCost: netCost
+    };
+}
+
+function apGainStep(battlePlayer, apGain) {
+    const battlePlayerData = battlePlayer.getData();
+    const netGain = Math.min(apGain, battlePlayerData.maxAp - battlePlayerData.ap);
+    battlePlayerData.ap += netGain;
+
+    return {
+        type: 'apGain',
+        targetId: battlePlayer.getData().id,
+        apGain: netGain
     };
 }
 
@@ -322,7 +367,8 @@ function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
     battlePlayer.getData().autoRevive = reviveAmount;
     return {
         type: 'readyRevive',
-        actorId: battlePlayer.getData().id,
+        targetId: battlePlayer.getData().id,
+        autoRevive: reviveAmount,
         description: `${battlePlayer.getData().name} will be revived if they are defeated.`
     };
 }
@@ -363,6 +409,7 @@ function removeStatusEffectStep(statusEffect, targetPlayer, noDescription = fals
 function imbueStep(targetAgent, element, durationCondition) {
     const weapon = new BattleWeapon(targetAgent.getData().weapon);
     weapon.imbue(element, durationCondition);
+    targetAgent.getData().weapon = weapon.getData();
 
     return {
         type: 'imbue',
@@ -427,6 +474,17 @@ function addAbilityStrikeStep(targetAgent, ability, durationCondition) {
     };
 }
 
+function strikeLevelChangeStep(targetAgent, strikeLevelChange) {
+    const oldValue = targetAgent.getData().strikeLevel;
+    targetAgent.changeStrikeLevel(strikeLevelChange);
+
+    return {
+        type: 'strikeLevelChange',
+        targetId: targetAgent.getData().id,
+        netChange: targetAgent.getData().strikeLevel - oldValue
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -444,6 +502,7 @@ const BattleSteps = {
     protection: protectionStep,
     revive: reviveStep,
     apCost: apCostStep,
+    apGain: apGainStep,
     readyRevive: readyReviveStep,
     gainStatusEffect: gainStatusEffectStep,
     removeStatusEffect: removeStatusEffectStep,
@@ -453,6 +512,7 @@ const BattleSteps = {
     addAbility: addAbilityStep,
     removeAbility: removeAblityStep,
     addAbilityStrike: addAbilityStrikeStep,
+    strikeLevelChange: strikeLevelChangeStep,
     genHitSteps,
     genStrikeSteps
 };

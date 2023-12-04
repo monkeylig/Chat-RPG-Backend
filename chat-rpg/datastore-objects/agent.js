@@ -87,14 +87,7 @@ const BagHolderMixin = {
     },
 
     addItemToBag(item) {
-        const existingItemData = this.findObjectInBagByName(item.getData().name);
-
-        if(!existingItemData) {
-            return this.addObjectToBag(item.getData(), 'item');
-        }
-
-        existingItemData.content.count += item.getData().count;
-        return true;
+        return this.addObjectToBag(item.getData(), 'item');
     },
 
     addObjectToLastDrops(object, type) {

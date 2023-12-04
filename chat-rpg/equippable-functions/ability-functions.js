@@ -10,7 +10,7 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     let baseDamage = ability.getData().baseDamage;
 
     const effectName = ability.getData().effectName;
-    if(AbilityEffects[effectName] && AbilityEffects[effectName].overrideBaseDamage) {
+    if(AbilityEffects[effectName] && AbilityEffects[effectName].overrideBaseDamage && battle) {
         baseDamage = AbilityEffects[effectName].overrideBaseDamage(ability, battle, srcPlayer, targetPlayer);
     }
 
@@ -29,6 +29,11 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         }
     }
 
+    if(ability.getData().heal > 0) {
+        const healStep = BattleSteps.heal(srcPlayer, srcPlayer, ability.getData().heal);
+        steps.push(healStep);
+    }
+
     if(chance(ability.getData().inflameChance)) {
         const inflameStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.inflamed, targetPlayer);
         if(inflameStep) {
@@ -42,42 +47,48 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id, targetPlayer.getData().id))
     }
 
-    if(ability.getData().strengthAmp !== 0) {
+    if(ability.getData().relativeRecoil > 0) {
+        const recoilStep = BattleSteps.damage(srcPlayer, srcPlayer.getData().health * ability.getData().relativeRecoil, ability.getData().type);
+        steps.push(recoilStep);
+        steps.push(BattleSteps.info(`${srcPlayer.getData().name} was hit by ${ability.getData().name}'s recoil damage.`, 'recoil', srcPlayer.getData().id, targetPlayer.getData().id))
+    }
+
+    if(ability.getData().strengthAmp) {
         const strengthAmpStep = BattleSteps.strengthAmp(srcPlayer, ability.getData().strengthAmp);
         steps.push(strengthAmpStep);
     }
 
-    if(ability.getData().targetStrengthAmp !== 0) {
+    if(ability.getData().targetStrengthAmp) {
         const strengthAmpStep = BattleSteps.strengthAmp(targetPlayer, ability.getData().targetStrengthAmp);
         steps.push(strengthAmpStep);
     }
 
-    if(ability.getData().magicAmp !== 0) {
+    if(ability.getData().magicAmp) {
         const magicAmpStep = BattleSteps.magicAmp(srcPlayer, ability.getData().magicAmp);
         steps.push(magicAmpStep);
     }
 
-    if(ability.getData().targetMagicAmp !== 0) {
+    if(ability.getData().targetMagicAmp) {
         const magicAmpStep = BattleSteps.magicAmp(targetPlayer, ability.getData().targetMagicAmp);
         steps.push(magicAmpStep);
     }
 
-    if(ability.getData().defenseAmp !== 0) {
+    if(ability.getData().defenseAmp) {
         const defenseAmpStep = BattleSteps.defenseAmp(srcPlayer, ability.getData().defenseAmp);
         steps.push(defenseAmpStep);
     }
 
-    if(ability.getData().targetDefenseAmp !== 0) {
+    if(ability.getData().targetDefenseAmp) {
         const defenseAmpStep = BattleSteps.defenseAmp(targetPlayer, ability.getData().targetDefenseAmp);
         steps.push(defenseAmpStep);
     }
 
-    if(ability.getData().weaponSpeedAmp !== 0) {
+    if(ability.getData().weaponSpeedAmp) {
         const speedAmpStep = BattleSteps.weaponSpeedAmp(srcPlayer, ability.getData().weaponSpeedAmp);
         steps.push(speedAmpStep);
     }
 
-    if(ability.getData().targetWeaponSpeedAmp !== 0) {
+    if(ability.getData().targetWeaponSpeedAmp) {
         const speedAmpStep = BattleSteps.weaponSpeedAmp(targetPlayer, ability.getData().targetWeaponSpeedAmp);
         steps.push(speedAmpStep);
     }
@@ -100,6 +111,18 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         }
     }
 
+    if(ability.getData().strikeLevelChange) {
+        steps.push(BattleSteps.strikeLevelChange(srcPlayer, ability.getData().strikeLevelChange));
+    }
+
+    if(ability.getData().apReduce) {
+        steps.push(BattleSteps.apCost(srcPlayer, ability.getData().apReduce));
+    }
+
+    if(ability.getData().apGain) {
+        steps.push(BattleSteps.apGain(srcPlayer, ability.getData().apGain));
+    }
+
     const imbue = ability.getData().imbue;
     for(const element in ability.getData().imbue) {
         if(imbue[element]) {
@@ -107,13 +130,13 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         }
     }
 
-    if(ability.getData().addAbilities.length > 0) {
+    if(ability.getData().addAbilities && ability.getData().addAbilities.length > 0) {
         for(const newAbility of ability.getData().addAbilities) {
             steps.push(BattleSteps.addAbility(srcPlayer, new Ability(newAbility)));
         }
     }
 
-    if(ability.getData().addAbilityStrikes.length > 0) {
+    if(ability.getData().addAbilityStrikes && ability.getData().addAbilityStrikes.length > 0) {
         for(const abilityStrike of ability.getData().addAbilityStrikes) {
             steps.push(BattleSteps.addAbilityStrike(srcPlayer, new Ability(abilityStrike.ability), abilityStrike.durationCondition));
         }
