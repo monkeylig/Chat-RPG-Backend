@@ -1,5 +1,6 @@
 const BattleSteps = require('../../battle-steps');
 const { BattleWeapon } = require('../../datastore-objects/battle-agent');
+const gameplayObjects = require('../../gameplay-objects');
 
 const chatRPGUtility = require('../../utility');
 
@@ -25,7 +26,7 @@ function decadeBlastOverrideBaseDamage(ability, battle, user, opponent) {
 
 //#region rapidSlash
 function rapidSlashOnActivate(ability, battle, user, opponent, contextControl) {
-    const hits = chatRPGUtility.getRandomIntInclusive(ability.getSpecialStat('minHits'), ability.getSpecialStat('maxHits'));
+    const hits = chatRPGUtility.getRandomIntInclusive(ability.getSpecialStat('minHits', 0), ability.getSpecialStat('maxHits'));
     const steps = [];
 
     let hitCount = 1;
@@ -49,6 +50,17 @@ function sacredSlashOverrideBaseDamage(ability, battle, user, opponent) {
 }
 //#endregion
 
+//#region arcticFang TODO Make a test
+function arcticFangOnActive(ability, battle, user, opponent, contextControl) {
+    const steps = [];
+    if(opponent.getStatusEffect(gameplayObjects.statusEffects.drenched.name)) {
+        steps.push(BattleSteps.imbue(user, 'water', 'strikeAbility'));
+    }
+
+    return steps;
+}
+//#endregion
+
 const AbilitiesSeries1 = {
     skyscraper: {
         overrideBaseDamage: skyscraperOverrideBaseDamage
@@ -64,6 +76,9 @@ const AbilitiesSeries1 = {
     },
     sacredSlash: {
         overrideBaseDamage: sacredSlashOverrideBaseDamage
+    },
+    arcticFang: {
+        onActivate: arcticFangOnActive
     }
 };
 

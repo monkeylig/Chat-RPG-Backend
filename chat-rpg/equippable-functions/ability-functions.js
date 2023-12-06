@@ -93,6 +93,11 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(speedAmpStep);
     }
 
+    if(ability.getData().targetLighteningResistAmp) {
+        const lighteningResistAmp = BattleSteps.lighteningResistAmp(targetPlayer, ability.getData().targetLighteningResistAmp);
+        steps.push(lighteningResistAmp);
+    }
+
     const empowerment = ability.getData().empowerment;
     if(empowerment) {
         for(const type in empowerment) {

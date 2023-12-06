@@ -241,13 +241,25 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
         case  4: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} rose greatly!`
+                description: `${descBeginning} rose significantly!`
             };
         }
         case -4: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} fell greatly!`
+                description: `${descBeginning} fell significantly!`
+            };
+        }
+        case  6: {
+            return {
+                type: ampFunctionName,
+                description: `${descBeginning} rose tremendously!`
+            };
+        }
+        case -6: {
+            return {
+                type: ampFunctionName,
+                description: `${descBeginning} fell tremendously!`
             };
         }
         case 12: {
