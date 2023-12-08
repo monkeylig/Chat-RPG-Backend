@@ -35,6 +35,8 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         defensePen = options.defensePen;
     }
     defense *= 1 - defensePen;
+    // Factor in elemental resistances
+    defense *= targetPlayer.getTotalElementalResistance(elements);
     let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defense);
 
     //Weapon Synergy Bonus
@@ -294,8 +296,8 @@ function fireResistAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'fireResist', 'fireResistAmp', stages);
 }
 
-function lighteningResistAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'lighteningResist', 'lighteningResistAmp', stages);
+function lightningResistAmpStep(battlePlayer, stages) {
+    return statAmpStep(battlePlayer, 'lightningResist', 'lightningResistAmp', stages);
 }
 
 function waterResistAmpStep(battlePlayer, stages) {
@@ -452,7 +454,7 @@ function setCounterStep(targetAgent, counterAbility, counterType) {
             type: counterType,
             ability: counterAbility.getData(),
         },
-        description: `${targetAgent} is ready to defend.`
+        description: `${targetAgent.getData().name} is ready to defend.`
     };
 }
 
@@ -506,7 +508,7 @@ const BattleSteps = {
     defenseAmp: defenseAmpStep,
     magicAmp: magicAmpStep,
     fireResistAmp: fireResistAmpStep,
-    lighteningResistAmp: lighteningResistAmpStep,
+    lightningResistAmp: lightningResistAmpStep,
     waterResistAmp: waterResistAmpStep,
     iceResistAmp: iceResistAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,

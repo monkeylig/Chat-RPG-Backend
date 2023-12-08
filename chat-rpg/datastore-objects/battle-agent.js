@@ -4,7 +4,6 @@ const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
 const BATTLE_AP = 3;
-const STRIKE_ABILITY_TRIGGER = 2;
 const MAX_STAT_AMP = 12;
 
 const statAmpTable = {
@@ -54,7 +53,7 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
 }
 
 const BattleAgentMixin = {
-
+    STRIKE_ABILITY_TRIGGER: 2,
     constructObject(agent) {
         agent.ap = BATTLE_AP;
         agent.maxAp = BATTLE_AP;
@@ -77,11 +76,11 @@ const BattleAgentMixin = {
         };
         agent.statusEffects = {};
         agent.fireResist = 1;
-        agent.lighteningResist = 1;
+        agent.lightningResist = 1;
         agent.waterResist = 1;
         agent.iceResist = 1;
         agent.fireResistAmp = 0;
-        agent.lighteningResistAmp = 0;
+        agent.lightningResistAmp = 0;
         agent.waterResistAmp = 0;
         agent.iceResistAmp = 0;
         agent.counter = null;
@@ -128,12 +127,12 @@ const BattleAgentMixin = {
         return this.getModifiedStat('fireResist', 'fireResistAmp');
     },
 
-    lighteningResistAmp(stages) {
-        return this.statAmp('lighteningResistAmp', stages);
+    lightningResistAmp(stages) {
+        return this.statAmp('lightningResistAmp', stages);
     },
 
-    getModifiedLighteningResist() {
-        return this.getModifiedStat('lighteningResist', 'lighteningResistAmp');
+    getModifiedLightningResist() {
+        return this.getModifiedStat('lightningResist', 'lightningResistAmp');
     },
 
     waterResistAmp(stages) {
@@ -152,8 +151,31 @@ const BattleAgentMixin = {
         return this.getModifiedStat('iceResist', 'iceResistAmp');
     },
 
+    getTotalElementalResistance(elements) {
+        const totalResistance = 1;
+
+        for(const element in elements){
+            switch(element) {
+                case 'fire':
+                    totalResistance *= this.getModifiedFireResist();
+                    break;
+                case 'lightning':
+                    totalResistance *= this.getModifiedLightningResist();
+                    break;
+                case 'water':
+                    totalResistance *= this.getModifiedWaterResist();
+                    break;
+                case 'ice':
+                    totalResistance *= this.getModifiedIceResist();
+                    break;
+            }
+        }
+
+        return totalResistance;
+    },
+
     setStrikeLevel(value) {
-        if (value > STRIKE_ABILITY_TRIGGER || value < 0) {
+        if (value > this.STRIKE_ABILITY_TRIGGER || value < 0) {
             return;
         }
 
@@ -161,7 +183,7 @@ const BattleAgentMixin = {
     },
 
     changeStrikeLevel(value) {
-        const newValue = Math.max(0, Math.min(STRIKE_ABILITY_TRIGGER, this.datastoreObject.strikeLevel + value));
+        const newValue = Math.max(0, Math.min(this.STRIKE_ABILITY_TRIGGER, this.datastoreObject.strikeLevel + value));
         this.setStrikeLevel(newValue);
     },
 
@@ -179,7 +201,7 @@ const BattleAgentMixin = {
     },
 
     strikeAbilityReady() {
-        return this.datastoreObject.strikeLevel >= STRIKE_ABILITY_TRIGGER
+        return this.datastoreObject.strikeLevel >= this.STRIKE_ABILITY_TRIGGER
     },
 
     onAbilityUsed(ability) {

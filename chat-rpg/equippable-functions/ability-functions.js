@@ -93,9 +93,24 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(speedAmpStep);
     }
 
-    if(ability.getData().targetLighteningResistAmp) {
-        const lighteningResistAmp = BattleSteps.lighteningResistAmp(targetPlayer, ability.getData().targetLighteningResistAmp);
-        steps.push(lighteningResistAmp);
+    if(ability.getData().fireResistAmp) {
+        const fireResistAmp = BattleSteps.fireResistAmp(srcPlayer, ability.getData().fireResistAmp);
+        steps.push(fireResistAmp);
+    }
+
+    if(ability.getData().targetFireResistAmp) {
+        const fireResistAmp = BattleSteps.fireResistAmp(targetPlayer, ability.getData().targetFireResistAmp);
+        steps.push(fireResistAmp);
+    }
+
+    if(ability.getData().lightningResistAmp) {
+        const lightningResistAmp = BattleSteps.lightningResistAmp(srcPlayer, ability.getData().lightningResistAmp);
+        steps.push(lightningResistAmp);
+    }
+
+    if(ability.getData().targetLightningResistAmp) {
+        const lightningResistAmp = BattleSteps.lightningResistAmp(targetPlayer, ability.getData().targetLightningResistAmp);
+        steps.push(lightningResistAmp);
     }
 
     const empowerment = ability.getData().empowerment;
@@ -118,6 +133,9 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
 
     if(ability.getData().strikeLevelChange) {
         steps.push(BattleSteps.strikeLevelChange(srcPlayer, ability.getData().strikeLevelChange));
+        if(srcPlayer.getData().strikeLevel === srcPlayer.STRIKE_ABILITY_TRIGGER) {
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name}'s strike ability is ready!`));
+        }
     }
 
     if(ability.getData().apReduce) {

@@ -300,8 +300,10 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
             if(unlockedAbilities.length > 0) {
                 const drop = {
                     type: 'abilitiesUnlock',
-                    content: unlockedAbilities,
-                    description: `You unlocked abilities from ${bagItem.content.name}!`
+                    content: {
+                        name: `${bagItem.content.name} ability unlocked!`
+                    },
+                    description: `Abilities unlocked from ${bagItem.content.name}!`
                 };
 
                 result.drops.push(drop);
@@ -347,12 +349,12 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
             }
         }
         else {
-            steps.push(BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, chatRPGUtility.strikeAnim));
-            counter = targetPlayer.getCounter('strike');
+            const counter = targetPlayer.getCounter('strike');
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, counter ? null : chatRPGUtility.strikeAnim));
             if(counter) {
                 targetPlayer.clearCounter();
                 steps.push(BattleSteps.info(`But it was countered!`))
-                steps.push(...createAbilitySteps(counter.ability, targetPlayer, srcPlayer, battle));
+                steps.push(...createAbilitySteps(new Ability(counter.ability), targetPlayer, srcPlayer, battle));
             }
             else {
                 steps.push(...BattleSteps.genStrikeSteps(srcPlayer, targetPlayer));
@@ -361,7 +363,8 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
                 const abilitiesToRemove = [];
 
                 abilityStrikes.forEach((abilityStrike, index) => {
-                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer, targetPlayer, abilityStrike.ability.animation));
+                    const target = abilityStrike.ability.target === 'self' ? srcPlayer : targetPlayer
+                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer.getData().id, target.getData().id, abilityStrike.ability.animation));
                     steps.push(...activateAbility(new Ability(abilityStrike.ability), srcPlayer, targetPlayer, battle));
 
                     if(abilityStrike.durationCondition && abilityStrike.durationCondition.type === 'strikes') {
@@ -436,15 +439,15 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
 function createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
     const steps = [];
 
-    if(ability.getData().isCounter) {
-        steps.push(BattleSteps.setCounter(srcPlayer, ability, ability.getData().counter.type));
-    }
-    else {
-        const actionWord = ability.getData().type === 'magical' ? 'casts' : 'used'
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} ${actionWord} ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
+    const actionWord = ability.getData().type === 'magical' ? 'casts' : 'used';
+    const target = ability.getData().target === 'self' ? srcPlayer : targetPlayer;
+    const infoStep = BattleSteps.info(`${srcPlayer.getData().name} ${actionWord} ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, target.getData().id, ability.getData().animation);
 
-        steps.push(infoStep);
-        steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
+    steps.push(infoStep);
+    steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
+        
+    if(ability.getData().setCounterAbility) { //TODO put this in standard steps
+        steps.push(BattleSteps.setCounter(srcPlayer, new Ability(ability.getData().setCounterAbility.ability), ability.getData().setCounterAbility.type));
     }
     return steps;
 }
@@ -480,7 +483,7 @@ function createBattleAction(actionRequest, battlePlayer) {
         playerBattleAction = {
             type: 'ability',
             ability: ability,
-            speed: ability.getData().isCounter ? COUNTER_PRIORITY : ability.getData().speed
+            speed: ability.getData().setCounterAbility ? COUNTER_PRIORITY : ability.getData().speed
         }
     }
 
@@ -530,7 +533,6 @@ function createReviveSteps(player1, player2) {
 
 function activateAbility(ability, srcPlayer, targetPlayer, battle) {
     const steps = [];
-
     const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer);
     const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
 

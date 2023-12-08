@@ -9,9 +9,10 @@ class Ability extends DatastoreObject {
     constructNewObject(ability) {
         ability.name = 'nothing';
         ability.baseDamage = 0;
+        ability.baseDamageText = null;
         ability.speed = 0;
         ability.effectName = '';
-        ability.apCost = 1;
+        ability.apCost = 0;
         ability.type = 'physical';
         ability.style = 'sword';
         ability.strengthAmp = 0;
@@ -35,14 +36,14 @@ class Ability extends DatastoreObject {
         };
         ability.description = 'This is an empty default ability.';
         ability.effectName = '';
-        ability.animation = animations.yellowHit;
+        ability.animation = null;
         ability.specialStats = {};
         ability.elements = [];
         ability.inflameChance = 0;
         ability.fireResistAmp = 0;
         ability.targetFireResistAmp = 0;
-        ability.lighteningResistAmp = 0;
-        ability.targetLighteningResistAmp = 0;
+        ability.lightningResistAmp = 0;
+        ability.targetLightningResistAmp = 0;
         ability.waterResistAmp = 0;
         ability.targetWaterResistAmp = 0;
         ability.iceResistAmp = 0;
@@ -59,6 +60,8 @@ class Ability extends DatastoreObject {
         ability.charges = null;
         ability.addAbilities = []
         ability.addAbilityStrikes = [];
+        ability.setCounterAbility = null;
+        ability.target = 'opponent';
     }
 
     getSpecialStat(stat, defaultValue = 0) {

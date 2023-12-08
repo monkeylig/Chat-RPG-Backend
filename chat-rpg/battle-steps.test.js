@@ -73,7 +73,7 @@ describe.each([
     ['defense', BattleSteps.defenseAmp],
     ['magic', BattleSteps.magicAmp],
     ['fireResist', BattleSteps.fireResistAmp],
-    ['lighteningResist', BattleSteps.lighteningResistAmp],
+    ['lightningResist', BattleSteps.lightningResistAmp],
     ['waterResist', BattleSteps.waterResistAmp],
     ['iceResist', BattleSteps.iceResistAmp],
     ['speed', BattleSteps.weaponSpeedAmp, true]
