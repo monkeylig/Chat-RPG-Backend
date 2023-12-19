@@ -32,10 +32,10 @@ const statAmpTable = {
 
 describe.each([
     ['strength', 'getModifiedStrength', 'strengthAmp'],
-    ['defence', 'getModifiedDefence', 'defenceAmp'],
+    ['defense', 'getModifiedDefense', 'defenseAmp'],
     ['magic', 'getModifiedMagic', 'magicAmp'],
     ['fireResist', 'getModifiedFireResist', 'fireResistAmp'],
-    ['lighteningResist', 'getModifiedLighteningResist', 'lighteningResistAmp'],
+    ['lightningResist', 'getModifiedLightningResist', 'lightningResistAmp'],
     ['waterResist', 'getModifiedWaterResist', 'waterResistAmp'],
     ['iceResist', 'getModifiedIceResist', 'iceResistAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {

@@ -9,15 +9,16 @@ class Ability extends DatastoreObject {
     constructNewObject(ability) {
         ability.name = 'nothing';
         ability.baseDamage = 0;
+        ability.baseDamageText = null;
         ability.speed = 0;
         ability.effectName = '';
-        ability.apCost = 1;
+        ability.apCost = 0;
         ability.type = 'physical';
         ability.style = 'sword';
         ability.strengthAmp = 0;
         ability.targetStrengthAmp = 0;
-        ability.defenceAmp = 0;
-        ability.targetDefenceAmp = 0;
+        ability.defenseAmp = 0;
+        ability.targetDefenseAmp = 0;
         ability.magicAmp = 0;
         ability.targetMagicAmp = 0;
         ability.speedAmp = 0;
@@ -35,19 +36,19 @@ class Ability extends DatastoreObject {
         };
         ability.description = 'This is an empty default ability.';
         ability.effectName = '';
-        ability.animation = animations.yellowHit;
+        ability.animation = null;
         ability.specialStats = {};
         ability.elements = [];
         ability.inflameChance = 0;
         ability.fireResistAmp = 0;
         ability.targetFireResistAmp = 0;
-        ability.lighteningResistAmp = 0;
-        ability.targetLighteningResistAmp = 0;
+        ability.lightningResistAmp = 0;
+        ability.targetLightningResistAmp = 0;
         ability.waterResistAmp = 0;
         ability.targetWaterResistAmp = 0;
         ability.iceResistAmp = 0;
         ability.targetIceResistAmp = 0;
-        ability.defencePen = 0;
+        ability.defensePen = 0;
         ability.imbue = {
             fire: null,
             lightning: null,
@@ -59,6 +60,8 @@ class Ability extends DatastoreObject {
         ability.charges = null;
         ability.addAbilities = []
         ability.addAbilityStrikes = [];
+        ability.setCounterAbility = null;
+        ability.target = 'opponent';
     }
 
     getSpecialStat(stat, defaultValue = 0) {

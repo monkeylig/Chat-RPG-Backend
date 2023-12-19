@@ -2,13 +2,12 @@ const LOCAL_TEST_PORT = 4000;
 
 const fs = require('fs');
 const express = require('express');
-const Buffer = require('buffer/').Buffer
-const jwt = require('jsonwebtoken');
 
 const ChatRPG = require('./chat-rpg/chat-rpg');
 const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const endpoints = require('./endpoints/endpoints');
+const utility = require('./utility');
 let twitchExtentionSecret;
 
 function twitchJWTValidation(req, res, next) {
@@ -21,7 +20,7 @@ function twitchJWTValidation(req, res, next) {
     }
 
     try {
-        const payload = jwt.verify(auth[1], Buffer.from(twitchExtentionSecret, 'base64'));
+        const payload = utility.verifyJWT(auth[1], twitchExtentionSecret);
         req.twitchUser = payload;
     }
     catch (error) {
@@ -47,6 +46,7 @@ function startServer(dataSource) {
 
     app.get('/', endpoints.welcome);
     app.get('/get_starting_avatars', (req, res) => endpoints.get_starting_avatars(req, res, chatrpg));
+    app.get('/get_game_info', (req, res) => endpoints.get_game_info(req, res, chatrpg));
     app.options('/create_new_player', endpoints.create_new_player_options);
     app.put('/create_new_player', (req, res) => endpoints.create_new_player(req, res, chatrpg));
     app.get('/get_player', (req, res) => endpoints.get_player(req, res, chatrpg));
@@ -62,6 +62,11 @@ function startServer(dataSource) {
     app.post('/drop_item', (req, res) => endpoints.drop_item(req, res, chatrpg));
     app.get('/get_shop', (req, res) => endpoints.get_shop(req, res, chatrpg));
     app.post('/buy', (req, res) => endpoints.buy(req, res, chatrpg));
+    app.post('/move_object_from_bag_to_inventory', (req, res) => endpoints.move_object_from_bag_to_inventory(req, res, chatrpg));
+    app.get('/get_inventory_page', (req, res) => endpoints.get_inventory_page(req, res, chatrpg));
+    app.post('/move_object_from_inventory_to_bag', (req, res) => endpoints.move_object_from_inventory_to_bag(req, res, chatrpg));
+    app.post('/product_purchase', (req, res) => endpoints.product_purchase(req, res, chatrpg, twitchExtentionSecret));
+    app.post('/claim_object', (req, res) => endpoints.claim_object(req, res, chatrpg));
 
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {

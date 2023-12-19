@@ -1,5 +1,7 @@
 const Item = require('../datastore-objects/item');
 const books = require('./books');
+const swords = require('./swords')
+const staffs = require('./staffs')
 
 const potion = new Item ({
     name:'Potion',
@@ -23,7 +25,9 @@ const content = {
     items: {
         potion,
         pheonixDown
-    }
+    },
+    swords,
+    staffs
 };
 
 module.exports = content;

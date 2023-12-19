@@ -8,7 +8,7 @@ function PotionIsReady(item, battle, user, opponent) {
 
 //#region Pheonix Down
 function PheonixDownIsReady(item, battle, user, opponent) {
-    return !user.getData().reviveReady;
+    return user.getData().autoRevive === 0;
 }
 
 function PheonixDownOnBattleActivate(item, battle, user, opponent, contextControl) {
@@ -24,7 +24,7 @@ const ItemsSeries1 = {
     pheonixDown: {
         onBattleActivate: PheonixDownOnBattleActivate,
         isReady: PheonixDownIsReady,
-        notReadyMessage: 'Phoenix Down is already active.'
+        notReadyMessage: 'Phoenix Down failed because another revive effect is active.'
     }
 };
 

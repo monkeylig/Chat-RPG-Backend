@@ -1,9 +1,9 @@
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
-const utility = require("../../utility");
 const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
+const { gameColection } = require('./utilities');
 
 function expFunc(level) {
     if (level == 1) {
@@ -21,7 +21,7 @@ function levelUpPlayer(player, growthObject) {
     player.health = player.maxHealth;
     player.strength += growthObject.strength;
     player.magic +=  growthObject.magic;
-    player.defence += growthObject.defence;
+    player.defense += growthObject.defense;
     player.level += 1;
     player.exp = 0;
     player.expToNextLevel = getExpToNextLevel(player.level);
@@ -41,41 +41,6 @@ function addExpAndLevel(player, _exp, growthObject) {
     }
 }
 
-function addObjectToCollection(collection, object, type, limit) {
-    if(limit && collection.length >= limit) {
-        return;
-    }
-
-    const objectContainer = {
-        type,
-        id: utility.genId(),
-        content: object
-    };
-    collection.push(objectContainer);
-    return objectContainer;
-}
-
-function dropObjectFromCollection(collection, id) {
-    const objectIndex = collection.findIndex(element => element.id === id);
-
-    if(objectIndex === -1) {
-        return;
-    }
-
-     const objectData = collection.splice(objectIndex, 1);
-
-    return objectData[0];
-}
-
-function findObjectInCollection(collection, id) {
-    const object = chatRPGUtility.findInObjectArray(collection, 'id', id);
-    
-    if (!object) {
-        return;
-    }
-    return object;
-}
-
 const BagHolderMixin = {
     constructObject(bagHolder) {
         bagHolder.bag = {
@@ -90,11 +55,11 @@ const BagHolderMixin = {
 
     addObjectToBag(object, type) {
         const bag = this.datastoreObject.bag;
-        return addObjectToCollection(bag.objects, object, type, bag.capacity);
+        return gameColection.addObjectToCollection(bag.objects, object, type, bag.capacity);
     },
 
     findObjectInBag(id) {
-        return findObjectInCollection(this.datastoreObject.bag.objects, id);
+        return gameColection.findObjectInCollection(this.datastoreObject.bag.objects, id);
     },
 
     findObjectInBagByName(name) {
@@ -106,7 +71,7 @@ const BagHolderMixin = {
     },
 
     dropObjectFromBag(id) {
-        return dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+        return gameColection.dropObjectFromCollection(this.datastoreObject.bag.objects, id);
     },
 
     isBagFull() {
@@ -122,23 +87,16 @@ const BagHolderMixin = {
     },
 
     addItemToBag(item) {
-        const existingItemData = this.findObjectInBagByName(item.getData().name);
-
-        if(!existingItemData) {
-            return this.addObjectToBag(item.getData(), 'item');
-        }
-
-        existingItemData.content.count += item.getData().count;
-        return true;
+        return this.addObjectToBag(item.getData(), 'item');
     },
 
     addObjectToLastDrops(object, type) {
         const lastDrops = this.datastoreObject.lastDrops;
-        return addObjectToCollection(lastDrops.objects, object, type);
+        return gameColection.addObjectToCollection(lastDrops.objects, object, type);
     },
 
     removeLastDrop(id) {
-        return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+        return gameColection.dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
     },
 
     clearLastDrops() {
@@ -169,7 +127,7 @@ const BagHolderMixin = {
 
 class Agent extends DatastoreObject {
 
-    static MAXABILITIES = 3;
+    static MAXABILITIES = 5;
     constructor(objectData) {
         super(objectData);
     }
@@ -184,7 +142,7 @@ class Agent extends DatastoreObject {
         agent.health = 0;
         agent.strength = 0;
         agent.magic = 0;
-        agent.defence = 0;
+        agent.defense = 0;
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
@@ -202,7 +160,7 @@ class Agent extends DatastoreObject {
         datastoreObject.health = datastoreObject.maxHealth;
         datastoreObject.strength = Math.floor(growthObject.strength * level);
         datastoreObject.magic =  Math.floor(growthObject.magic * level);
-        datastoreObject.defence = Math.floor(growthObject.defence * level);
+        datastoreObject.defense = Math.floor(growthObject.defense * level);
         datastoreObject.level = level;
         datastoreObject.exp = 0;
         datastoreObject.expToNextLevel = getExpToNextLevel(datastoreObject.level);
@@ -348,7 +306,7 @@ class Player extends Agent {
         thisPlayerData.health = battlePlayerData.health;
         thisPlayerData.strength = battlePlayerData.strength;
         thisPlayerData.magic =  battlePlayerData.magic;
-        thisPlayerData.defence = battlePlayerData.defence;
+        thisPlayerData.defense = battlePlayerData.defense;
         thisPlayerData.level = battlePlayerData.level;
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;

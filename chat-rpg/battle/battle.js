@@ -36,11 +36,9 @@ function singlePlayerBattleIteration(battle, playerActionRequest) {
     // Post Action Phase
     steps.push(...executePostActionPhase(battlePlayer, battleMonster, battle));
 
-    const endStep = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
+    const endSteps = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
 
-    if(endStep) {
-        steps.push(endStep);
-    }
+    steps.push(...endSteps);
 
     battle.player = battlePlayer.getData();
     battle.monster = battleMonster.getData();
@@ -82,6 +80,9 @@ function executeActionPhase(battlePlayer, battlePlayerAction, battleMonster, bat
 
 function executePostActionPhase(battlePlayer, battleMonster, battle) {
     const steps = [];
+    if(!battle.active) {
+        return steps;
+    }
     
     steps.push(...checkInflame(battleMonster));
     steps.push(...checkInflame(battlePlayer));
@@ -109,10 +110,10 @@ function checkInflame(battleAgent) {
     }
 
     const steps = [];
-    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
     const inflameDamage = battleAgent.getData().maxHealth * inflamed.damagePercentage;
 
-    steps.push(BattleSteps.damage(battleAgent, Math.min(1, inflameDamage * defensiveRatio)));
+    steps.push(BattleSteps.damage(battleAgent, Math.max(1, inflameDamage * defensiveRatio)));
     steps.push(BattleSteps.info(`${battleAgent.getData().name} was hurt from being inflamed.`, 'inflameDamage'));
 
     const tickStep = tickStatusEffectStep(battleAgent, inflamed);
@@ -191,7 +192,7 @@ function popSurged(battleAgent) {
         return [];
     }
 
-    const defensiveRatio = battleAgent.getData().defence / battleAgent.getModifiedDefence();
+    const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
     const surgeDamage = battleAgent.getData().maxHealth * surged.damagePercentage;
 
     const steps = [
@@ -215,14 +216,11 @@ function tickStatusEffectStep(battleAgent, statusEffect) {
 function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
 
     if(!battle.active && battle.result.status === 'escape') {
-        return {
-            type: "battle_end",
-            description: `${battle.player.name} escaped.`
-        };
+        return [BattleSteps.battleEnd()];
     }
 
     if(!battlePlayer.isDefeated() && !battleMonster.isDefeated()) {
-        return;
+        return [];
     }
 
     battle.active = false;
@@ -232,20 +230,28 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
     if(battlePlayer.isDefeated() && battleMonster.isDefeated()) {
         result.winner = null;
         result.status = 'draw';
-        return BattleSteps.battleEnd("The battle ended in a draw.");
+        return [
+            BattleSteps.info("The battle ended in a draw."),
+            BattleSteps.battleEnd()
+        ];
     }
     else if(battlePlayer.isDefeated()) {
         result.winner = battleMonster.getData().id;
         result.status = 'defeat';
-        return BattleSteps.battleEnd(`${battlePlayer.getData().name} was defeated.`);
+        return [
+            BattleSteps.info(`${battlePlayer.getData().name} was defeated.`),
+            BattleSteps.battleEnd()
+        ];
     }
     else if(battleMonster.isDefeated()) {
         result.status = 'victory';
         const expGain = battleMonster.getExpGain();
+        const oldLevel = battlePlayer.getData().level;
         battlePlayer.addExpAndLevel(expGain);
 
         result.winner = battlePlayer.getData().id;
         result.expAward = expGain;
+        result.levelGain = battlePlayer.getData().level - oldLevel;
         result.drops = [];
         battlePlayer.clearLastDrops();
 
@@ -294,19 +300,24 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
             if(unlockedAbilities.length > 0) {
                 const drop = {
                     type: 'abilitiesUnlock',
-                    content: unlockedAbilities,
-                    description: `You unlocked abilities from ${bagItem.content.name}!`
+                    content: {
+                        name: `${bagItem.content.name} ability unlocked!`
+                    },
+                    description: `Abilities unlocked from ${bagItem.content.name}!`
                 };
 
                 result.drops.push(drop);
             }
         }
-        return BattleSteps.battleEnd(`${battleMonster.getData().name} was defeated!`);
+        return [
+            BattleSteps.info(`${battleMonster.getData().name} was defeated!`),
+            BattleSteps.battleEnd()
+        ];
     }
 }
 
 function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
-    if(srcPlayer.isDefeated() || targetPlayer.isDefeated()) {
+    if(srcPlayer.isDefeated() || targetPlayer.isDefeated() || !battle.active) {
         return [];
     }
     const steps = [];
@@ -338,12 +349,12 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
             }
         }
         else {
-            steps.push(BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, chatRPGUtility.strikeAnim));
-            counter = targetPlayer.getCounter('strike');
+            const counter = targetPlayer.getCounter('strike');
+            steps.push(BattleSteps.info(`${srcPlayer.getData().name} strikes ${targetPlayer.getData().name}!`, 'strike', srcPlayer.getData().id, targetPlayer.getData().id, counter ? null : chatRPGUtility.strikeAnim));
             if(counter) {
                 targetPlayer.clearCounter();
                 steps.push(BattleSteps.info(`But it was countered!`))
-                steps.push(...createAbilitySteps(counter.ability, targetPlayer, srcPlayer, battle));
+                steps.push(...createAbilitySteps(new Ability(counter.ability), targetPlayer, srcPlayer, battle));
             }
             else {
                 steps.push(...BattleSteps.genStrikeSteps(srcPlayer, targetPlayer));
@@ -352,7 +363,8 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
                 const abilitiesToRemove = [];
 
                 abilityStrikes.forEach((abilityStrike, index) => {
-                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer, targetPlayer, abilityStrike.ability.animation));
+                    const target = abilityStrike.ability.target === 'self' ? srcPlayer : targetPlayer
+                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer.getData().id, target.getData().id, abilityStrike.ability.animation));
                     steps.push(...activateAbility(new Ability(abilityStrike.ability), srcPlayer, targetPlayer, battle));
 
                     if(abilityStrike.durationCondition && abilityStrike.durationCondition.type === 'strikes') {
@@ -388,10 +400,12 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
     }
 
     else if(battleAction.type === 'item') {
-        const itemData = battleAction.item.datastoreObject;
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${itemData.name}!`, 'item', srcPlayer.getData().id);
+        const item = battleAction.item;
+        const itemData = item.getData();
+        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used a ${item.getData().name}!`, 'item', srcPlayer.getData().id);
         if(ItemFunctions.isItemReady(itemData, battle, srcPlayer, targetPlayer)) {
-            const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+            //const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+            const standardSteps = AbilityFunctions.standardSteps(item, battle, srcPlayer, targetPlayer);
             const itemSteps = ItemFunctions.effectBattleSteps(itemData, battle, srcPlayer, targetPlayer, {});
             srcPlayer.onItemUsed(battleAction.item);
 
@@ -410,6 +424,7 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
     }
 
     else if(battleAction.type === 'escape') {
+        steps.push(BattleSteps.info(`${battle.player.name} escaped.`, 'escape', srcPlayer.getData().id))
         battle.active = false;
         battle.result = {
             status: 'escape',
@@ -424,14 +439,15 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
 function createAbilitySteps(ability, srcPlayer, targetPlayer, battle) {
     const steps = [];
 
-    if(ability.getData().isCounter) {
-        steps.push(BattleSteps.setCounter(srcPlayer, ability, ability.getData().counter.type));
-    }
-    else {
-        const infoStep = BattleSteps.info(`${srcPlayer.getData().name} used ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, targetPlayer.getData().id, ability.getData().animation);
+    const actionWord = ability.getData().type === 'magical' ? 'casts' : 'used';
+    const target = ability.getData().target === 'self' ? srcPlayer : targetPlayer;
+    const infoStep = BattleSteps.info(`${srcPlayer.getData().name} ${actionWord} ${ability.getData().name}!`, 'ability', srcPlayer.getData().id, target.getData().id, ability.getData().animation);
 
-        steps.push(infoStep);
-        steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
+    steps.push(infoStep);
+    steps.push(...activateAbility(ability, srcPlayer, targetPlayer, battle));
+        
+    if(ability.getData().setCounterAbility) { //TODO put this in standard steps
+        steps.push(BattleSteps.setCounter(srcPlayer, new Ability(ability.getData().setCounterAbility.ability), ability.getData().setCounterAbility.type));
     }
     return steps;
 }
@@ -467,7 +483,7 @@ function createBattleAction(actionRequest, battlePlayer) {
         playerBattleAction = {
             type: 'ability',
             ability: ability,
-            speed: ability.getData().isCounter ? COUNTER_PRIORITY : ability.getData().speed
+            speed: ability.getData().setCounterAbility ? COUNTER_PRIORITY : ability.getData().speed
         }
     }
 
@@ -504,20 +520,19 @@ function createReviveSteps(player1, player2) {
     let reviveStep = createReviveStep(player1);
 
     if(reviveStep) {
-        steps.push(player1);
+        steps.push(reviveStep);
     }
 
     reviveStep = createReviveStep(player2);
 
     if(reviveStep) {
-        steps.push(player2);
+        steps.push(reviveStep);
     }
     return steps;
 }
 
 function activateAbility(ability, srcPlayer, targetPlayer, battle) {
     const steps = [];
-
     const standardSteps = AbilityFunctions.standardSteps(ability, battle, srcPlayer, targetPlayer);
     const abilitySteps = AbilityFunctions.effectSteps(ability, battle, srcPlayer, targetPlayer, {});
 

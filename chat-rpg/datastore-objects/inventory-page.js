@@ -1,5 +1,6 @@
 const DatastoreObject = require('./datastore-object');
 const utility = require("../../utility");
+const { gameColection } = require('./utilities');
 
 class InventoryPage extends DatastoreObject {
     static PAGE_CAPACITY = 25;
@@ -17,30 +18,12 @@ class InventoryPage extends DatastoreObject {
     }
 
     addObjectToInventory(object, type) {
-        if(this.isFull()) {
-            return;
-        }
-
-        const objectContainer = {
-            type,
-            id: utility.genId(),
-            content: object
-        };
-        this.datastoreObject.objects.push(objectContainer);
-        return objectContainer;
+        return gameColection.addObjectToCollection(this.datastoreObject.objects, object, type, InventoryPage.PAGE_CAPACITY);
     }
 
     dropObjectFromInventory(objectId) {
         const objects = this.datastoreObject.objects;
-        const objectIndex = objects.findIndex(element => element.id === objectId);
-        
-        if(objectIndex === -1) {
-            return;
-        }
-
-        const droppedObject = objects[objectIndex];
-        objects.splice(objectIndex, 1);
-        return droppedObject;
+        return gameColection.dropObjectFromCollection(objects, objectId);
     }
 }
 

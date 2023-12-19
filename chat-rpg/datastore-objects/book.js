@@ -57,6 +57,7 @@ class Book extends DatastoreObject {
 
     constructNewObject(book) {
         book.name = '';
+        book.icon = '';
         book.description = 'Ability books contain new abilities for Legion Slayers to learn through battles.';
         book.abilities = [];
     }

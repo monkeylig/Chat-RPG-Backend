@@ -2,7 +2,7 @@ const Ability = require("../datastore-objects/ability");
 const chatRPGUtility = require("../utility");
 
 function genericAi(monster, opponent, battle) {
-    let choice = chatRPGUtility.getRandomIntInclusive(0, 1);
+    /*let choice = chatRPGUtility.getRandomIntInclusive(0, 1);
 
     const monsterData = monster.getData();
     if(choice === 1 && monsterData.abilities.length > 0) {
@@ -15,7 +15,7 @@ function genericAi(monster, opponent, battle) {
                 abilityName: ability.getData().name
             };
         }
-    }
+    }*/
 
     return {type: 'strike'};
 }

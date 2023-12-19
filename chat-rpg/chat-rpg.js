@@ -13,6 +13,7 @@ const BattleFunctions = require('./battle/battle')
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
+const gameplayObjects = require("./gameplay-objects");
 
 class ChatRPG {
     #datasource;
@@ -36,7 +37,18 @@ class ChatRPG {
         return [];
     }
 
-    async addNewPlayer(name, avatar, platformId, platform) {
+    async getGameInfo() {
+        const gameInfoSnap = await this.#datasource.collection(Schema.Collections.Configs).doc('gameInfo').get();
+        const gameInfo = gameInfoSnap.data();
+
+        if(gameInfo) {
+            return gameInfo;
+        }
+
+        return {};
+    }
+
+    async addNewPlayer(name, avatar, weaponType, vitalityBonus, platformId, platform) {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
 
@@ -49,15 +61,27 @@ class ChatRPG {
 
         const player = new Player({name, avatar, [platformIdProperty]: platformId});
 
-        player.addItemToBag(chatRPGUtility.startingItems.items.potion);
-        player.addItemToBag(chatRPGUtility.startingItems.items.phoenixDown);
-        player.addBookToBag(chatRPGUtility.startingItems.books.warriorMasteryI);
-        player.addBookToBag(chatRPGUtility.startingItems.books.wizardMasteryI);
+        if(weaponType) {
+            player.getData().weapon = gameplayObjects.startingWeapons[weaponType];    
+        }
 
-        const newPlayer = playersRef.doc();
-        await newPlayer.set(player.getData());
+        if(vitalityBonus === 'health') {
+            player.getData().maxHealth += 2;
+            player.getData().health += 2;
+        }
+        else if(vitalityBonus === 'defense') {
+            player.getData().defense += 1;
+        }
 
-        return newPlayer.id;
+        player.addItemToBag(gameplayObjects.startingItems.items.potion);
+        player.addItemToBag(gameplayObjects.startingItems.items.phoenixDown);
+        player.addBookToBag(gameplayObjects.startingItems.books.warriorMasteryI);
+        player.addBookToBag(gameplayObjects.startingItems.books.wizardMasteryI);
+
+        const playerRef = playersRef.doc();
+        await playerRef.set(player.getData());
+
+        return this.#returnPlayerResponce(player, playerRef.id);
     }
 
     async findPlayerById(id, platform) {
@@ -212,18 +236,24 @@ class ChatRPG {
             }
 
             await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
-            return {player: battlePlayerData, monster: monsterData, steps, result: battle.result};
+
+            const updatedPlayer = player.getData();
+            updatedPlayer.id = battlePlayerData.id;
+            return {
+                ...battle,
+                updatedPlayer,
+                player: battlePlayerData,
+                monster: monsterData,
+                steps, 
+                result: battle.result};
         }
 
         await battleSnap.ref.set(battle);
 
-        return {player: battle.player, monster: battle.monster, turn: battle.round - 1, steps};
-    }
-
-    async #finishBattle(battleRef, playerRef, player, battlePlayer) {
-        player.mergeBattlePlayer(battlePlayer);
-        await playerRef.set(player.getData());
-        await battleRef.delete();
+        return {
+            ...battle,
+            turn: battle.round - 1,
+            steps};
     }
 
     async equipWeapon(playerId, weaponId) {
@@ -279,11 +309,12 @@ class ChatRPG {
         const playerData = playerSnap.data();
         const player = new Player(playerData);
         const bookObject = player.findObjectInBag(abilityBookId, false);
-        const book = new Book(bookObject.content);
 
         if(!bookObject) {
             throw new Error(ChatRPGErrors.bookNotInBag);
         }
+
+        const book = new Book(bookObject.content);
 
         if(abilityIndex >= book.getData().abilities.length || abilityIndex < 0) {
             throw new Error(ChatRPGErrors.badAbilityBookIndex);
@@ -359,8 +390,10 @@ class ChatRPG {
             let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
-                case 'book':
                     purchacedObject = new Weapon(shopItem.getData().product);
+                    break;
+                case 'book':
+                    purchacedObject = new Book(shopItem.getData().product);
                     break;
                 case 'item':
                     purchacedObject = new Item({...shopItem.getData().product, count: amount});
@@ -373,9 +406,6 @@ class ChatRPG {
                 this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
             }
             else {
-                if(shopItem.getData().type === 'item') {
-                    player.addItemToBag(purchacedObject);                    
-                }
                 player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
             }
 
@@ -437,9 +467,9 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.bagFull);
             }
 
-            player.onObjectRemovedFromInventory(page);
+            player.onObjectRemovedFromInventory(pageId);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData);
+            transaction.set(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -475,7 +505,7 @@ class ChatRPG {
 
             player.onObjectRemovedFromInventory(page);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData);
+            transaction.set(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -526,7 +556,36 @@ class ChatRPG {
 
         const page = new InventoryPage(pageSnap.data());
 
-        return {...page.getData(), pageId};
+        return {...page.getData(), id: pageId};
+    }
+
+    async productPurchase(playerId, productSku) {
+        const productSnap = await this.#datasource.collection(Schema.Collections.Products).doc(productSku).get();
+
+        if (!productSnap.exists) {
+            throw new Error(ChatRPGErrors.productSkuNotFound);
+        }
+
+        const productData = productSnap.data();
+
+        const playerData = await this.#datasource.runTransaction(async (transaction) =>{
+            const playerSnap = await this.#findPlayerT(transaction, playerId);
+            const player = new Player(playerSnap.data());
+
+            switch(productSku) {
+                case 'Tier1CoinPackage':
+                case 'Tier2CoinPackage':
+                case 'Tier3CoinPackage':
+                case 'Tier4CoinPackage':
+                    player.getData().coins += productData.coins;
+                    break;
+            }
+
+            transaction.set(playerSnap.ref, player.getData());
+            return this.#returnPlayerResponce(player, playerId);
+        });
+
+        return playerData;
     }
 
     #returnPlayerResponce(player, id) {
@@ -605,20 +664,34 @@ class ChatRPG {
         }
     }
 
+    // WARNING: This function reads first then writes. Remember not to do a transaction write before calling this function 
     async #addObjectToPlayerInventoryT(player, object, type, transaction) {
         let pageId = player.getNextAvailableInventoryPageId();
         const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
-        const page = new InventoryPage();
-        page.addObjectToInventory(object, type);
         if (!pageId) {
+            const page = new InventoryPage();
+            page.addObjectToInventory(object, type);
             pageId = pageRef.id;
             transaction.set(pageRef, page.getData());
+            player.onObjectAddedToInventory(pageId);
         }
         else {
-            transaction.update(pageRef, {objects: FieldValue.arrayUnion(page.datastoreObject.objects[0])});
+            const pageData = (await transaction.get(pageRef)).data();
+            const page = new InventoryPage(pageData);
+            page.addObjectToInventory(object, type);
+            transaction.update(pageRef, page.getData());
+            const oldSize = pageData.objects.length;
+            const newSize = page.getData().objects.length;
+            if(oldSize != newSize) {
+                player.onObjectAddedToInventory(pageId);
+            }
         }
+    }
 
-        player.onObjectAddedToInventory(pageId);
+    async #finishBattle(battleRef, playerRef, player, battlePlayer) {
+        player.mergeBattlePlayer(battlePlayer);
+        await playerRef.set(player.getData());
+        await battleRef.delete();
     }
 }
 

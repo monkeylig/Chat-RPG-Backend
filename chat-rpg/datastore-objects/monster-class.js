@@ -14,7 +14,7 @@ class MonsterClass extends DatastoreObject {
         monster.abilities = [];
         monster.strengthRating = 0.25;
         monster.magicRating = 0.25;
-        monster.defenceRating = 0.25;
+        monster.defenseRating = 0.25;
         monster.healthRating = 0.25;
         monster.avatar = '';
         monster.expYield = 0;
@@ -62,7 +62,7 @@ class Monster extends Agent {
         Agent.setStatsAtLevel(monster, {
             maxHealth: monster.healthRating * Monster.STAT_POINTS_PER_LEVEL,
             strength: monster.strengthRating * Monster.STAT_POINTS_PER_LEVEL,
-            defence: monster.defenceRating * Monster.STAT_POINTS_PER_LEVEL,
+            defense: monster.defenseRating * Monster.STAT_POINTS_PER_LEVEL,
             magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
         }, level);
     }

@@ -1,12 +1,14 @@
 const Schema = {
     Collections: {
         Avatars: 'avatars',
+        Configs: 'configs',
         Accounts: 'accounts',
         Games: 'games',
         Monsters: 'monsters',
         Battles: 'battles',
         Shops: 'shops',
-        InventoryPages: 'inventory_pages'
+        InventoryPages: 'inventory_pages',
+        Products: 'products'
     },
     
     AvatarDocuments: {
@@ -26,7 +28,7 @@ const Schema = {
         Health: 'health',
         MaxHealth: 'maxHealth',
         Strength: 'strength',
-        Defence: 'defence',
+        Defense: 'defense',
         Magic: 'magic',
         Weapon: 'weapon',
         Exp: 'exp',
@@ -56,7 +58,7 @@ const Schema = {
         MaxHealth: 'maxHealth',
         CurrentHealth: 'health',
         Strength: 'strength',
-        Defence: 'defence',
+        Defense: 'defense',
         Magic: 'magic',
         Weapon: 'weapon',
         Abilities: 'abilities',

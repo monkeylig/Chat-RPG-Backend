@@ -1,4 +1,5 @@
 const ChatRPGErrors = require('../chat-rpg/errors');
+const utility = require('../utility');
 
 //#region Utilities
 function setStandardHeaders(res) {
@@ -68,11 +69,19 @@ function welcome(req, res) {
 }
 
 function get_starting_avatars(req, res, chatrpg) {
-    setStandardHeaders(res);    
+    setStandardHeaders(res);
     chatrpg.getStartingAvatars().then((avatars) => {
         res.status(200);
         avatars = avatars ? avatars : [];
         res.send(JSON.stringify(avatars));
+    })
+    .catch((error) => {internalErrorCatch(req, res, error);});
+}
+
+function get_game_info(req, res, chatrpg) {
+    setStandardHeaders(res);
+    chatrpg.getGameInfo().then((gameInfo) => {
+        sendResponceObject(res, gameInfo);
     })
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
@@ -92,7 +101,9 @@ function create_new_player(req, res, chatrpg) {
     const payloadParams = [
         {name: 'name', type: 'string'},
         {name: 'playerId', type: 'string'},
-        {name: 'avatar', type: 'string'}
+        {name: 'avatar', type: 'string'},
+        {name: 'vitalityBonus', type: 'string'},
+        {name: 'weaponType', type: 'string'}
     ];
     
     if(!validatePayloadParameters(req.body, payloadParams))
@@ -113,10 +124,10 @@ function create_new_player(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.playerId, req.query.platform)
-    .then(playerId => {
+    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.weaponType, req.body.vitalityBonus, req.body.playerId, req.query.platform)
+    .then(player => {
             res.status(200);
-            res.send(JSON.stringify({playerId: playerId}));
+            res.send(JSON.stringify(player));
     }).catch(error => {
         if(error.message === ChatRPGErrors.playerExists) {
             res.status(400);
@@ -270,7 +281,9 @@ function battle_action(req, res, chatrpg) {
 
     const battleAction = {type: req.query.actionType};
     if(req.query.actionType === 'ability') {
-        if(!validatePayloadParameters(req.query, {name: 'abilityName', type: 'string'})) {
+        if(!validatePayloadParameters(req.query, [
+            {name: 'abilityName', type: 'string'}
+        ])) {
             sendError(res, "Ability parameters are malformed");
             return;
         }
@@ -278,11 +291,13 @@ function battle_action(req, res, chatrpg) {
     }
 
     if(req.query.actionType === 'item') {
-        if(!validatePayloadParameters(req.query, {name: 'itemName', type: 'string'})) {
+        if(!validatePayloadParameters(req.query, [
+            {name: 'itemId', type: 'string'}
+        ])) {
             sendError(res, "Item parameters are malformed");
             return;
         }
-        battleAction.itemName = req.query.itemName;
+        battleAction.itemId = req.query.itemId;
     }
 
     chatrpg.battleAction(req.query.battleId, battleAction)
@@ -337,7 +352,7 @@ function equip_ability(req, res, chatrpg) {
 
     const queryParams = [
         {name: 'playerId', type: 'string'},
-        {name: 'abilityBookName', type: 'string'},
+        {name: 'abilityBookId', type: 'string'},
         {name: 'abilityIndex', type: 'string'},
     ];
 
@@ -346,7 +361,7 @@ function equip_ability(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.equipAbility(req.query.playerId, req.query.abilityBookName, Number(req.query.abilityIndex), req.query.replacedAbilityName)
+    chatrpg.equipAbility(req.query.playerId, req.query.abilityBookId, Number(req.query.abilityIndex), req.query.replacedAbilityName)
     .then(player => {
         sendResponceObject(res, player);
     })
@@ -426,7 +441,104 @@ function buy(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.buy(req.query.playerId, req.query.shopId, req.query.productId)
+    let amount = 1;
+    if(validatePayloadParameters(req.query, [{name: 'amount', type: 'string'}])) {
+        amount = Number(req.query.amount);
+    }
+
+    chatrpg.buy(req.query.playerId, req.query.shopId, req.query.productId, amount)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function move_object_from_bag_to_inventory(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if(!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'objectId', type: 'string'}
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.moveObjectFromBagToInventory(req.query.playerId, req.query.objectId)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function get_inventory_page(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if(!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'pageId', type: 'string'}
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.getInventoryPage(req.query.playerId, req.query.pageId)
+    .then(page => {
+        sendResponceObject(res, page);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function move_object_from_inventory_to_bag(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if(!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'pageId', type: 'string'},
+        {name: 'objectId', type: 'string'},
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.moveObjectFromInventoryToBag(req.query.playerId, req.query.pageId, req.query.objectId)
+    .then(moveResults => {
+        sendResponceObject(res, moveResults);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function product_purchase(req, res, chatrpg, secret) {
+    setStandardHeaders(res);
+    if(!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'transactionReceipt', type: 'string'},
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+    
+    const receiptData = utility.verifyJWT(req.query.transactionReceipt, secret);
+
+    chatrpg.productPurchase(req.query.playerId, receiptData.data.product.sku)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+function claim_object(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if(!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'objectId', type: 'string'},
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.claimObject(req.query.playerId, req.query.objectId)
     .then(player => {
         sendResponceObject(res, player);
     })
@@ -437,6 +549,7 @@ function buy(req, res, chatrpg) {
 module.exports = {
     welcome,
     get_starting_avatars,
+    get_game_info,
     create_new_player_options,
     create_new_player,
     get_player,
@@ -451,5 +564,10 @@ module.exports = {
     drop_book,
     drop_item,
     buy,
-    get_shop
+    move_object_from_bag_to_inventory,
+    get_shop,
+    get_inventory_page,
+    move_object_from_inventory_to_bag,
+    product_purchase,
+    claim_object
 };
