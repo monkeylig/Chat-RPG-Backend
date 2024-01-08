@@ -210,7 +210,8 @@ function get_game(req, res, chatrpg) {
     setStandardHeaders(res);
 
     const queryParams = [
-        {name: 'gameId', type: 'string'}
+        {name: 'gameId', type: 'string'},
+        {name: 'playerId', type: 'string'}
     ];
 
     if(!validatePayloadParameters(req.query, queryParams)) {
@@ -218,7 +219,7 @@ function get_game(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.getGame(req.query.gameId)
+    chatrpg.getGame(req.query.gameId, req.query.playerId)
     .then(gameUpdate => {
         sendResponceObject(res, gameUpdate);
     })

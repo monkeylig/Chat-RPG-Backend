@@ -128,14 +128,21 @@ class ChatRPG {
         await playerSnap.ref.update({ currentGameId: gameId });
         player.datastoreObject.currentGameId = gameId;
 
+        await GameModes[game.getData().mode].postProcessGameState(this.#datasource, game, player);
         const gameData = game.getData();
         gameData.id = gameId;
 
         return gameData;
     }
 
-    async getGame(gameId) {
+    async getGame(gameId, playerId) {
+        //Make sure the user exists
+        const playerSnap = await this.#findPlayer(playerId);
+        const player = new Player(playerSnap.data());
+
         const game = new Game((await this.#findGame(gameId)).data());
+        await GameModes[game.mode].postProcessGameState(this.#datasource, game, player);
+
         const gameData = game.getData();
         gameData.id = gameId;
 

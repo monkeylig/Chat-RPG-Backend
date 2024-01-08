@@ -78,7 +78,7 @@ async function ArenaPostProcessGameState(dataSource, game, player) {
 
     const monsterPromises = [];
     for(let i = 0; i < numberOfMonsters; i++) {
-        monsterPromises.push(monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get());
+        monsterPromises.push(await monstersRef.where(Schema.MonsterFields.MonsterNumber, '==', randomInt(GameModes.numberOfMonsters)).get());
     }
     const querySnapshots = await Promise.all(monsterPromises);
 
