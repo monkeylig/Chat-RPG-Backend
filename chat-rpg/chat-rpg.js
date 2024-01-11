@@ -110,7 +110,7 @@ class ChatRPG {
                 const transGameSnap = await transaction.get(gameRef);
                 if(!transGameSnap.exists) {
                     //TODO Use the host's game mode from the config
-                    const game = await GameModes.arena.createGame(this.#datasource);
+                    const game = await GameModes.battleRoyal.createGame(this.#datasource);
                     game.onPlayerJoin(player);
                     transaction.create(gameRef, game.getData());
                     return game;
@@ -141,9 +141,10 @@ class ChatRPG {
         const player = new Player(playerSnap.data());
 
         const game = new Game((await this.#findGame(gameId)).data());
-        await GameModes[game.mode].postProcessGameState(this.#datasource, game, player);
-
         const gameData = game.getData();
+
+        await GameModes[gameData.mode].postProcessGameState(this.#datasource, game, player);
+
         gameData.id = gameId;
 
         return gameData;
@@ -234,7 +235,7 @@ class ChatRPG {
                         }
                         
                         game.removeMonster(monsterData.id);
-                        await GameModes.arena.onMonsterDefeated(this.#datasource, game, battlePlayer, monster);
+                        await GameModes[game.getData().mode].onMonsterDefeated(this.#datasource, game, battlePlayer, monster);
                         transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
                     });
                 } catch(error) {

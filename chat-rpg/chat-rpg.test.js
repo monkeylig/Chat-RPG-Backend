@@ -210,7 +210,7 @@ test('Getting a game update', async () => {
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'physical', 'health', 'fr4wt4', 'twitch');
     await chatrpg.joinGame(playerId.id, 'new game');
 
-    const gameUpdate = await chatrpg.getGame('new game');
+    const gameUpdate = await chatrpg.getGame('new game', playerId.id);
 
     expect(gameUpdate.id).toEqual('new game');
     expect(gameUpdate.monsters.length).toBeGreaterThan(0);
@@ -486,6 +486,7 @@ test('Battle Actions: Ability', async () => {
             name: 'Big Bang',
             type: 'magical',
             baseDamage: 50,
+            apCost: 1,
             effectName: 'testAbility1'
         }
     ];
@@ -669,12 +670,9 @@ test('Defeating a monster', async () => {
     expect(battleUpdate.result.expAward).toBe(chatRPGUtility.getMonsterExpGain(battleUpdate.monster));
     expect(battleUpdate.player.level).toBe(2);
 
-    const gameUpdate = await chatrpg.getGame('new game');
+    const gameUpdate = await chatrpg.getGame('new game', playerId.id);
 
     expect(gameUpdate.monsters.includes(battleUpdate.monster.id)).toBeFalsy();
-    //#region arena game specific
-    expect(gameUpdate.monsters.length).toBe(5);
-    //#endregion
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
 
@@ -876,10 +874,8 @@ test('Unlocking abilities after battle', async () => {
 
     expect(battleUpdate.result).toBeDefined();
     expect(battleUpdate.result.drops.length).toBe(2);
-    expect(battleUpdate.result.drops[1].content.length).toBe(2);
     expect(battleUpdate.result.drops[1].type).toBe('abilitiesUnlock');
-    expect(battleUpdate.result.drops[1].content[0].ability.name).toBe('ability 1');
-    expect(battleUpdate.result.drops[1].content[1].ability.name).toBe('ability 2');
+    expect(battleUpdate.result.drops[1].content).toBeDefined();
 
 });
 

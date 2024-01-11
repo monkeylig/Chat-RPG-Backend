@@ -79,7 +79,8 @@ test('Rapid Slash', () => {
     const ability = new Ability({
         baseDamage: 30,
         specialStats: {
-            maxHits: 10
+            maxHits: 10,
+            minHits: 5
         }
     });
 

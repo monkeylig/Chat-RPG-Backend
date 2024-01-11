@@ -301,7 +301,7 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
                 const drop = {
                     type: 'abilitiesUnlock',
                     content: {
-                        name: `${bagItem.content.name} ability unlocked!`
+                        name: `Ability unlocked from ${bagItem.content.name}!`
                     },
                     description: `Abilities unlocked from ${bagItem.content.name}!`
                 };

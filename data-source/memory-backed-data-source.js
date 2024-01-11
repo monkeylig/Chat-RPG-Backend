@@ -181,7 +181,7 @@ class MemoryDataSourceDocumentRef {
     }
 
     async set(object) {
-        this.collection[this.id] = Object.assign({}, object);
+        this.collection[this.id] = utility.deepCopy(object);
     }
 
     async update(object) {

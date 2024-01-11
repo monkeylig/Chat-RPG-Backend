@@ -2,6 +2,7 @@ const Schema = require("./datasource-schema");
 const {MonsterClass, Monster} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');
+const { genId } = require("../utility");
 
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);
@@ -115,7 +116,18 @@ async function BattleRoyalCreateGame(dataSource) {
 
 async function BattleRoyalOnMonsterDefeated(dataSource, game, player, monster) {
     const newMonster = new Monster(player.getData());
-    newMonster.getData().weaponDropRate = 0;
+    const monsterData = newMonster.getData();
+    monsterData.weaponDropRate = 0;
+    monsterData.id = genId();
+
+    const statSum = (monsterData.strength + monsterData.magic + newMonster.defense + newMonster.maxHealth) * 0.5;
+
+    monsterData.strengthRating = monsterData.strength / statSum;
+    monsterData.magicRating = monsterData.magic / statSum;
+    monsterData.defenseRating = newMonster.defense / statSum;
+    monsterData.healthRating = newMonster.maxHealth / statSum;
+    monsterData.expYield = 36;
+    monsterData.coinDrop = 3;
     game.addMonster(newMonster);
 }
 
