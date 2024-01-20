@@ -26,7 +26,7 @@ function decadeBlastOverrideBaseDamage(ability, battle, user, opponent) {
 
 //#region rapidSlash
 function rapidSlashOnActivate(ability, battle, user, opponent, contextControl) {
-    const hits = chatRPGUtility.getRandomIntInclusive(ability.getSpecialStat('minHits', 0), ability.getSpecialStat('maxHits'));
+    const hits = chatRPGUtility.getRandomIntInclusive(ability.getSpecialStat('minHits', 0), ability.getSpecialStat('maxHits', ability.getSpecialStat('minHits', 0)));
     const steps = [];
 
     let hitCount = 1;
@@ -79,6 +79,15 @@ function inflameAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
 }
 //#endregion
 
+//#region status attack bonus
+function statusAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
+    if(user.getStatusEffect(ability.getSpecialStat('status'))) {
+        return ability.getData().baseDamage + ability.getSpecialStat('baseDamageBonus', 0)
+    }
+    return ability.getData().baseDamage;
+}
+//#endregion
+
 const AbilitiesSeries1 = {
     skyscraper: {
         overrideBaseDamage: skyscraperOverrideBaseDamage
@@ -103,6 +112,9 @@ const AbilitiesSeries1 = {
     },
     inflameAttackBonus: {
         overrideBaseDamage: inflameAttackBonusOverrideBaseDamage
+    },
+    statusAttackBonus: {
+        overrideBaseDamage: statusAttackBonusOverrideBaseDamage
     }
 };
 

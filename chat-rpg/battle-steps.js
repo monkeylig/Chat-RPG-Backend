@@ -125,8 +125,8 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         }
         if(searchElements('ice')) {
             if(targetPlayer.getStatusEffect(drenched.name) && chatRPGUtility.chance(frozen.drenchedInflict)) {
-                steps.push(BattleSteps.gainStatusEffect(frozen, targetPlayer));
                 steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer, true));
+                steps.push(BattleSteps.gainStatusEffect(frozen, targetPlayer));
             }
         }
     }
@@ -293,19 +293,19 @@ function magicAmpStep(battlePlayer, stages) {
 }
 
 function fireResistAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'fireResist', 'fireResistAmp', stages);
+    return statAmpStep(battlePlayer, 'fire resistance', 'fireResistAmp', stages);
 }
 
 function lightningResistAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'lightningResist', 'lightningResistAmp', stages);
+    return statAmpStep(battlePlayer, 'lightning resistance', 'lightningResistAmp', stages);
 }
 
 function waterResistAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'waterResist', 'waterResistAmp', stages);
+    return statAmpStep(battlePlayer, 'water resistance', 'waterResistAmp', stages);
 }
 
 function iceResistAmpStep(battlePlayer, stages) {
-    return statAmpStep(battlePlayer, 'iceResist', 'iceResistAmp', stages);
+    return statAmpStep(battlePlayer, 'ice resistance', 'iceResistAmp', stages);
 }
 
 function weaponSpeedAmpStep(battlePlayer, stages) {

@@ -113,6 +113,16 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(lightningResistAmp);
     }
 
+    if(ability.getData().waterResistAmp) {
+        const waterResistAmp = BattleSteps.waterResistAmp(srcPlayer, ability.getData().waterResistAmp);
+        steps.push(waterResistAmp);
+    }
+
+    if(ability.getData().targetWaterResistAmp) {
+        const waterResistAmp = BattleSteps.waterResistAmp(targetPlayer, ability.getData().targetWaterResistAmp);
+        steps.push(waterResistAmp);
+    }
+
     const empowerment = ability.getData().empowerment;
     if(empowerment) {
         for(const type in empowerment) {

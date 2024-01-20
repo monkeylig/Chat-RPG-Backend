@@ -152,9 +152,9 @@ const BattleAgentMixin = {
     },
 
     getTotalElementalResistance(elements) {
-        const totalResistance = 1;
+        let totalResistance = 1;
 
-        for(const element in elements){
+        for(const element of elements){
             switch(element) {
                 case 'fire':
                     totalResistance *= this.getModifiedFireResist();
