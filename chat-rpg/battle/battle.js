@@ -316,6 +316,31 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
     }
 }
 
+function executeAbilityStrikes(srcPlayer, targetPlayer, battle) {
+    const steps = [];
+    const abilityStrikes = srcPlayer.getAbilityStrikes();
+    const abilitiesToRemove = [];
+
+    abilityStrikes.forEach((abilityStrike, index) => {
+        const target = abilityStrike.ability.target === 'self' ? srcPlayer : targetPlayer
+        steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer.getData().id, target.getData().id, abilityStrike.ability.animation));
+        steps.push(...activateAbility(new Ability(abilityStrike.ability), srcPlayer, targetPlayer, battle));
+
+        if(abilityStrike.durationCondition && abilityStrike.durationCondition.type === 'strikes') {
+            abilityStrike.durationCondition.value -= 1;
+            if(abilityStrike.durationCondition.value <= 0) {
+                abilitiesToRemove.push(index);
+            }
+        }
+    });
+
+    abilitiesToRemove.forEach(abilityIndex => {
+        srcPlayer.removeAbilityStrike(abilityIndex);
+    });
+
+    return steps;
+}
+
 function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
     if(srcPlayer.isDefeated() || targetPlayer.isDefeated() || !battle.active) {
         return [];
@@ -358,30 +383,11 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
             }
             else {
                 steps.push(...BattleSteps.genStrikeSteps(srcPlayer, targetPlayer));
-
-                const abilityStrikes = srcPlayer.getAbilityStrikes();
-                const abilitiesToRemove = [];
-
-                abilityStrikes.forEach((abilityStrike, index) => {
-                    const target = abilityStrike.ability.target === 'self' ? srcPlayer : targetPlayer
-                    steps.push(BattleSteps.info('', 'abilityStrike', srcPlayer.getData().id, target.getData().id, abilityStrike.ability.animation));
-                    steps.push(...activateAbility(new Ability(abilityStrike.ability), srcPlayer, targetPlayer, battle));
-
-                    if(abilityStrike.durationCondition && abilityStrike.durationCondition.type === 'strikes') {
-                        abilityStrike.durationCondition.value -= 1;
-                        if(abilityStrike.durationCondition.value <= 0) {
-                            abilitiesToRemove.push(index);
-                        }
-                    }
-                });
-
-                abilitiesToRemove.forEach(abilityIndex => {
-                    srcPlayer.removeAbilityStrike(abilityIndex);
-                });
             }
             srcPlayer.onStrike();
         }
 
+        steps.push(...executeAbilityStrikes(srcPlayer, targetPlayer, battle));
     }
 
     else if(battleAction.type === 'ability') {

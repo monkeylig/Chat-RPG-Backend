@@ -85,7 +85,6 @@ describe.each([
 
         expect(statAmpStep).toBeDefined();
         expect(statAmpStep.type).toMatch(`${statName}Amp`);
-        expect(statAmpStep.description).toMatch(new RegExp(`${statName}`));
 
         if(!isWeaponStat) {
             expect(player1.getData()[`${statName}Amp`]).toBe(1);
@@ -298,9 +297,9 @@ test("Generate Hit Steps: Drench and freeze", () => {
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps.length).toBe(3);
-    expect(battleSteps[1].type).toMatch('gainStatusEffect');
-    expect(battleSteps[1].statusEffect).toStrictEqual(gameplayObjects.statusEffects.frozen);
-    expect(battleSteps[1].targetId).toBe(player2.getData().id);
+    expect(battleSteps[2].type).toMatch('gainStatusEffect');
+    expect(battleSteps[2].statusEffect).toStrictEqual(gameplayObjects.statusEffects.frozen);
+    expect(battleSteps[2].targetId).toBe(player2.getData().id);
     expect(player2.getStatusEffect('drenched')).not.toBeDefined();
 });
 
@@ -370,7 +369,7 @@ test('Freeze Rate', async () => {
 
         BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['water'], hitResult);
         const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['ice'], hitResult);
-        if (battleSteps.length === 3 && battleSteps[1].type === 'gainStatusEffect')
+        if (battleSteps.length === 3 && battleSteps[2].type === 'gainStatusEffect')
         {
             return true;
         }

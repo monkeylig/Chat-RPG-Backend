@@ -153,6 +153,10 @@ const BattleAgentMixin = {
 
     getTotalElementalResistance(elements) {
         let totalResistance = 1;
+        
+        if(!elements) {
+            return totalResistance;
+        }
 
         for(const element of elements){
             switch(element) {
