@@ -11,7 +11,7 @@ const gameplayObjects = {
         },
         surged: {
             name: 'surged',
-            inflictChance: 0.10,
+            inflictChance: 1,//0.10,
             damagePercentage: 0.15,
             roundsLeft: 2
         },

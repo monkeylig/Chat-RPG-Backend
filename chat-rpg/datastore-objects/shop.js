@@ -10,7 +10,7 @@ class Shop extends DatastoreObject {
     constructNewObject(shop) {
         shop.title = 'Shop';
         shop.description = 'A place to buy cool new things!';
-        shop.coinIcon = 'coin.png';
+        shop.coinIcon = 'coin.webp';
         shop.products = [];
     }
 

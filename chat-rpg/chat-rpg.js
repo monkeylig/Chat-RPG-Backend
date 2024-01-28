@@ -110,7 +110,7 @@ class ChatRPG {
                 const transGameSnap = await transaction.get(gameRef);
                 if(!transGameSnap.exists) {
                     //TODO Use the host's game mode from the config
-                    const game = await GameModes.battleRoyal.createGame(this.#datasource);
+                    const game = await GameModes.auto.createGame(this.#datasource);
                     game.onPlayerJoin(player);
                     transaction.create(gameRef, game.getData());
                     return game;
@@ -118,6 +118,7 @@ class ChatRPG {
 
                 const game = new Game(transGameSnap.data());
                 game.onPlayerJoin(player);
+                await GameModes[game.getData().mode].onPlayerJoin(this.#datasource, game, player);
                 transaction.update(gameRef, {trackers: game.getData().trackers})
                 return game;
             });
@@ -230,11 +231,10 @@ class ChatRPG {
                         const game = new Game(transGameSnap.data());
                         game.onPlayerLevelUp(oldLevel, player);
                         const transMonster = game.findMonsterById(monsterData.id);
-                        if(!transMonster) {
+                        if(!transMonster || !game.removeMonster(monsterData.id)) {
                             return;
                         }
-                        
-                        game.removeMonster(monsterData.id);
+
                         await GameModes[game.getData().mode].onMonsterDefeated(this.#datasource, game, battlePlayer, monster);
                         transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
                     });
@@ -594,6 +594,15 @@ class ChatRPG {
         });
 
         return playerData;
+    }
+
+    async updateGame(gameId, mode) {
+        const game = GameModes[mode].createGame(this.#datasource);
+
+        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
+        gameRef.set(game.getData());
+
+        return game.getData();
     }
 
     #returnPlayerResponce(player, id) {

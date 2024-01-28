@@ -1,8 +1,10 @@
 const BattleSteps = require('../../battle-steps');
+const Ability = require('../../datastore-objects/ability');
 const { BattleWeapon } = require('../../datastore-objects/battle-agent');
 const gameplayObjects = require('../../gameplay-objects');
 
 const chatRPGUtility = require('../../utility');
+const StandardSteps = require('./standard-steps');
 
 //#region skyscraper 
 function skyscraperOverrideBaseDamage(ability, battle, user, opponent) {
@@ -75,18 +77,26 @@ function protectionAttackOnActivate(ability, battle, user, opponent, contextCont
 
 //#region inflame attack bonus
 function inflameAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
-    return user.getStatusEffect(gameplayObjects.statusEffects.inflamed) ? ability.getSpecialStat('superDamage', 0) : ability.getData().baseDamage;
+    return opponent.getStatusEffect(gameplayObjects.statusEffects.inflamed) ? ability.getSpecialStat('superDamage', 0) : ability.getData().baseDamage;
 }
 //#endregion
 
 //#region status attack bonus
 function statusAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
-    if(user.getStatusEffect(ability.getSpecialStat('status'))) {
+    if(opponent.getStatusEffect(ability.getSpecialStat('status'))) {
         return ability.getData().baseDamage + ability.getSpecialStat('baseDamageBonus', 0)
     }
     return ability.getData().baseDamage;
 }
 //#endregion
+
+function statusAttackOnActivate(ability, battle, user, opponent, contextControl) {
+    if(opponent.getStatusEffect(ability.getSpecialStat('status'))) {
+        return StandardSteps(new Ability(ability.getSpecialStat('effect')), battle, user, opponent)
+    }
+
+    return [];
+}
 
 const AbilitiesSeries1 = {
     skyscraper: {
@@ -115,6 +125,9 @@ const AbilitiesSeries1 = {
     },
     statusAttackBonus: {
         overrideBaseDamage: statusAttackBonusOverrideBaseDamage
+    },
+    statusAttack: {
+        onActivate: statusAttackOnActivate
     }
 };
 

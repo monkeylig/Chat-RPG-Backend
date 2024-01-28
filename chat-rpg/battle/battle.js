@@ -279,7 +279,7 @@ function checkEndOfBattleSteps(battlePlayer, battleMonster, battle) {
                 type: 'coin',
                 content: {
                     name: `${battleMonster.getData().coinDrop} coins`,
-                    icon: 'coin.png'
+                    icon: 'coin.webp'
                 }
             };
             battlePlayer.addCoins(battleMonster.getData().coinDrop);
@@ -392,6 +392,8 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
 
     else if(battleAction.type === 'ability') {
         const ability = battleAction.ability;
+        steps.push(BattleSteps.apCost(srcPlayer, battleAction.ability.getData().apCost));
+
         steps.push(...createAbilitySteps(ability, srcPlayer, targetPlayer, battle));
         if(ability.getData().charges !== null) {
             ability.getData().charges -= 1;
@@ -399,8 +401,6 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
                 steps.push(BattleSteps.removeAbility(srcPlayer, ability.getData().name));
             }
         }
-
-        steps.push(BattleSteps.apCost(srcPlayer, battleAction.ability.getData().apCost));
         steps.push(...popSurged(srcPlayer));
         srcPlayer.onAbilityUsed(battleAction.ability);
     }

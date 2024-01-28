@@ -545,6 +545,24 @@ function claim_object(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+function updateGame(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if(!validatePayloadParameters(req.query, [
+        {name: 'gameId', type: 'string'},
+        {name: 'mode', type: 'string'},
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    chatrpg.updateGame(req.query.gameId, req.query.mode)
+    .then(player => {
+        sendResponceObject(res, player);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -570,5 +588,6 @@ module.exports = {
     get_inventory_page,
     move_object_from_inventory_to_bag,
     product_purchase,
-    claim_object
+    claim_object,
+    updateGame
 };

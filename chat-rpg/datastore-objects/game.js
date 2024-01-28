@@ -9,6 +9,7 @@ class Game extends DatastoreObject {
     constructNewObject(game) {
         game.monsters = [];
         game.mode = '';
+        game.metadata = {};
         game.trackers = {
             levelSum: 0,
             numberOfPlayers: 0,
@@ -36,7 +37,7 @@ class Game extends DatastoreObject {
             return;
         }
 
-        this.datastoreObject.monsters.splice(monsterIndex, 1);
+        return this.datastoreObject.monsters.splice(monsterIndex, 1)[0];
     }
 
     getMonsters() {

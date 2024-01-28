@@ -67,7 +67,8 @@ function startServer(dataSource) {
     app.post('/move_object_from_inventory_to_bag', (req, res) => endpoints.move_object_from_inventory_to_bag(req, res, chatrpg));
     app.post('/product_purchase', (req, res) => endpoints.product_purchase(req, res, chatrpg, twitchExtentionSecret));
     app.post('/claim_object', (req, res) => endpoints.claim_object(req, res, chatrpg));
-
+    app.post('/updateGame', (req, res) => endpoints.updateGame(req, res, chatrpg));
+    
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {
         console.log(`Server running at port ${PORT}`);

@@ -233,7 +233,7 @@ const BattleAgentMixin = {
             this.datastoreObject.protection[type] = 0;
         }
 
-        const hpValue = Math.floor(this.datastoreObject.maxHealth * (value/100));
+        const hpValue = Math.max(Math.floor(this.datastoreObject.maxHealth * (value/100)), 1);
         this.datastoreObject.protection[type] += hpValue;
         return hpValue;
     },

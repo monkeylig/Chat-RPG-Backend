@@ -187,12 +187,12 @@ class Agent extends DatastoreObject {
     }
 
     heal(hp) {
-        let healAmount = Math.floor(Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health));
+        let healAmount = Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health);
 
-        if (hp > 0) {
+        if (healAmount > 0) {
             healAmount = Math.max(healAmount, 1);
         }
-        this.datastoreObject.health += healAmount;
+        this.datastoreObject.health += Math.floor(healAmount);
 
         return healAmount;
     }

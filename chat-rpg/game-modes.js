@@ -4,6 +4,8 @@ const Game = require('./datastore-objects/game');
 const utility = require('./utility');
 const { genId } = require("../utility");
 
+const AUTO_GAME_MODE = "arena";
+
 function randomInt(upper) {
     return Math.floor(Math.random() * upper);
 }
@@ -141,8 +143,38 @@ async function BattleRoyalPostProcessGameState(dataSource, game, player) {
     game.addMonster(newMonster);
 }
 
+async function AutoCreateGame(dataSource) {
+    const game = await GameModes[AUTO_GAME_MODE].createGame(dataSource);
+    game.getData().mode = 'auto';
+    game.getData().metadata.mode = AUTO_GAME_MODE;
+    return game;
+}
+
+async function AutoOnPlayerJoin(dataSource, game, player) {
+    if(game.getData().metadata.mode != AUTO_GAME_MODE) { //Reset game to current game mode
+        const newGame = await GameModes[AUTO_GAME_MODE].createGame(dataSource);
+        game.resetData(newGame.getData());
+    }
+}
+
+async function AutoOnMonsterDefeated(dataSource, game, player, monster) {
+    return await GameModes[AUTO_GAME_MODE].onMonsterDefeated(dataSource, game, player, monster);
+}
+
+async function AutoPostProcessGameState(dataSource, game, player) {
+    return await GameModes[AUTO_GAME_MODE].postProcessGameState(dataSource, game, player);
+}
+
+
 const GameModes = {
     numberOfMonsters: 10,
+    auto: {
+        name: 'auto',
+        createGame: AutoCreateGame,
+        onPlayerJoin: AutoOnPlayerJoin,
+        onMonsterDefeated: AutoOnMonsterDefeated,
+        postProcessGameState: AutoPostProcessGameState
+    },
     arena: {
         name: 'arena',
         numberOfStartingMonsters: 5,
@@ -150,12 +182,14 @@ const GameModes = {
         async createGame(dataSource) {
             return await ArenaCreateGame(dataSource, this.name, this.numberOfStartingMonsters);
         },
+        onPlayerJoin: async()=>{},
         onMonsterDefeated: ArenaOnMonsterDefeated,
         postProcessGameState: ArenaPostProcessGameState
     },
     battleRoyal: {
         name: 'battleRoyal',
         createGame: BattleRoyalCreateGame,
+        onPlayerJoin: async()=>{},
         onMonsterDefeated: BattleRoyalOnMonsterDefeated,
         postProcessGameState: BattleRoyalPostProcessGameState
 

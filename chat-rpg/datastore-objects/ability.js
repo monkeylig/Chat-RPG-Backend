@@ -13,6 +13,7 @@ class Ability extends DatastoreObject {
         ability.speed = 0;
         ability.effectName = '';
         ability.apCost = 0;
+        ability.apGain = 0;
         ability.type = 'physical';
         ability.style = 'sword';
         ability.strengthAmp = 0;
