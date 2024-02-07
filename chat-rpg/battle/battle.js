@@ -84,8 +84,8 @@ function executePostActionPhase(battlePlayer, battleMonster, battle) {
         return steps;
     }
     
-    steps.push(...checkInflame(battleMonster));
-    steps.push(...checkInflame(battlePlayer));
+    steps.push(...checkAblaze(battleMonster));
+    steps.push(...checkAblaze(battlePlayer));
 
     steps.push(...checkSurged(battleMonster));
     steps.push(...checkSurged(battlePlayer));
@@ -99,24 +99,24 @@ function executePostActionPhase(battlePlayer, battleMonster, battle) {
     return steps;
 }
 
-function checkInflame(battleAgent) {
+function checkAblaze(battleAgent) {
     if(battleAgent.isDefeated()) {
         return [];
     }
 
-    const inflamed = battleAgent.getStatusEffect(gameplayObjects.statusEffects.inflamed.name);
-    if(!inflamed) {
+    const ablazed = battleAgent.getStatusEffect(gameplayObjects.statusEffects.ablazed.name);
+    if(!ablazed) {
         return [];
     }
 
     const steps = [];
     const defensiveRatio = battleAgent.getData().defense / battleAgent.getModifiedDefense();
-    const inflameDamage = battleAgent.getData().maxHealth * inflamed.damagePercentage;
+    const ablazeDamage = battleAgent.getData().maxHealth * ablazed.damagePercentage;
 
-    steps.push(BattleSteps.damage(battleAgent, Math.max(1, inflameDamage * defensiveRatio)));
-    steps.push(BattleSteps.info(`${battleAgent.getData().name} was hurt from being inflamed.`, 'inflameDamage'));
+    steps.push(BattleSteps.damage(battleAgent, Math.max(1, ablazeDamage * defensiveRatio)));
+    steps.push(BattleSteps.info(`${battleAgent.getData().name} was hurt from being ablazed.`, 'ablazeDamage'));
 
-    const tickStep = tickStatusEffectStep(battleAgent, inflamed);
+    const tickStep = tickStatusEffectStep(battleAgent, ablazed);
     if(tickStep) {
         steps.push(tickStep);
     }

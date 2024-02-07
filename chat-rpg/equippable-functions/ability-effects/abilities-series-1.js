@@ -75,9 +75,9 @@ function protectionAttackOnActivate(ability, battle, user, opponent, contextCont
 }
 //#endregion
 
-//#region inflame attack bonus
-function inflameAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
-    return opponent.getStatusEffect(gameplayObjects.statusEffects.inflamed) ? ability.getSpecialStat('superDamage', 0) : ability.getData().baseDamage;
+//#region ablaze attack bonus
+function ablazeAttackBonusOverrideBaseDamage(ability, battle, user, opponent) {
+    return opponent.getStatusEffect(gameplayObjects.statusEffects.ablazed) ? ability.getSpecialStat('superDamage', 0) : ability.getData().baseDamage;
 }
 //#endregion
 
@@ -120,8 +120,8 @@ const AbilitiesSeries1 = {
     protectionAttack: {
         onActivate: protectionAttackOnActivate
     },
-    inflameAttackBonus: {
-        overrideBaseDamage: inflameAttackBonusOverrideBaseDamage
+    ablazeAttackBonus: {
+        overrideBaseDamage: ablazeAttackBonusOverrideBaseDamage
     },
     statusAttackBonus: {
         overrideBaseDamage: statusAttackBonusOverrideBaseDamage

@@ -37,10 +37,10 @@ function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
         steps.push(healStep);
     }
 
-    if(chance(ability.getData().inflameChance)) {
-        const inflameStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.inflamed, targetPlayer);
-        if(inflameStep) {
-            steps.push(inflameStep);
+    if(chance(ability.getData().ablazeChance)) {
+        const ablazeStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.ablazed, targetPlayer);
+        if(ablazeStep) {
+            steps.push(ablazeStep);
         }
     }
 

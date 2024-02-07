@@ -14,7 +14,7 @@ describe.each([
     ['speedAmp', {weaponSpeedAmp: 1}],
     ['empowerment', {empowerment: {pysical: 50}}],
     ['empowerment', {empowerment: {magical: 50}}],
-    ['gainStatusEffect', {inflameChance: 1}],
+    ['gainStatusEffect', {ablazeChance: 1}],
     ['protection', {protection: {pysical: 50}}],
     ['protection', {protection: {magical: 50}}],
     ['addAbility', {addAbilities: [{name: 'ability'}]}],
@@ -36,4 +36,4 @@ describe.each([
     });
 });
 
-//TODO Add inflame chance rate test
+//TODO Add ablaze chance rate test
