@@ -63,7 +63,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     steps.push(damageStep);
 
     if(Array.isArray(elements)) {
-        const inflamed = gameplayObjects.statusEffects.inflamed;
+        const ablazed = gameplayObjects.statusEffects.ablazed;
         const surged = gameplayObjects.statusEffects.surged;
         const drenched = gameplayObjects.statusEffects.drenched;
         const frozen = gameplayObjects.statusEffects.frozen;
@@ -87,11 +87,11 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
                 steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer));
             }
 
-            if(chatRPGUtility.chance(inflamed.inflictChance)) {
-                const inflamedStep = BattleSteps.gainStatusEffect(inflamed, targetPlayer);
-                if(inflamedStep) {
-                    steps.push(inflamedStep);
-                    stepResults.targetInflamed = true;
+            if(chatRPGUtility.chance(ablazed.inflictChance)) {
+                const ablazedStep = BattleSteps.gainStatusEffect(ablazed, targetPlayer);
+                if(ablazedStep) {
+                    steps.push(ablazedStep);
+                    stepResults.targetAblazed = true;
                 }
             }
 
@@ -107,7 +107,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
             }
         }
         if(searchElements('water')) {
-            if(targetPlayer.getStatusEffect(inflamed.name)) {
+            if(targetPlayer.getStatusEffect(ablazed.name)) {
                 steps.push(BattleSteps.removeStatusEffect(drenched, targetPlayer));
             }
 
@@ -119,7 +119,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
                 }
             }
 
-            if(srcPlayer.getStatusEffect(inflamed.name)) {
+            if(srcPlayer.getStatusEffect(ablazed.name)) {
                 steps.push(BattleSteps.removeStatusEffect(drenched, srcPlayer));
             }
         }

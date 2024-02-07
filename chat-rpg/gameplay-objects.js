@@ -3,8 +3,8 @@ const content = require("./content/content");
 
 const gameplayObjects = {
     statusEffects: {
-        inflamed: {
-            name: 'inflamed',
+        ablazed: {
+            name: 'ablazed',
             inflictChance: 0.30,
             damagePercentage: 1/16,
             roundsLeft: 3

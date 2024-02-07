@@ -40,7 +40,7 @@ class Ability extends DatastoreObject {
         ability.animation = null;
         ability.specialStats = {};
         ability.elements = [];
-        ability.inflameChance = 0;
+        ability.ablazeChance = 0;
         ability.fireResistAmp = 0;
         ability.targetFireResistAmp = 0;
         ability.lightningResistAmp = 0;

@@ -153,14 +153,14 @@ test('ReadyRevive Step', () => {
 
 test('Gain and Remove Status Effect Step', () => {
     const player1 = new BattlePlayer();
-    const statusEffectStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.inflamed, player1);
+    const statusEffectStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.ablazed, player1);
     
-    expect(player1.getStatusEffect(statusEffectStep.statusEffect.name)).toStrictEqual(gameplayObjects.statusEffects.inflamed);
+    expect(player1.getStatusEffect(statusEffectStep.statusEffect.name)).toStrictEqual(gameplayObjects.statusEffects.ablazed);
 
-    const removeStatusEffectStep = BattleSteps.removeStatusEffect(gameplayObjects.statusEffects.inflamed, player1);
+    const removeStatusEffectStep = BattleSteps.removeStatusEffect(gameplayObjects.statusEffects.ablazed, player1);
 
     expect(player1.removeStatusEffect(removeStatusEffectStep.statusEffect.name)).not.toBeDefined();
-    expect(player1.removeStatusEffect(gameplayObjects.statusEffects.inflamed.name)).not.toBeDefined();
+    expect(player1.removeStatusEffect(gameplayObjects.statusEffects.ablazed.name)).not.toBeDefined();
 });
 
 test('Generate Hit Steps: damage', ()=>{
@@ -224,7 +224,7 @@ test('Generate Hit Steps: weapon synergy', () => {
 });
 
 describe.each([
-    ['Inflame', 'fire', gameplayObjects.statusEffects.inflamed, '5'],
+    ['Ablaze', 'fire', gameplayObjects.statusEffects.ablazed, '5'],
     ['Surged', 'lightning', gameplayObjects.statusEffects.surged, '5'],
     ['Drenched', 'water', gameplayObjects.statusEffects.drenched, '5'],
 ])('Generate Hit Steps: %s', (statusName, element, statusEffect, randomSeed) => {

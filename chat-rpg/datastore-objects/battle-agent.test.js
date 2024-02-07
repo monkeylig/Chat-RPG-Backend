@@ -87,23 +87,23 @@ describe.each([
 
 test('Gain Status Effects', () => {
     const player = new BattlePlayer();
-    const inflamed = {
-        name: 'inflamed',
+    const ablazed = {
+        name: 'ablazed',
         turns: 5
     };
 
-    player.addStatusEffect(inflamed.name, inflamed);
-    let statusEffect = player.getStatusEffect(inflamed.name);
+    player.addStatusEffect(ablazed.name, ablazed);
+    let statusEffect = player.getStatusEffect(ablazed.name);
 
     expect(statusEffect).toBeDefined();
-    expect(statusEffect).toStrictEqual(inflamed);
+    expect(statusEffect).toStrictEqual(ablazed);
 
     const noEffect = player.getStatusEffect('random');
 
     expect(noEffect).not.toBeDefined();
 
-    player.removeStatusEffect(inflamed.name);
-    statusEffect = player.getStatusEffect(inflamed.name);
+    player.removeStatusEffect(ablazed.name);
+    statusEffect = player.getStatusEffect(ablazed.name);
 
     expect(statusEffect).not.toBeDefined();
 });
