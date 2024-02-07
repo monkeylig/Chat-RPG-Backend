@@ -392,7 +392,6 @@ function applyAction(battleAction, srcPlayer, targetPlayer, battle) {
 
     else if(battleAction.type === 'ability') {
         const ability = battleAction.ability;
-        steps.push(BattleSteps.apCost(srcPlayer, battleAction.ability.getData().apCost));
 
         steps.push(...createAbilitySteps(ability, srcPlayer, targetPlayer, battle));
         if(ability.getData().charges !== null) {

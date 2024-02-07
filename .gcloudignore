@@ -20,4 +20,17 @@ node_modules/
 *.test*
 *test/
 
+# Firebase
+emulator-export/
+
+# Local testing files
+sandbox*
+
+# VSCode launch configuration
+.vscode
+
+# Logs
+logs
+*.log
+
 #!include:.gitignore

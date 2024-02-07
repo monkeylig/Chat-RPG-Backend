@@ -11,12 +11,28 @@ const utility = require('./utility');
 let twitchExtentionSecret;
 
 function twitchJWTValidation(req, res, next) {
+    
+    if(req.method === 'OPTIONS') {
+        next();
+        return;
+    }
+    const rejectRequest = (message) => {
+        res.status(401);
+        res.set('Access-Control-Allow-Origin', '*');
+        res.send(message);
+    };
+
     const authHeader = req.get('Authorization');
+    if(!authHeader) {
+        rejectRequest('Unauthorized');
+        return;
+    }
+
     auth = authHeader.split(' ');
 
     if(auth[0] !== 'bearer') {
-        res.status(401);
-        res.send('Unauthorized');
+        rejectRequest('Unauthorized');
+        return;
     }
 
     try {
@@ -25,6 +41,7 @@ function twitchJWTValidation(req, res, next) {
     }
     catch (error) {
         res.status(401);
+        res.set('Access-Control-Allow-Origin', '*');
         res.send(error.message);
         return;
     }
@@ -44,6 +61,7 @@ function startServer(dataSource) {
 
     const chatrpg = new ChatRPG(dataSource);
 
+    app.use(endpoints.default_options);
     app.get('/', endpoints.welcome);
     app.get('/get_starting_avatars', (req, res) => endpoints.get_starting_avatars(req, res, chatrpg));
     app.get('/get_game_info', (req, res) => endpoints.get_game_info(req, res, chatrpg));

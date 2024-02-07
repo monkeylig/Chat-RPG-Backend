@@ -20,7 +20,7 @@ test('Area game creation', async () => {
 
     let arenaGame = (await GameModes.arena.createGame(datasource)).getData();
 
-    expect(arenaGame.mode).toMatch(GameModes.arena.name);
+    expect(arenaGame.mode).toMatch("arena");
     expect(arenaGame.monsters.length).toBe(GameModes.arena.numberOfStartingMonsters);
     expect(arenaGame.monsters[0]).toHaveProperty("strength");
     expect(arenaGame.monsters[0]).toHaveProperty("defense");
@@ -96,7 +96,7 @@ test('Battle Royal Create Game', async () => {
 
     let battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
 
-    expect(battleRoyal.mode).toMatch(GameModes.battleRoyal.name);
+    expect(battleRoyal.mode).toMatch("battleRoyal");
     expect(battleRoyal.monsters.length).toBe(10);
     expect(battleRoyal.monsters[0].strengthRating).toBe(0.5);
 

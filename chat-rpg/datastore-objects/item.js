@@ -7,6 +7,7 @@ class Item extends DatastoreObject {
 
     constructNewObject(item) {
         item.name = 'nothing';
+        item.instanceNumber = 0;
         item.icon = 'potion.png';
         item.count = 1;
         item.effectName = '';

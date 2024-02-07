@@ -13,6 +13,7 @@ class Weapon extends DatastoreObject {
 
     constructNewObject(weapon) {
         weapon.name = 'Unknown';
+        weapon.instanceNumber = 0;
         weapon.type = 'physical';
         weapon.style = 'sword';
         weapon.baseDamage = 0;

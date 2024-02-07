@@ -68,6 +68,18 @@ function welcome(req, res) {
     res.send('Welcome to chat RPG!')
 }
 
+function default_options(req, res, next) {
+    if(req.method !== 'OPTIONS') {
+        next();
+        return;
+    }
+    setStandardHeaders(res);
+    res.set('Access-Control-Allow-Methods', '*');
+    res.set('Access-Control-Allow-Headers', '*');
+    res.status(200);
+    res.send('OK');
+}
+
 function get_starting_avatars(req, res, chatrpg) {
     setStandardHeaders(res);
     chatrpg.getStartingAvatars().then((avatars) => {
@@ -211,7 +223,6 @@ function get_game(req, res, chatrpg) {
 
     const queryParams = [
         {name: 'gameId', type: 'string'},
-        {name: 'playerId', type: 'string'}
     ];
 
     if(!validatePayloadParameters(req.query, queryParams)) {
@@ -219,7 +230,7 @@ function get_game(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.getGame(req.query.gameId, req.query.playerId)
+    chatrpg.getGame(req.query.gameId)
     .then(gameUpdate => {
         sendResponceObject(res, gameUpdate);
     })
@@ -567,6 +578,7 @@ function updateGame(req, res, chatrpg) {
 
 module.exports = {
     welcome,
+    default_options,
     get_starting_avatars,
     get_game_info,
     create_new_player_options,

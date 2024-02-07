@@ -136,15 +136,10 @@ class ChatRPG {
         return gameData;
     }
 
-    async getGame(gameId, playerId) {
-        //Make sure the user exists
-        const playerSnap = await this.#findPlayer(playerId);
-        const player = new Player(playerSnap.data());
+    async getGame(gameId) {
 
         const game = new Game((await this.#findGame(gameId)).data());
         const gameData = game.getData();
-
-        await GameModes[gameData.mode].postProcessGameState(this.#datasource, game, player);
 
         gameData.id = gameId;
 
@@ -597,10 +592,10 @@ class ChatRPG {
     }
 
     async updateGame(gameId, mode) {
-        const game = GameModes[mode].createGame(this.#datasource);
+        const game = await GameModes[mode].createGame(this.#datasource);
 
         const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
-        gameRef.set(game.getData());
+        await gameRef.set(game.getData());
 
         return game.getData();
     }

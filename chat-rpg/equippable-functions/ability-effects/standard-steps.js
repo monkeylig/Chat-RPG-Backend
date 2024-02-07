@@ -6,6 +6,9 @@ const AbilityEffects = require('./ability-effects');
 
 function StandardSteps (ability, battle, srcPlayer, targetPlayer) {
     const steps = [];
+    if (ability.getData().apCost > 0) {
+        steps.push(BattleSteps.apCost(srcPlayer, ability.getData().apCost));
+    }
 
     let baseDamage = ability.getData().baseDamage;
 

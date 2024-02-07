@@ -534,13 +534,13 @@ test('Battle Actions: Ability', async () => {
 
     expect(battleObject.environment).toBeDefined();
     expect(battleObject.environment.abilityTest1Activated).toBeTruthy();
-    expect(battleUpdate.steps[3].damage).toBeGreaterThan(4);
-    expect(battleUpdate.steps[4]).toBeDefined();
-    expect(battleUpdate.steps[4].type).toMatch('info');
-    expect(battleUpdate.steps[4].description).toMatch('Test ability 1 has activated.');
+    expect(battleUpdate.steps[3].type).toMatch('apCost');
+    expect(battleUpdate.steps[3].apCost).toBe(1);
+    expect(battleUpdate.steps[4].damage).toBeGreaterThan(4);
+    expect(battleUpdate.steps[5]).toBeDefined();
+    expect(battleUpdate.steps[5].type).toMatch('info');
+    expect(battleUpdate.steps[5].description).toMatch('Test ability 1 has activated.');
     expect(battleUpdate.player.ap).toBe(2);
-    expect(battleUpdate.steps[5].type).toMatch('apCost');
-    expect(battleUpdate.steps[5].apCost).toBe(1);
 
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'ability', abilityName: 'Big Bang'});

@@ -24,7 +24,7 @@ const duelistsBane = new Weapon({
         defense: 1
     },
     description: 'A difficult weapon to duel against.',
-    icon: 'duelists_bane.png'
+    icon: 'duelists_bane.webp'
 }).getData();
 
 module.exports = {

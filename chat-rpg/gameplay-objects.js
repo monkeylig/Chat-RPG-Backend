@@ -5,19 +5,19 @@ const gameplayObjects = {
     statusEffects: {
         inflamed: {
             name: 'inflamed',
-            inflictChance: 0.15,
+            inflictChance: 0.30,
             damagePercentage: 1/16,
             roundsLeft: 3
         },
         surged: {
             name: 'surged',
-            inflictChance: 1,//0.10,
+            inflictChance: 0.30,
             damagePercentage: 0.15,
             roundsLeft: 2
         },
         drenched: {
             name: 'drenched',
-            healthThreshold: 0.15,
+            healthThreshold: 0.20,
             lightningAmp: 0.2,
             roundsLeft: 5,
         },

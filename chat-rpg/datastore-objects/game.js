@@ -9,6 +9,8 @@ class Game extends DatastoreObject {
     constructNewObject(game) {
         game.monsters = [];
         game.mode = '';
+        game.name = 'Legion Slayer';
+        game.description = '';
         game.metadata = {};
         game.trackers = {
             levelSum: 0,

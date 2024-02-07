@@ -52,7 +52,7 @@ async function ArenaCreateGame(dataSource, name, numberOfStartingMonsters) {
         monstersClasses.push(monsterClass);
     }
 
-    const arenaGame = new Game({mode: name});
+    const arenaGame = new Game({mode: 'arena', name: 'Arena', description: GameModes.arena.description});
 
     monstersClasses.forEach(monsterClass => {
         arenaGame.addMonster(monsterClass.createMonsterInstance(1));
@@ -99,7 +99,7 @@ async function ArenaPostProcessGameState(dataSource, game, player) {
 }
 
 async function BattleRoyalCreateGame(dataSource) {
-    const battleRoyalGame = new Game({mode: 'battleRoyal'});
+    const battleRoyalGame = new Game({mode: 'battleRoyal', name: "Battle Royal", description: GameModes.battleRoyal.description});
     const classNumbers = [];
 
     for(let i = 0; i < 10; i++) {
@@ -173,25 +173,28 @@ const GameModes = {
         createGame: AutoCreateGame,
         onPlayerJoin: AutoOnPlayerJoin,
         onMonsterDefeated: AutoOnMonsterDefeated,
-        postProcessGameState: AutoPostProcessGameState
+        postProcessGameState: AutoPostProcessGameState,
     },
     arena: {
-        name: 'arena',
+        name: 'Area',
         numberOfStartingMonsters: 5,
         levelBias: 0,
         async createGame(dataSource) {
             return await ArenaCreateGame(dataSource, this.name, this.numberOfStartingMonsters);
         },
+
         onPlayerJoin: async()=>{},
         onMonsterDefeated: ArenaOnMonsterDefeated,
-        postProcessGameState: ArenaPostProcessGameState
+        postProcessGameState: ArenaPostProcessGameState,
+        description: "Fight hordes of endlessly spawning monsters!"
     },
     battleRoyal: {
-        name: 'battleRoyal',
+        name: 'Battle Royal',
         createGame: BattleRoyalCreateGame,
         onPlayerJoin: async()=>{},
         onMonsterDefeated: BattleRoyalOnMonsterDefeated,
-        postProcessGameState: BattleRoyalPostProcessGameState
+        postProcessGameState: BattleRoyalPostProcessGameState,
+        description: "Defeat a monster, then a doppelganger of yourself will take it's place!"
 
     }
 }

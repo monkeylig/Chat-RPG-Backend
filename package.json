@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node main.js",
     "test": "jest",
+    "deploy": "gcloud app deploy --no-cache",
     "int-test": "node test/integration-test.js",
     "firebase_emulator": "firebase emulators:start --import=./emulator-export --project demo-test",
     "firebase_export": "firebase emulators:export ./emulator-export --project demo-test"
