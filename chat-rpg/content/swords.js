@@ -2,19 +2,19 @@ const { Weapon } = require('../datastore-objects/weapon');
 const animations = require('./animations');
 
 const braveCutlass = new Weapon({
-    weaponNumber: 2,
     name: 'Brave Cutlass',
     type: 'physical',
     style: 'sword',
-    baseDamage: 20,
+    baseDamage: 10,
     speed: 2,
     strikeAbility: {
         name: 'Brave Engage',
         type: 'physical',
         style: 'sword',
-        baseDamage: 65,
+        baseDamage: 55,
         defenseAmp: 2,
-        description: 'Slightly increases defense.',
+        speed: 2,
+        description: 'Slightly increases the users defense.',
         animation: animations.blueStab1
     },
     statGrowth: {

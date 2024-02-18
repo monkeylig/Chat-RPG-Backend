@@ -24,20 +24,16 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     
     const srcPlayerData = srcPlayer.getData();
 
-    // make sure we don't devide by 0
-    let defense = 1;
-    if(targetPlayer.getModifiedDefense()) {
-        defense = targetPlayer.getModifiedDefense();
-    }
-
+    let defense = targetPlayer.getModifiedDefense();
     let defensePen = 0;
     if(options.defensePen) {
         defensePen = options.defensePen;
     }
-    defense *= 1 - defensePen;
+    defense = (defense + (defense * 1 - defensePen)) / defense;
     // Factor in elemental resistances
     defense *= targetPlayer.getTotalElementalResistance(elements);
-    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, defense);
+    //defense will be at least 0.001
+    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, Math.max(0.001, defense));
 
     //Weapon Synergy Bonus
     if(srcPlayerData.weapon.style === style) {

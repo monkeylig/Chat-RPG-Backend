@@ -10,7 +10,7 @@ const StandardSteps = require('./standard-steps');
 function skyscraperOverrideBaseDamage(ability, battle, user, opponent) {
     const damageScalar = ability.getSpecialStat('damageMultiplier');
     const weapon = new BattleWeapon(user.getData().weapon);
-    return Math.max(ability.getData().baseDamage, ability.getData().baseDamage + (weapon.getModifiedSpeed() - weapon.getData().speed) * damageScalar);
+    return ability.getData().baseDamage, ability.getData().baseDamage + (weapon.getModifiedSpeed() - weapon.getData().speed) * damageScalar;
 }
 //#endregion
 
@@ -67,8 +67,8 @@ function arcticFangOnActivate(ability, battle, user, opponent, contextControl) {
 function protectionAttackOnActivate(ability, battle, user, opponent, contextControl) {
     const steps = [];
 
-    const portectionType = ability.getSpecialStat('protectionType', 'physical');
-    const baseDamage = ability.getSpecialStat('minBaseDamage', 0) + user.getProtectionValue(portectionType);
+    const protectionType = ability.getSpecialStat('protectionType', 'physical');
+    const baseDamage = ability.getSpecialStat('minBaseDamage', 0) + user.getProtectionValue(protectionType);
 
     steps.push(...BattleSteps.genHitSteps(user, opponent, baseDamage, ability.getData().type, ability.getData().style, ability.getData().elements));
     return steps;

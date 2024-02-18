@@ -23,10 +23,10 @@ const warriorMasteryI = {
                 type: 'physical',
                 style: 'sword',
                 speed: 5,
-                baseDamage: 50,
+                baseDamage: 30,
                 weaponSpeedAmp: 2,
                 apCost: 1,
-                description: "Increases the user's weapon speed.",
+                description: "A very fast attack dealing modest damage. Increases the user's weapon speed.",
                 animation: animations.orangeStab1
             }).getData()
         },
@@ -46,7 +46,7 @@ const warriorMasteryI = {
                 name: 'Fury Assault',
                 type: 'physical',
                 style: 'sword',
-                baseDamage: 40,
+                baseDamage: 35,
                 speed: 3,
                 addAbilityStrikes: [
                     {
@@ -84,9 +84,9 @@ const warriorMasteryI = {
                 name: 'Guard Attack',
                 type: 'physical',
                 style: 'sword',
-                baseDamage: 40,
+                baseDamage: 15,
                 protection: {
-                    physical: 10
+                    physical: 5
                 },
                 speed: 3,
                 addAbilityStrikes: [
@@ -99,7 +99,7 @@ const warriorMasteryI = {
                             type: 'physical',
                             style: 'sword',
                             protection: {
-                                physical: 10
+                                physical: 5
                             },
                             target: 'self',
                             animation: animations.swordBuff1,
@@ -157,7 +157,7 @@ const warriorMasteryI = {
                 name: 'Mega Slash',
                 type: 'physical',
                 style: 'sword',
-                baseDamage: 90,
+                baseDamage: 100,
                 speed: 3,
                 apCost: 2,
                 description: "A might feat of strength doing great damage.",
@@ -188,7 +188,7 @@ const wizardMasteryI = {
                 name: 'Smite',
                 type: 'magical',
                 style: 'staff',
-                baseDamage: 60,
+                baseDamage: 50,
                 speed: 3,
                 apCost: 1,
                 description: "A bolt of energy dealing magical damage.",
@@ -211,7 +211,7 @@ const wizardMasteryI = {
                 name: 'Arcania',
                 type: 'magical',
                 style: 'staff',
-                speed: 4,
+                speed: 3,
                 magicAmp: 2,
                 addAbilities: [
                     {
@@ -219,7 +219,7 @@ const wizardMasteryI = {
                         type: 'magical',
                         style: 'staff',
                         charges: 1,
-                        baseDamage: 40,
+                        baseDamage: 35,
                         apCost: 1,
                         speed: 3,
                         description: 'The user summons a surplus of magical energy and releases it in a small burst.',
@@ -250,7 +250,7 @@ const wizardMasteryI = {
                 style: 'staff',
                 speed: 3,
                 protection: {
-                    magical: 20
+                    magical: 10
                 },
                 addAbilities: [
                     {
@@ -268,12 +268,12 @@ const wizardMasteryI = {
                         },
                         target: 'self',
                         animation: animations.magicBuff1,
-                        description: 'If the target attacks with a strike, then it does nothing and the user attacks the target instead.',
+                        description: 'If the target strikes the user it does nothing, and the user attacks the target instead.',
                     }
                 ],
                 target: 'self',
                 apCost: 1,
-                description: "Gain 20% magical protection. Gain the ability Repel.",
+                description: "Gain 10% magical protection. Gain the ability Repel.",
                 animation: animations.magicBuff1
             }).getData()
         },
@@ -293,13 +293,13 @@ const wizardMasteryI = {
                 name: 'Magnus',
                 type: 'magical',
                 style: 'staff',
-                speed: 4,
+                speed: 3,
                 empowerment: {
-                    magical: 60
+                    magical: 75
                 },
                 apCost: 1,
                 target: 'self',
-                description: "Gain 60 magical empowerment. This means your next magical attack's base damage will be increased by 60.",
+                description: "The user gains 75 magical empowerment",
                 animation: animations.magicBuff1
             }).getData()
         },
@@ -319,7 +319,7 @@ const wizardMasteryI = {
                 name: 'Magic Blast',
                 type: 'magical',
                 style: 'staff',
-                baseDamage: 90,
+                baseDamage: 110,
                 speed: 2,
                 apCost: 2,
                 description: "A great blast of magical damage. Effective against opponents with physical protection.",

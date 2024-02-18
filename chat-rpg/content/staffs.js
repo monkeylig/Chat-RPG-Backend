@@ -2,19 +2,19 @@ const { Weapon } = require('../datastore-objects/weapon');
 const animations = require('./animations');
 
 const duelistsBane = new Weapon({
-    weaponNumber: 7,
     name: 'Duelist\'s Bane',
     type: 'magical',
     style: 'staff',
-    baseDamage: 20,
+    baseDamage: 10,
     speed: 3,
     strikeAbility: {
         name: 'Magic Rush',
         type: 'magical',
         style: 'staff',
-        baseDamage: 30,
+        baseDamage: 55,
+        speed: 3,
         magicAmp: 1,
-        description: "Slightly increase magic.",
+        description: "Slightly increases the user's magic.",
         animation: animations.impact2
     },
     statGrowth: {

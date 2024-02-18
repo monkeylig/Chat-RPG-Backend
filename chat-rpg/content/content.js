@@ -9,6 +9,7 @@ const potion = new Item ({
     icon: 'potion.webp',
     count: 1,
     heal: 100,
+    outOfBattle: true,
     description: 'Heals the user for 100 HP.'
 });
 
@@ -17,6 +18,7 @@ const pheonixDown = new Item({
     effectName: 'pheonixDown',
     icon: 'phoenix_down.webp',
     count: 1,
+    outOfBattle: true,
     description: 'If the user is defeated, they will be revived with half of their maximum HP instead.'
 });
 

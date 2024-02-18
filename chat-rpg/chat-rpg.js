@@ -406,7 +406,7 @@ class ChatRPG {
             }
 
             if(player.getData().bag.objects.length >= player.getData().bag.capacity) {
-                this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
+                await this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
             }
             else {
                 player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
@@ -431,7 +431,7 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.objectNotInBag);
             }
             
-            this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
+            await this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
             transaction.set(playerSnap.ref, player.getData());
 
             return {...player.getData(), id: playerSnap.ref.id};
@@ -531,7 +531,7 @@ class ChatRPG {
             }
 
             if(!player.addObjectToBag(claimedObject.content, claimedObject.type)) {
-                this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
+                await this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
             }
 
             transaction.set(playerSnap.ref, player.getData());
@@ -684,11 +684,15 @@ class ChatRPG {
             const page = new InventoryPage();
             page.addObjectToInventory(object, type);
             pageId = pageRef.id;
-            transaction.set(pageRef, page.getData());
             player.onObjectAddedToInventory(pageId);
+            transaction.set(pageRef, page.getData());
         }
         else {
-            const pageData = (await transaction.get(pageRef)).data();
+            const pageSnap = await transaction.get(pageRef)
+            if(!pageSnap.exists) {
+                console.log("missing object")
+            }
+            const pageData = pageSnap.data();
             const page = new InventoryPage(pageData);
             page.addObjectToInventory(object, type);
             transaction.update(pageRef, page.getData());
