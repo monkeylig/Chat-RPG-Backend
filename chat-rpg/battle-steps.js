@@ -29,7 +29,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     if(options.defensePen) {
         defensePen = options.defensePen;
     }
-    defense = (defense + (defense * 1 - defensePen)) / defense;
+    defense *= (1 - defensePen);
     // Factor in elemental resistances
     defense *= targetPlayer.getTotalElementalResistance(elements);
     //defense will be at least 0.001
