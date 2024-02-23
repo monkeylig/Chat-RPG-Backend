@@ -1,4 +1,4 @@
-const {FieldValue} = require("../data-source/backend-data-source");
+const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
 const chatRPGUtility = require('./utility');
@@ -16,12 +16,17 @@ const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
 
 class ChatRPG {
+    /** @member {IBackendDataSource} */
     #datasource;
     
     static Platforms = {
         Twitch: 'twitch'
     }
 
+    /**
+     * Initialize an instance of the Web RPG Game
+     * @param {IBackendDataSource} datasource 
+     */
     constructor(datasource) {
         this.#datasource = datasource;
     }
@@ -281,25 +286,24 @@ class ChatRPG {
     }
 
     async dropObjectFromBag(playerId, objectId) {
-
-        let player;
-        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
-        await this.#datasource.runTransaction(async (transaction) => {
+        const player = await this.#datasource.runTransaction(async (transaction) => {
+            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
-                throw new ChatRPGErrors.playerNotFound;
+                throw new Error(ChatRPGErrors.playerNotFound);
             }
 
-            player = new Player(playerSnap.data());
+            const playerT = new Player(playerSnap.data());
 
             const bagObject = player.findObjectInBag(objectId);
             if(!bagObject) {
-                throw new ChatRPGErrors.objectNotInBag;
+                throw new Error(ChatRPGErrors.objectNotInBag);
             }
 
             transaction.update(playerRef, {'bag.objects': FieldValue.arrayRemove(bagObject)});
 
+            return playerT;
         });
 
         player.dropObjectFromBag(objectId);
@@ -311,7 +315,7 @@ class ChatRPG {
         const playerSnap = await this.#findPlayer(playerId);
         const playerData = playerSnap.data();
         const player = new Player(playerData);
-        const bookObject = player.findObjectInBag(abilityBookId, false);
+        const bookObject = player.findObjectInBag(abilityBookId);
 
         if(!bookObject) {
             throw new Error(ChatRPGErrors.bookNotInBag);

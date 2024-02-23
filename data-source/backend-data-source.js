@@ -1,4 +1,4 @@
-
+/** An abstract class providing an interface to NoSQL datastore */
 class IBackendDataSource {
     async initializeDataSource(options) {
         console.log("backend initializeDataSource()");
@@ -9,42 +9,22 @@ class IBackendDataSource {
         return new IBackendDataSourceCollectionRef();
     }
 
+    /**
+     * @callback TransactionFunction
+     * @param {Object} transaction
+     * @returns {*}
+     */
+
+    /**
+     * 
+     * @param {TransactionFunction} transactionFunction 
+     * @returns {Promise}
+     */
     async runTransaction(transactionFunction) {
         console.log("backend runTransaction()");
     }
     //#endregion
 
-    //#region Gen2
-    async addDocumentToCollection(document, collection) {
-        console.log("backend addDocumentToCollection()");
-    }
-
-    async getCollection(collection) {
-        console.log("backend getCollection()");
-    }
-
-    async findDocumentInCollection(value, macher, collection) {
-        console.log("backend findDocumentInCollection()");
-    }
-
-    async updateDocumentInCollection(filter, updateDoc, collection) {
-        /** updateDoc format
-         * {
-         *  $set: {
-         *      fieldName: newValue,
-         *      fieldName: newValue,
-         *      ...
-         *  },
-         *  $push: {
-         *      fieldName: newValue,
-         *      fieldName: newValue,
-         *      ...
-         *  }, 
-         * }
-         */
-        console.log("backend updateDocumentInCollection()");
-    }
-    //#endregion
     //#region datastore helper functions
     isPropertyMatch(filter, document) {
         for(const property in filter) {
@@ -100,20 +80,6 @@ class IBackendDataSource {
         }
     }
     //#endregion
-    
-//#region legacy interface
-    async getStartingAvatars() {
-        console.log("backend getStartingAvatars()");
-    }
-
-    async addAccount(account) {
-        console.log("backend addAccount()");
-    }
-
-    async findAccount(value, matcher) {
-        console.log("backend findAccount()");
-    }
-//#endregion
 
 }
 
@@ -155,6 +121,9 @@ class IBackendDataSourceDocumentRef {
 class IBackendDataSourceDocumentSnapshot {
     exists;
     ref;
+    /**
+     * @returns {Object | undefined} The data that was retrieved from the datastore. 
+     */
     data() {}
 }
 
