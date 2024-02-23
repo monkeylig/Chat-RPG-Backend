@@ -22,7 +22,7 @@ class Game extends DatastoreObject {
     }
 
     findMonsterById(id, flatten=true) {
-        return Game.findMonsterById(this.datastoreObject, id, flatten);
+        return Game.findMonsterById(this.datastoreObject, id);
     }
     static findMonsterById(datastoreObject, id,) {
         for(const monster of datastoreObject.monsters) {

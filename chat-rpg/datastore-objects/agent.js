@@ -5,6 +5,17 @@ const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
 
+/**
+ * @typedef {import('./utilities').Collection} Collection
+ * @typedef {import('./utilities').CollectionContainer} CollectionContainer
+ * @typedef {import('./utilities').Constructor} Constructor
+ */
+
+/**
+ * Calculates how much exp is needed to reach a level
+ * @param {number} level 
+ * @returns {number} The amount of exp needed to reach that level
+ */
 function expFunc(level) {
     if (level == 1) {
         return 0;
@@ -41,8 +52,150 @@ function addExpAndLevel(player, _exp, growthObject) {
     }
 }
 
-const BagHolderMixin = {
-    constructObject(bagHolder) {
+/**
+ * @template {Constructor} TBase
+ * @param {TBase} Base 
+ * @returns 
+ */
+function BagHolderMixin(Base) {
+    return class BagHolderObject extends Base {
+        /** @type {Object} */
+        datastoreObject;
+
+        /**
+         * 
+         * @param {Object} object 
+         * @param {string} type 
+         * @returns {CollectionContainer | undefined}
+         */
+        addObjectToBag(object, type) {
+            const bag = this.datastoreObject.bag;
+            return gameColection.addObjectToCollection(bag.objects, object, type, bag.capacity);
+        }
+
+        /**
+         * 
+         * @param {string} id 
+         * @returns {CollectionContainer | undefined}
+         */
+        findObjectInBag(id) {
+            return gameColection.findObjectInCollection(this.datastoreObject.bag.objects, id);
+        }
+
+        /**
+         * 
+         * @param {string} name 
+         * @returns {CollectionContainer | undefined}
+         */
+        findObjectInBagByName(name) {
+            for(const object of this.datastoreObject.bag.objects) {
+                if(object.content.name === name) {
+                    return object;
+                }
+            }
+        }
+
+        /**
+         * 
+         * @param {string} id 
+         * @returns {CollectionContainer | undefined}
+         */
+        dropObjectFromBag(id) {
+            return gameColection.dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+        }
+
+        /**
+         * 
+         * @returns {boolean}
+         */
+        isBagFull() {
+            return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
+        }
+
+        addWeaponToBag(weapon) {
+            return this.addObjectToBag(weapon.getData(), 'weapon');
+        }
+
+        addBookToBag(book) {
+            return this.addObjectToBag(book, 'book');
+        }
+
+        addItemToBag(item) {
+            return this.addObjectToBag(item.getData(), 'item');
+        }
+
+        addObjectToLastDrops(object, type) {
+            const lastDrops = this.datastoreObject.lastDrops;
+            return gameColection.addObjectToCollection(lastDrops.objects, object, type);
+        }
+
+        removeLastDrop(id) {
+            return gameColection.dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+        }
+
+        clearLastDrops() {
+            this.datastoreObject.lastDrops.objects = [];
+        }
+
+        onItemUsed(item) {
+            const bag = this.datastoreObject.bag;
+            const itemIndex = bag.objects.findIndex(element => element.content.name === item.getData().name);
+            if(itemIndex === -1) {
+                return;
+            }
+
+            const thisItemData = bag.objects[itemIndex].content;
+            Item.onUsed(thisItemData);
+
+            if(!Item.isDepleted(thisItemData)) {
+                return;
+            }
+
+            bag.objects.splice(itemIndex, 1);
+        }
+
+        addCoins(coins) {
+            this.datastoreObject.coins += coins;
+        }
+
+        /**
+         * @param {string} weaponId 
+         * @returns {boolean} If the opteration succeeded
+         */
+        equipWeaponFromBag(weaponId) {
+            const weaponObject = this.findObjectInBag(weaponId);
+
+            if(!weaponObject) {
+                return false;
+            }
+
+            let equippedWeapon = this.datastoreObject.weapon;
+            this.datastoreObject.weapon = weaponObject.content;
+            this.dropObjectFromBag(weaponId);
+
+            if(equippedWeapon && equippedWeapon.name !== chatRPGUtility.defaultWeapon.name) {
+                this.addWeaponToBag(new Weapon(equippedWeapon));
+            }
+
+            return true;
+        }
+    };
+}
+
+
+/**
+ * @typedef {Object} BagHolderData
+ * @property {Object} bag
+ * @property {Object} lastDrops
+ * @property {number} coins
+ */
+const BagHolder = {
+    Mixin: BagHolderMixin,
+    /**
+     * Initializes a new bag holder object.
+     * @param {Object} bagHolder - The raw data to be initialized
+     */
+    construct(bagHolder) {
         bagHolder.bag = {
             capacity: 10,
             objects: []
@@ -51,79 +204,25 @@ const BagHolderMixin = {
             objects: []
         };
         bagHolder.coins = 0;
-    },
+    }  
+};
 
-    addObjectToBag(object, type) {
-        const bag = this.datastoreObject.bag;
-        return gameColection.addObjectToCollection(bag.objects, object, type, bag.capacity);
-    },
-
-    findObjectInBag(id) {
-        return gameColection.findObjectInCollection(this.datastoreObject.bag.objects, id);
-    },
-
-    findObjectInBagByName(name) {
-        for(const object of this.datastoreObject.bag.objects) {
-            if(object.content.name === name) {
-                return object;
-            }
-        }
-    },
-
-    dropObjectFromBag(id) {
-        return gameColection.dropObjectFromCollection(this.datastoreObject.bag.objects, id);
-    },
-
-    isBagFull() {
-        return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
-    },
-
-    addWeaponToBag(weapon) {
-        return this.addObjectToBag(weapon.getData(), 'weapon');
-    },
-
-    addBookToBag(book) {
-        return this.addObjectToBag(book, 'book');
-    },
-
-    addItemToBag(item) {
-        return this.addObjectToBag(item.getData(), 'item');
-    },
-
-    addObjectToLastDrops(object, type) {
-        const lastDrops = this.datastoreObject.lastDrops;
-        return gameColection.addObjectToCollection(lastDrops.objects, object, type);
-    },
-
-    removeLastDrop(id) {
-        return gameColection.dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
-    },
-
-    clearLastDrops() {
-        this.datastoreObject.lastDrops.objects = [];
-    },
-
-    onItemUsed(item) {
-        const bag = this.datastoreObject.bag;
-        const itemIndex = bag.objects.findIndex(element => element.content.name === item.getData().name);
-        if(itemIndex === -1) {
-            return;
-        }
-
-        const thisItemData = bag.objects[itemIndex].content;
-        Item.onUsed(thisItemData);
-
-        if(!Item.isDepleted(thisItemData)) {
-            return;
-        }
-
-        bag.objects.splice(itemIndex, 1);
-    },
-
-    addCoins(coins) {
-        this.datastoreObject.coins += coins;
-    }
-}
+/**
+ * @typedef {Object} AgentData
+ * @property {string} name
+ * @property {string} avatar
+ * @property {Object[]} abilities
+ * @property {Object} weapon
+ * @property {number} autoRevive
+ * @property {number} maxHealth
+ * @property {number} health
+ * @property {number} strength
+ * @property {number} magic
+ * @property {number} defense
+ * @property {number} level
+ * @property {number} exp
+ * @property {number} expToNextLevel
+ */
 
 class Agent extends DatastoreObject {
 
@@ -256,14 +355,22 @@ class Agent extends DatastoreObject {
     }
 }
 
-class Player extends Agent {
+/**
+ * A class representing a player
+ * 
+ * @extends Agent
+ */
+class PlayerAgent extends Agent {
+    /**
+     * @param {*} objectData 
+     */
     constructor(objectData) {
         super(objectData);
     }
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BagHolderMixin.constructObject(agent);
+        BagHolder.construct(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
         agent.abilities = [];
@@ -278,24 +385,6 @@ class Player extends Agent {
             },
             deaths: 0
         };
-    }
-
-    equipWeaponFromBag(weaponId) {
-        const weaponObject = this.findObjectInBag(weaponId);
-
-        if(!weaponObject) {
-            return false;
-        }
-
-        let equippedWeapon = this.datastoreObject.weapon;
-        this.datastoreObject.weapon = weaponObject.content;
-        this.dropObjectFromBag(weaponId);
-
-        if(equippedWeapon && equippedWeapon.name !== chatRPGUtility.defaultWeapon.name) {
-            this.addWeaponToBag(new Weapon(equippedWeapon));
-        }
-
-        return true;
     }
 
     mergeBattlePlayer(battlePlayer) {
@@ -334,7 +423,7 @@ class Player extends Agent {
     getNextAvailableInventoryPageId() {
         const leger = this.datastoreObject.inventory.leger;
         // Has the inventory been created yet?
-        if (!leger.length === 0) {
+        if (leger.length === 0) {
             return;
         }
 
@@ -376,6 +465,8 @@ class Player extends Agent {
     }
 }
 
-Object.assign(Player.prototype, BagHolderMixin);
+//Object.assign(Player.prototype, BagHolderMixin);
 
-module.exports = {Agent, Player, BagHolderMixin};
+const Player = BagHolderMixin(PlayerAgent);
+
+module.exports = {Agent, Player, BagHolder};

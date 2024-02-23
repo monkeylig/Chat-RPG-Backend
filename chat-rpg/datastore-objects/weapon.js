@@ -1,43 +1,57 @@
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
 
-class Weapon extends DatastoreObject {
-    static Type = {
-        Physical: 'physical',
-        Magical: 'magical'
-    }
+/**
+ * @typedef {Object} WeaponData
+ * @property {string} name
+ * @property {number} instanceNumber
+ * @property {string} type
+ * @property {string} style
+ * @property {number} baseDamage
+ * @property {number} speed
+ * @property {Object} strikeAbility
+ * @property {Object} statGrowth
+ * @property {string} description
+ * @property {string} icon
+ */
 
+/**
+ * A class representing a Weapon
+ */
+class Weapon extends DatastoreObject {
+
+    /**
+     * 
+     * @param {Object} objectData 
+     */
     constructor(objectData) {
         super(objectData);
     }
 
+    /**
+     * 
+     * @param {Object} weapon 
+     */
     constructNewObject(weapon) {
-        weapon.name = 'Unknown';
-        weapon.instanceNumber = 0;
-        weapon.type = 'physical';
-        weapon.style = 'sword';
-        weapon.baseDamage = 0;
-        weapon.speed = 0;
-        weapon.strikeAbility = {
+        /** @type {WeaponData} */
+        const weaponData = {
             name: 'Unknown',
+            instanceNumber: 0,
             type: 'physical',
             style: 'sword',
             baseDamage: 0,
-            weaponSpeedAmp: 0,
-            empowerment: {
-                strike: 0
+            speed: 0,
+            strikeAbility: {},
+            statGrowth: {
+                maxHealth: 1,
+                strength: 1,
+                magic: 1,
+                defense: 1
             },
             description: 'Unknown',
-            animation: chatRPGUtility.strikeAnim
+            icon: 'sword-icon.png'
         };
-        weapon.statGrowth = {
-            maxHealth: 1,
-            strength: 1,
-            magic: 1,
-            defense: 1
-        };
-        weapon.description = 'Unknown',
-        weapon.icon = 'sword-icon.png'
+        weapon = weaponData;
     }
 }
 

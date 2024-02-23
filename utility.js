@@ -3,6 +3,10 @@ const Buffer = require('buffer/').Buffer
 const jwt = require('jsonwebtoken');
 
 const utility = {
+    /**
+     * Generates a uuid
+     * @returns {string} The new uuid
+     */
     genId() {
         return uuidv4();
     },
@@ -14,4 +18,7 @@ const utility = {
     }
 }
 
+/**
+ * @module utility
+ */
 module.exports = utility;

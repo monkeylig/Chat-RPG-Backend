@@ -38,7 +38,9 @@ function singlePlayerBattleIteration(battle, playerActionRequest) {
 
     const endSteps = checkEndOfBattleSteps(battlePlayer, battleMonster, battle);
 
-    steps.push(...endSteps);
+    if(endSteps) {
+        steps.push(...endSteps);
+    }
 
     battle.player = battlePlayer.getData();
     battle.monster = battleMonster.getData();
