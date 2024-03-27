@@ -51,7 +51,7 @@ class Weapon extends DatastoreObject {
             description: 'Unknown',
             icon: 'sword-icon.png'
         };
-        weapon = weaponData;
+        Object.assign(weapon, weaponData);
     }
 }
 

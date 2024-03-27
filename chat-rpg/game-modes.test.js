@@ -1,3 +1,4 @@
+// @ts-nocheck
 const GameModes = require("./game-modes");
 const MemoryBackedDataSource = require("../data-source/memory-backed-data-source");
 const { Player } = require("./datastore-objects/agent");
@@ -31,7 +32,7 @@ test('Area game creation', async () => {
 
     arenaGame = (await GameModes.arena.createGame(datasource)).getData();
 
-    expect(arenaGame.mode).toMatch(GameModes.arena.name);
+    expect(arenaGame.mode).toMatch("arena");
     expect(arenaGame.monsters.length).toBe(0);
 });
 
@@ -105,7 +106,7 @@ test('Battle Royal Create Game', async () => {
 
     battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
 
-    expect(battleRoyal.mode).toMatch(GameModes.battleRoyal.name);
+    expect(battleRoyal.mode).toMatch("battleRoyal");
     expect(battleRoyal.monsters.length).toBe(0);
 });
 

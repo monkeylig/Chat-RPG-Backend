@@ -296,7 +296,7 @@ class ChatRPG {
 
             const playerT = new Player(playerSnap.data());
 
-            const bagObject = player.findObjectInBag(objectId);
+            const bagObject = playerT.findObjectInBag(objectId);
             if(!bagObject) {
                 throw new Error(ChatRPGErrors.objectNotInBag);
             }

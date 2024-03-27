@@ -1,5 +1,9 @@
 const utility = require("../../utility");
 
+/** 
+ * @typedef {new (...args: any[]) => DatastoreObject} DatastoreConstructor
+ */
+
 /** A class representing an object that is stored in a datastore. */
 class DatastoreObject {
     /** The raw data of the datastore object.

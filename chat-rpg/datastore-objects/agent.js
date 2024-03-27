@@ -8,7 +8,7 @@ const { gameColection } = require('./utilities');
 /**
  * @typedef {import('./utilities').Collection} Collection
  * @typedef {import('./utilities').CollectionContainer} CollectionContainer
- * @typedef {import('./utilities').Constructor} Constructor
+ * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
  */
 
 /**
@@ -53,15 +53,39 @@ function addExpAndLevel(player, _exp, growthObject) {
 }
 
 /**
- * @template {Constructor} TBase
+ * @typedef {Object} BagHolderData
+ * @property {Object} bag
+ * @property {Object} lastDrops
+ * @property {number} coins
+ */
+
+/**
+ * @template {DatastoreConstructor} TBase
  * @param {TBase} Base 
  * @returns 
  */
 function BagHolderMixin(Base) {
     return class BagHolderObject extends Base {
-        /** @type {Object} */
-        datastoreObject;
 
+        /**
+         * 
+         * @param  {...any} objectData 
+         */
+        constructor(...objectData) {
+            super(...objectData);
+        }
+
+        constructNewObject(bagHolder) {
+            super.constructNewObject(bagHolder);
+            bagHolder.bag = {
+                capacity: 10,
+                objects: []
+            };
+            bagHolder.lastDrops = {
+                objects: []
+            };
+            bagHolder.coins = 0;
+        }
         /**
          * 
          * @param {Object} object 
@@ -181,31 +205,6 @@ function BagHolderMixin(Base) {
         }
     };
 }
-
-
-/**
- * @typedef {Object} BagHolderData
- * @property {Object} bag
- * @property {Object} lastDrops
- * @property {number} coins
- */
-const BagHolder = {
-    Mixin: BagHolderMixin,
-    /**
-     * Initializes a new bag holder object.
-     * @param {Object} bagHolder - The raw data to be initialized
-     */
-    construct(bagHolder) {
-        bagHolder.bag = {
-            capacity: 10,
-            objects: []
-        };
-        bagHolder.lastDrops = {
-            objects: []
-        };
-        bagHolder.coins = 0;
-    }  
-};
 
 /**
  * @typedef {Object} AgentData
@@ -370,7 +369,6 @@ class PlayerAgent extends Agent {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BagHolder.construct(agent);
         agent.twitchId = '';
         agent.currentGameId = '';
         agent.abilities = [];
@@ -469,4 +467,4 @@ class PlayerAgent extends Agent {
 
 const Player = BagHolderMixin(PlayerAgent);
 
-module.exports = {Agent, Player, BagHolder};
+module.exports = {Agent, Player, BagHolderMixin};
