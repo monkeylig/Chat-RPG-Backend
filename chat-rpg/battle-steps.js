@@ -40,9 +40,8 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         damage *= WEAPON_SYNERGY_BONUS;
     }
 
-    let searchElements = () => {};
+    let searchElements = element => elements.find(e => e === element);
     if(Array.isArray(elements)) {
-        searchElements = element => elements.find(e => e === element);
         // Lightning attacking drenched targets bonus
         if(searchElements('lightning') && targetPlayer.getStatusEffect(gameplayObjects.statusEffects.drenched.name)) {
             damage *= 1 + gameplayObjects.statusEffects.drenched.lightningAmp;

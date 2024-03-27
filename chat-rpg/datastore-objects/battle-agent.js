@@ -1,14 +1,13 @@
 const Ability = require('./ability');
-const {Agent, Player, BagHolder} = require('./agent');
+const {Agent, Player, BagHolderMixin} = require('./agent');
 const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
 /**
  * @typedef {import('./agent').AgentData} AgentData
  * @typedef {import('./agent').BagHolderData} BagHolderData
+ * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
  */
-
-/** @typedef {import('./utilities').Constructor} Constructor */
 
 const BATTLE_AP = 3;
 const MAX_STAT_AMP = 12;
@@ -60,14 +59,81 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
 }
 
 /**
- * @template {Constructor} TBase
+ * @typedef {Object} BattleAgentData
+ * @property {number} ap
+ * @property {number} maxAp
+ * @property {number} strikeLevel
+ * @property {number} id
+ * @property {number} strength
+ * @property {number} defense
+ * @property {number} magic
+ * @property {number} strengthAmp
+ * @property {number} defenseAmp
+ * @property {number} magicAmp
+ * @property {boolean} reviveReady
+ * @property {Object} empowerment
+ * @property {Object} protection
+ * @property {Object} statusEffects
+ * @property {number} fireResist
+ * @property {number} lightningResist
+ * @property {number} waterResist
+ * @property {number} iceResist
+ * @property {number} fireResistAmp
+ * @property {number} lightningResistAmp
+ * @property {number} waterResistAmp
+ * @property {number} iceResistAmp
+ * @property {Object} counter
+ * @property {Object[]} abilityStrikes
+ */
+
+/**
+ * @template {DatastoreConstructor} TBase
  * @param {TBase} Base 
  */
 function BattleAgentMixin(Base) {
     return class BattleAgent extends Base {
         STRIKE_ABILITY_TRIGGER = 2;
-        /** @type {Object} */
-        datastoreObject;
+        /**
+         * 
+         * @param  {...any} objectData 
+         */
+        constructor(...objectData) {
+            super(...objectData);
+        }
+
+        constructNewObject(agent) {
+            super.constructNewObject(agent);
+            agent.ap = BATTLE_AP;
+            agent.maxAp = BATTLE_AP;
+            agent.strikeLevel = 0;
+            agent.id = 0;
+            agent.strength = 0;
+            agent.defense = 0;
+            agent.magic = 0;
+            agent.strengthAmp = 0;
+            agent.defenseAmp = 0;
+            agent.magicAmp = 0;
+            agent.reviveReady = false;
+            agent.empowerment = {
+                magical: 0,
+                physical: 0
+            };
+            agent.protection = {
+                magical: 0,
+                physical: 0
+            };
+            agent.statusEffects = {};
+            agent.fireResist = 1;
+            agent.lightningResist = 1;
+            agent.waterResist = 1;
+            agent.iceResist = 1;
+            agent.fireResistAmp = 0;
+            agent.lightningResistAmp = 0;
+            agent.waterResistAmp = 0;
+            agent.iceResistAmp = 0;
+            agent.counter = null;
+            agent.abilityStrikes = [];
+        }
 
         statAmp(stat, stages) {
             return statAmp(this.datastoreObject, stat, stages);
@@ -308,74 +374,6 @@ function BattleAgentMixin(Base) {
 }
 
 /**
- * @typedef {Object} BattleAgentData
- * @property {number} ap
- * @property {number} maxAp
- * @property {number} strikeLevel
- * @property {number} id
- * @property {number} strength
- * @property {number} defense
- * @property {number} magic
- * @property {number} strengthAmp
- * @property {number} defenseAmp
- * @property {number} magicAmp
- * @property {boolean} reviveReady
- * @property {Object} empowerment
- * @property {Object} protection
- * @property {Object} statusEffects
- * @property {number} fireResist
- * @property {number} lightningResist
- * @property {number} waterResist
- * @property {number} iceResist
- * @property {number} fireResistAmp
- * @property {number} lightningResistAmp
- * @property {number} waterResistAmp
- * @property {number} iceResistAmp
- * @property {Object} counter
- * @property {Object[]} abilityStrikes
- */
-
-/** @type {Object} */
-const BattleAgent = {
-    /**
-     * Initializes a new Battle Agent object.
-     * @param {Object} agent - The raw data to be initialized
-     */
-    construct(agent) {
-        agent.ap = BATTLE_AP;
-        agent.maxAp = BATTLE_AP;
-        agent.strikeLevel = 0;
-        agent.id = 0;
-        agent.strength = 0;
-        agent.defense = 0;
-        agent.magic = 0;
-        agent.strengthAmp = 0;
-        agent.defenseAmp = 0;
-        agent.magicAmp = 0;
-        agent.reviveReady = false;
-        agent.empowerment = {
-            magical: 0,
-            physical: 0
-        };
-        agent.protection = {
-            magical: 0,
-            physical: 0
-        };
-        agent.statusEffects = {};
-        agent.fireResist = 1;
-        agent.lightningResist = 1;
-        agent.waterResist = 1;
-        agent.iceResist = 1;
-        agent.fireResistAmp = 0;
-        agent.lightningResistAmp = 0;
-        agent.waterResistAmp = 0;
-        agent.iceResistAmp = 0;
-        agent.counter = null;
-        agent.abilityStrikes = [];
-    }
-}
-
-/**
  * @typedef {BattleAgentData & AgentData & BagHolderData} BattlePlayerData
  * 
  */
@@ -390,8 +388,6 @@ class BattlePlayerAgent extends Agent {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BattleAgent.construct(agent);
-        BagHolder.constructObject(agent);
     }
 
     /**
@@ -403,7 +399,7 @@ class BattlePlayerAgent extends Agent {
     }
 }
 
-const BattlePlayer = BattleAgentMixin(BagHolder.Mixin(BattlePlayerAgent));
+const BattlePlayer = BattleAgentMixin(BagHolderMixin(BattlePlayerAgent));
 
 class _BattleMonster extends Monster {
     constructor(objectData) {
@@ -412,11 +408,10 @@ class _BattleMonster extends Monster {
 
     constructNewObject(agent) {
         super.constructNewObject(agent);
-        BattleAgent.construct(agent);
     }
 }
 
-const BattleMonster = BattleAgent.Mixin(_BattleMonster);
+const BattleMonster = BattleAgentMixin(_BattleMonster);
 
 class BattleWeapon extends Weapon {
     constructNewObject(weapon) {

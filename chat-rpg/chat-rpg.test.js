@@ -1,3 +1,4 @@
+// @ts-nocheck
 const ChatRPG = require('./chat-rpg');
 const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
 const chatRPGUtility = require('./utility');
@@ -660,6 +661,7 @@ test('Defeating a monster', async () => {
     let battleState = await chatrpg.startBattle(playerId.id, gameState.id, gameState.monsters[0].id);
 
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 

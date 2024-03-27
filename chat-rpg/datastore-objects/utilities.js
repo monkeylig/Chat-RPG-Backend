@@ -1,7 +1,9 @@
 const utility = require("../../utility");
 const chatRPGUtility = require('../utility');
 
-/** @typedef {new (...args: any[]) => {}} Constructor */
+/** 
+ * @typedef {new (...args: any[]) => {}} Constructor
+ */
 
 /**
  * @typedef {Object[]} Collection
