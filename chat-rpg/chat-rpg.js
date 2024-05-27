@@ -14,6 +14,13 @@ const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
+const ItemFunctions = require("./equippable-functions/item-functions");
+const AbilityFunctions = require("./equippable-functions/ability-functions");
+const BattleSteps = require("./battle-steps");
+
+/**
+ * @typedef {import("./datastore-objects/agent").AgentData} AgentData
+ */
 
 class ChatRPG {
     /** @member {IBackendDataSource} */
@@ -442,6 +449,47 @@ class ChatRPG {
         });
 
         return responceObject;
+    }
+
+    /**
+     * @typedef {{player: AgentData, steps: Array<Object>}} UseItemResponce
+     * 
+     */
+
+    /**
+     * @param {string} playerId The player's ID
+     * @param {string} objectId The object's ID
+     * @param {string} pageId The pages's ID if the object is locaated in the player's inventory
+     * @returns {Promise<UseItemResponce, Error>} A promise object that will resolve to a responce object.
+     */
+    async useItem(playerId, objectId, pageId) {
+        const playerSnap = await this.#findPlayer(playerId);
+
+        const player = new Player(playerSnap.data());
+        const itemContainer = player.findObjectInBag(objectId);
+        if(!itemContainer) {
+            throw new Error(ChatRPGErrors.objectNotInBag);
+        }
+        if(itemContainer.type != "item") {
+            throw new Error(ChatRPGErrors.itemNotinBag);
+        }
+
+        const steps = [];
+        const item = new Item(itemContainer.content);
+        if(ItemFunctions.isItemReady(item.getData(), null, player, player)) {
+            //const standardSteps = ItemFunctions.standardBattleSteps(itemData, srcPlayer, targetPlayer);
+            const standardSteps = AbilityFunctions.standardSteps(item, null, player, player);
+            const itemSteps = ItemFunctions.effectBattleSteps(item.getData(), null, player, player, {});
+            player.onItemUsed(item);
+            steps.push(...standardSteps);
+            steps.push(...itemSteps);
+        }
+        else {
+            const readyInfoStep = BattleSteps.info(ItemFunctions.getNotReadyMessage(item.getData()), 'item failed', player.getData().id);
+            steps.push(readyInfoStep);
+        }
+
+        return {player: this.#returnPlayerResponce(player, playerId), steps};
     }
 
     async moveObjectFromInventoryToBag(playerId, pageId, objectId) {

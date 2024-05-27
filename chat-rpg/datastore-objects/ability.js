@@ -9,7 +9,7 @@ class Ability extends DatastoreObject {
     constructNewObject(ability) {
         ability.name = 'nothing';
         ability.baseDamage = 0;
-        ability.baseDamageText = null;
+        ability.baseDamageTextModifier = '';
         ability.speed = 0;
         ability.effectName = '';
         ability.apCost = 0;
