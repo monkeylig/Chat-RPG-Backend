@@ -1,5 +1,6 @@
 const Ability = require('./ability');
 const {Agent, Player, BagHolderMixin} = require('./agent');
+const DatastoreObject = require('./datastore-object');
 const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
@@ -7,6 +8,7 @@ const { Weapon } = require('./weapon');
  * @typedef {import('./agent').AgentData} AgentData
  * @typedef {import('./agent').BagHolderData} BagHolderData
  * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
+ * @typedef {import('../utility').GConstructor<Agent>} AgentConstructor
  */
 
 const BATTLE_AP = 3;
@@ -59,35 +61,33 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
 }
 
 /**
- * @typedef {Object} BattleAgentData
- * @property {number} ap
- * @property {number} maxAp
- * @property {number} strikeLevel
- * @property {number} id
- * @property {number} strength
- * @property {number} defense
- * @property {number} magic
- * @property {number} strengthAmp
- * @property {number} defenseAmp
- * @property {number} magicAmp
- * @property {boolean} reviveReady
- * @property {Object} empowerment
- * @property {Object} protection
- * @property {Object} statusEffects
- * @property {number} fireResist
- * @property {number} lightningResist
- * @property {number} waterResist
- * @property {number} iceResist
- * @property {number} fireResistAmp
- * @property {number} lightningResistAmp
- * @property {number} waterResistAmp
- * @property {number} iceResistAmp
- * @property {Object} counter
- * @property {Object[]} abilityStrikes
+ * @typedef {AgentData & {
+ * ap: number,
+ * maxAp: number,
+ * strikeLevel: number, 
+ * id: number,
+ * strengthAmp: number, 
+ * defenseAmp: number, 
+ * magicAmp: number, 
+ * reviveReady: boolean, 
+ * empowerment: object,
+ * protection: object,
+ * statusEffects: object,
+ * fireResist: number,
+ * lightningResist: number,
+ * waterResist: number,
+ * iceResist: number,
+ * fireResistAmp: number,
+ * lightningResistAmp: number,
+ * waterResistAmp: number,
+ * iceResistAmp: number,
+ * counter: object,
+ * abilityStrikes: object[]
+ * }} BattleAgentData
  */
 
 /**
- * @template {DatastoreConstructor} TBase
+ * @template {AgentConstructor} TBase
  * @param {TBase} Base 
  */
 function BattleAgentMixin(Base) {
@@ -370,18 +370,28 @@ function BattleAgentMixin(Base) {
         getAbilityStrikes() {
             return this.datastoreObject.abilityStrikes;
         }
+
+        /**
+         * @override
+         * @returns {BattleAgentData}
+         */
+        getData() {
+            return /** @type {BattleAgentData} */ (this.datastoreObject);
+        }
     }
 }
 
+class BattleAgent extends BattleAgentMixin(Agent){};
+
 /**
- * @typedef {BattleAgentData & AgentData & BagHolderData} BattlePlayerData
+ * @typedef {BattleAgentData & BagHolderData} BattlePlayerData
  * 
  */
 
 /**
- * An intermediate class
+ * A version of the player class with data fields for battles
  */
-class BattlePlayerAgent extends Agent {
+class BattlePlayer extends BattleAgentMixin(BagHolderMixin(Agent)) {
     constructor(objectData) {
         super(objectData)
     }
@@ -399,9 +409,15 @@ class BattlePlayerAgent extends Agent {
     }
 }
 
-const BattlePlayer = BattleAgentMixin(BagHolderMixin(BattlePlayerAgent));
+/**
+ * @typedef {BattleAgentData} BattleMonsterData
+ * 
+ */
 
-class _BattleMonster extends Monster {
+/**
+ * A version of the monster class with data fields for battles
+ */
+class BattleMonster extends BattleAgentMixin(Monster) {
     constructor(objectData) {
         super(objectData)
     }
@@ -409,9 +425,15 @@ class _BattleMonster extends Monster {
     constructNewObject(agent) {
         super.constructNewObject(agent);
     }
-}
 
-const BattleMonster = BattleAgentMixin(_BattleMonster);
+    /**
+     * @override
+     * @returns {BattleMonsterData}
+     */
+    getData() {
+        return /** @type {BattleMonsterData} */ (this.datastoreObject);
+    }
+}
 
 class BattleWeapon extends Weapon {
     constructNewObject(weapon) {
@@ -455,4 +477,4 @@ class BattleWeapon extends Weapon {
     }
 }
 
-module.exports = {BattlePlayer, BattleMonster, BattleWeapon};
+module.exports = {BattlePlayer, BattleMonster, BattleWeapon, BattleAgent};

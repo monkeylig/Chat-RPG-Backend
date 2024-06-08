@@ -15,6 +15,11 @@ const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
 
+/**
+ * @typedef {import("./datastore-objects/battle-agent").BattlePlayerData} BattlePlayerData
+ * @typedef {import("./datastore-objects/battle-agent").BattleMonsterData} BattleMonsterData
+ */
+
 class ChatRPG {
     /** @member {IBackendDataSource} */
     #datasource;
@@ -179,13 +184,15 @@ class ChatRPG {
         const battlePlayer = new BattlePlayer(player.datastoreObject);
         const battleMonster = new BattleMonster(targetMonsterData);
 
+        /** @type {BattleData} */
         const battle = {
-            player: battlePlayer.datastoreObject,
-            monster: battleMonster.datastoreObject,
+            player: battlePlayer.getData(),
+            monster: battleMonster.getData(),
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
             environment: {},
             round: 1,
+            id: '',
             active: true
         };
 

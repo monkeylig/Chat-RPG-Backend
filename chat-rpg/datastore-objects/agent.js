@@ -9,6 +9,7 @@ const { gameColection } = require('./utilities');
  * @typedef {import('./utilities').Collection} Collection
  * @typedef {import('./utilities').CollectionContainer} CollectionContainer
  * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
+ * @typedef {import('./weapon').WeaponData} WeaponData
  */
 
 /**
@@ -210,8 +211,8 @@ function BagHolderMixin(Base) {
  * @typedef {Object} AgentData
  * @property {string} name
  * @property {string} avatar
+ * @property {WeaponData} weapon
  * @property {Object[]} abilities
- * @property {Object} weapon
  * @property {number} autoRevive
  * @property {number} maxHealth
  * @property {number} health
@@ -224,7 +225,6 @@ function BagHolderMixin(Base) {
  */
 
 class Agent extends DatastoreObject {
-
     static MAXABILITIES = 5;
     constructor(objectData) {
         super(objectData);
@@ -233,8 +233,8 @@ class Agent extends DatastoreObject {
     constructNewObject(agent) {
         agent.name = 'Unknown';
         agent.avatar = 'unknown.png';
-        agent.abilities = [];
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
+        agent.abilities = [];
         agent.autoRevive = 0;
         agent.maxHealth = 0;
         agent.health = 0;
@@ -320,7 +320,7 @@ class Agent extends DatastoreObject {
             this.addAbility(abilityData);
         }
     }
-
+    
     removeAbility(abilityName) {
         const abilities = this.datastoreObject.abilities;
         const abilityIndex = abilities.findIndex(element => element.name === abilityName);
@@ -352,14 +352,14 @@ class Agent extends DatastoreObject {
             datastoreObject.health = Math.floor(datastoreObject.maxHealth * healPercent);
         }
     }
-}
+};
+
 
 /**
  * A class representing a player
  * 
- * @extends Agent
  */
-class PlayerAgent extends Agent {
+class Player extends BagHolderMixin(Agent) {
     /**
      * @param {*} objectData 
      */
@@ -462,9 +462,5 @@ class PlayerAgent extends Agent {
         leger[pageIndex].count -= Math.min(1, leger[pageIndex].count);
     }
 }
-
-//Object.assign(Player.prototype, BagHolderMixin);
-
-const Player = BagHolderMixin(PlayerAgent);
 
 module.exports = {Agent, Player, BagHolderMixin};

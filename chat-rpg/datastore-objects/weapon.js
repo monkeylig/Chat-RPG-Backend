@@ -1,5 +1,4 @@
 const DatastoreObject = require('./datastore-object');
-const chatRPGUtility = require('../utility');
 
 /**
  * @typedef {Object} WeaponData
@@ -52,6 +51,14 @@ class Weapon extends DatastoreObject {
             icon: 'sword-icon.png'
         };
         Object.assign(weapon, weaponData);
+    }
+
+    /**
+     * @override
+     * @returns {WeaponData}
+     */
+    getData() {
+        return /** @type {WeaponData} */ (this.datastoreObject);
     }
 }
 

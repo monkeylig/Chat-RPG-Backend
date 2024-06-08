@@ -1,10 +1,10 @@
 // @ts-nocheck
 const seedrandom = require('seedrandom');
 const BattleSteps = require('./battle-steps');
-const { BattlePlayer } = require('./datastore-objects/battle-agent');
-const chatRPGUtility = require('./utility');
-const gameplayObjects = require('./gameplay-objects');
-const Ability = require('./datastore-objects/ability');
+const { BattlePlayer } = require('../datastore-objects/battle-agent');
+const chatRPGUtility = require('../utility');
+const gameplayObjects = require('../gameplay-objects');
+const Ability = require('../datastore-objects/ability');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;

@@ -1,3 +1,7 @@
+/** 
+ * @template {{}} TCon
+ * @typedef {new (...args: any[]) => TCon} GConstructor
+ */
 
 const EXP_MODIFIER = 6;
 
