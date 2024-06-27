@@ -1,0 +1,52 @@
+const Ability = require("../../datastore-objects/ability");
+const { AbilityBattleMove } = require("../ability-battle-move");
+const { BattleContext } = require("../battle-context");
+const BattleStepTypes = require("../battle-steps");
+const ActionTypes = require("../action");
+
+test("Simple damage ability", () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        target: 'opponent',
+        baseDamage: 20,
+        apCost: 1,
+        animation: {}
+    });
+    const abilityMove = new AbilityBattleMove(battleContext.player, ability);
+    const actionGenerator = abilityMove.onActivate(battleContext);
+    const firstYield = /**@type {boolean}*/(actionGenerator.next().value);
+
+    expect(firstYield).toBe(true);
+
+    let actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+
+    expect(actionObject.infoAction).toBeDefined();
+    expect(actionObject.infoAction?.action).toMatch("ability");
+    expect(actionObject.infoAction?.srcAgentId).toMatch("player");
+    expect(actionObject.infoAction?.targetAgentId).toMatch("monster");
+
+    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+
+    expect(actionObject.infoAction).toBeDefined();
+    expect(actionObject.infoAction?.action).toMatch("animation");
+    expect(actionObject.infoAction?.animation).toBeDefined();
+    expect(actionObject.infoAction?.srcAgentId).toMatch("player");
+    expect(actionObject.infoAction?.targetAgentId).toMatch("monster");
+
+    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+
+    expect(actionObject.playerAction).toBeDefined();
+    expect(actionObject.playerAction?.baseDamage).toBe(20);
+    expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.monster);
+
+    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+
+    expect(actionObject.playerAction).toBeDefined();
+    expect(actionObject.playerAction?.apChange).toBe(-1);
+    expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.player);
+
+    const lastYield = actionGenerator.next();
+
+    expect(lastYield.done).toBeTruthy();
+    expect(lastYield.value).toBeUndefined();
+});

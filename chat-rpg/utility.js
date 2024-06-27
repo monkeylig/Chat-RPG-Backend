@@ -38,6 +38,23 @@ function findInObjectArray(arr, matcher, matchValue) {
     return item;
 }
 
+/**
+ * 
+ * @param {any[]} arr 
+ * @param {any} value 
+ * @returns {any | undefined}
+ */
+function findAndRemoveFromArray(arr, value) {
+    const objectIndex = arr.find(element => element === value);
+
+    if(objectIndex === -1) {
+        return;
+    }
+
+    const objectData = arr.splice(objectIndex, 1);
+    return objectData[0];
+}
+
 const chatRPGUtility = {
     random: Math.random,
     getRandomIntInclusive,
@@ -57,9 +74,16 @@ const chatRPGUtility = {
         baseDamage: 10,
         speed: 3,
         icon: 'fist.png',
+        /** @type {import("./datastore-objects/ability").AbilityData} */
         strikeAbility: {
             name: 'Heavy Strike',
-            baseDamage: 30
+            baseDamage: 30,
+            type: 'physical',
+            style: 'fist',
+            speed: 3,
+            target: 'opponent',
+            description: 'A heavy punch',
+            animation: {}
         },
         statGrowth: {
             maxHealth: 2,
@@ -108,6 +132,7 @@ const chatRPGUtility = {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
     },
     findInObjectArray,
+    findAndRemoveFromArray,
     calcHitDamge
 };
 

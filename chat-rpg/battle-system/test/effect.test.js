@@ -1,16 +1,14 @@
 
-
-const { BattleAgent } = require("../datastore-objects/battle-agent");
-const { ActionGenerator } = require("./action-generator");
-const { BattleContext } = require("./battle-context");
-const { Effect } = require("./effect");
+const { BattleAgent } = require("../../datastore-objects/battle-agent");
+const { BattleContext } = require("../battle-context");
+const { Effect } = require("../effect");
 
 /**
- * @typedef {import("./action-generator").ActionGeneratorObject} ActionGeneratorObject
- * @typedef {import("./action").Action} Action
- * @typedef {import("./battle-steps").BattleStep} BattleStep
- * @typedef {import("./battle-system-types").ActiveActionGenerator} ActiveActionGenerator
- * @typedef {import("./battle-system-types").ActiveAction} ActiveAction
+ * @typedef {import("../action-generator").ActionGeneratorObject} ActionGeneratorObject
+ * @typedef {import("../action").Action} Action
+ * @typedef {import("../battle-steps").BattleStep} BattleStep
+ * @typedef {import("../battle-system-types").ActiveActionGenerator} ActiveActionGenerator
+ * @typedef {import("../battle-system-types").ActiveAction} ActiveAction
  */
 
 test("Effect action generation", () => {

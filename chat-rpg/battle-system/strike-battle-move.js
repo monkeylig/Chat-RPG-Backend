@@ -1,31 +1,37 @@
+/** @import {ActionGeneratorObject} from "./action-generator"*/
+/** @import {AbilityData} from "../datastore-objects/ability"*/
+const animations = require("../content/animations");
+const Ability = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
-const { PlayerActionType, PlayerActionStyle } = require("./action");
-const { ActionCreatorType, ActionGenerator } = require("./action-generator");
+const chatRPGUtility = require("../utility");
+const { generateAbilityActions } = require("./ability-utility");
+const { PlayerActionType, PlayerActionStyle, TargetEnum } = require("./action");
+const { ActionGenerator } = require("./action-generator");
+const { BattleContext } = require("./battle-context");
 const { BattleMove } = require("./battle-move");
-
-/**
- * @typedef {import("./action-generator").ActionGeneratorObject} ActionGeneratorObject
- */
+const { GeneratorCreatorType } = require("./battle-system-types");
 
 /**
  * @typedef {Object} StrikeBattleMoveData
- * @property {BattleAgent} targetPlayer
- * @property {PlayerActionType} type - The action's type
- * @property {PlayerActionStyle} style - The action's style
- * @property {number} baseDamage
+ * @property {AbilityData} strikeData
+ * @property {number} apChange
+ * @property {number} strikeLevelChange
  */
 
 class StrikeBattleMove extends BattleMove {
-    #targetPlayer;
     /**
      * 
      * @param {BattleAgent} srcplayer 
-     * @param {BattleAgent} targetPlayer
      */
-    constructor(srcplayer, targetPlayer) {
+    constructor(srcplayer) {
         super(srcplayer);
-        this.#targetPlayer = targetPlayer;
-        this.creatorType = ActionCreatorType.Strike;
+    }
+
+    /**
+     * @returns {GeneratorCreatorType}
+     */
+    get creatorType() {
+        return GeneratorCreatorType.Strike;
     }
 
     /**
@@ -33,32 +39,55 @@ class StrikeBattleMove extends BattleMove {
      * @returns {StrikeBattleMoveData}
      */
     getInputData() {
-        /** @type {StrikeBattleMoveData} */
-        const strikeData = {
-            targetPlayer: this.#targetPlayer,
+        const strike = new Ability({
+            baseDamage: this.owner.getData().weapon.baseDamage,
             type: this.owner.getData().weapon.type,
             style: this.owner.getData().weapon.style,
-            baseDamage: this.owner.getData().weapon.baseDamage
+            target: TargetEnum.Opponent,
+            animation: animations.yellowHit
+        });
+        return {
+            strikeData: strike.getData(),
+            apChange: 1,
+            strikeLevelChange: 1
         };
-        return strikeData;
     }
     
-    activate(battleContext){
-        return new ActionGenerator(this.strike());
-    }
-
     /**
+     * @override
+     * @param {BattleContext} battleContext 
      * @returns {ActionGeneratorObject}
      */
-    *strike() {
+    *activate(battleContext){
         const inputData = /** @type {StrikeBattleMoveData} */ (yield true);
+        const target = inputData.strikeData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
+        
+        if(!target) {
+            return;
+        }
+
+        yield {
+            infoAction: {
+                description: `${this.owner.getData().name} strikes ${target.getData().name}!`,
+                action: 'strike',
+                targetAgentId: target.getData().id,
+                srcAgentId: this.owner.getData().id,
+                animation: chatRPGUtility.strikeAnim
+            }
+        };
+
+        for(const action of generateAbilityActions(this.owner, inputData.strikeData, battleContext)) {
+            yield action;
+        }
+
         yield {
             playerAction: {
                 srcPlayer: this.owner,
-                targetPlayer: inputData.targetPlayer,
-                type: inputData.type,
-                style: inputData.style,
-                baseDamage: inputData.baseDamage
+                targetPlayer: this.owner,
+                type: inputData.strikeData.type,
+                style: inputData.strikeData.style,
+                apChange: inputData.apChange,
+                strikeLevelChange: inputData.strikeLevelChange
             }
         };
     }

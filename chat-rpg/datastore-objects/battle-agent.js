@@ -1,3 +1,10 @@
+/**
+ * @import {MonsterData} from './monster-class'
+ * @import {AgentData, BagHolderData} from './agent'
+ * @import {GConstructor} from '../utility'
+ * @import {WeaponData} from './weapon'
+ */
+
 const Ability = require('./ability');
 const {Agent, Player, BagHolderMixin} = require('./agent');
 const DatastoreObject = require('./datastore-object');
@@ -5,10 +12,7 @@ const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
 /**
- * @typedef {import('./agent').AgentData} AgentData
- * @typedef {import('./agent').BagHolderData} BagHolderData
- * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
- * @typedef {import('../utility').GConstructor<Agent>} AgentConstructor
+ * @typedef {GConstructor<Agent>} AgentConstructor
  */
 
 const BATTLE_AP = 3;
@@ -62,10 +66,11 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
 
 /**
  * @typedef {AgentData & {
+ * weapon: BattleWeaponData,
  * ap: number,
  * maxAp: number,
  * strikeLevel: number, 
- * id: number,
+ * id: string,
  * strengthAmp: number, 
  * defenseAmp: number, 
  * magicAmp: number, 
@@ -103,13 +108,11 @@ function BattleAgentMixin(Base) {
 
         constructNewObject(agent) {
             super.constructNewObject(agent);
+            agent.weapon = new BattleWeapon(agent.weapon).getData();
             agent.ap = BATTLE_AP;
             agent.maxAp = BATTLE_AP;
             agent.strikeLevel = 0;
             agent.id = 0;
-            agent.strength = 0;
-            agent.defense = 0;
-            agent.magic = 0;
             agent.strengthAmp = 0;
             agent.defenseAmp = 0;
             agent.magicAmp = 0;
@@ -410,7 +413,7 @@ class BattlePlayer extends BattleAgentMixin(BagHolderMixin(Agent)) {
 }
 
 /**
- * @typedef {BattleAgentData} BattleMonsterData
+ * @typedef {BattleAgentData & MonsterData} BattleMonsterData
  * 
  */
 
@@ -434,6 +437,12 @@ class BattleMonster extends BattleAgentMixin(Monster) {
         return /** @type {BattleMonsterData} */ (this.datastoreObject);
     }
 }
+
+/**
+ * @typedef {WeaponData & {
+* speedAmp: number,
+* }} BattleWeaponData
+*/
 
 class BattleWeapon extends Weapon {
     constructNewObject(weapon) {

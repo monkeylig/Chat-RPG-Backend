@@ -1,5 +1,5 @@
 const { BattleAgent } = require("../datastore-objects/battle-agent");
-const { ActionCreatorType, ActionGenerator } = require("./action-generator");
+const { ActionGenerator } = require("./action-generator");
 const { BattleContext } = require("./battle-context");
 const { ActionGeneratorCreator, GeneratorCreatorType } = require("./battle-system-types");
 
@@ -39,7 +39,9 @@ class Effect extends ActionGeneratorCreator {
      * @returns 
      */
     onActionGeneratorBegin(battleContext, actionGenerator) {
-        return new ActionGenerator(this.actionGeneratorBeginEvent(battleContext, actionGenerator));
+        const newGenerator = new ActionGenerator(this.actionGeneratorBeginEvent(battleContext, actionGenerator));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
     }
     
     /**
@@ -49,7 +51,9 @@ class Effect extends ActionGeneratorCreator {
      * @returns 
      */
     onActionGeneratorEnd(battleContext, actionGenerator) {
-        return new ActionGenerator(this.actionGeneratorEndEvent(battleContext, actionGenerator));
+        const newGenerator = new ActionGenerator(this.actionGeneratorEndEvent(battleContext, actionGenerator));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
     }
 
     /**
@@ -59,7 +63,9 @@ class Effect extends ActionGeneratorCreator {
      * @returns 
      */
     onActionBegin(battleContext, activeAction) {
-        return new ActionGenerator(this.actionBeginEvent(battleContext, activeAction));
+        const newGenerator = new ActionGenerator(this.actionBeginEvent(battleContext, activeAction));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
     }
 
     /**
@@ -70,7 +76,9 @@ class Effect extends ActionGeneratorCreator {
      * @returns 
      */
     onActionEnd(battleContext, activeAction, battleSteps) {
-        return new ActionGenerator(this.actionEndEvent(battleContext, activeAction, battleSteps));
+        const newGenerator = new ActionGenerator(this.actionEndEvent(battleContext, activeAction, battleSteps));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
     }
 
     /**

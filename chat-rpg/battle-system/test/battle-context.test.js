@@ -1,0 +1,247 @@
+
+const { ActionGeneratorCreator } = require("../battle-system-types");
+const { ActionGenerator } = require("../action-generator");
+const { BattleContext } = require("../battle-context");
+const { Effect } = require("../effect");
+const { BattlePlayer, BattleAgent, BattleMonster } = require("../../datastore-objects/battle-agent");
+const { StrikeBattleMove } = require("../strike-battle-move");
+
+class ActionCreator extends ActionGeneratorCreator {
+    constructor() {
+        super();
+    }
+    /**
+     * @returns {ActionGeneratorObject}
+     */
+    *generate() {}
+
+    /**
+     * @returns {ActionGeneratorObject}
+     */
+    *generateRespondAll() {
+        yield true;
+    }
+};
+
+/**
+ * @typedef {import("../action").Action} Action
+ * @typedef {import("../battle-system-types").ActiveActionGenerator} ActiveActionGenerator
+ * @typedef {import("../battle-system-types").ActiveAction} ActiveAction
+ * @typedef {import("../action-generator").ActionGeneratorObject} ActionGeneratorObject
+ * @typedef {import("../battle-system").BattleData} BattleData
+ */
+
+test("Action generator stack", () => {
+    
+    const actionCreator = new ActionCreator();
+    
+    /** @type {ActiveActionGenerator} */
+    const actionGenerator1 = {
+        generator: new ActionGenerator(actionCreator.generate()),
+        creator: actionCreator
+    };
+
+    /** @type {ActiveActionGenerator} */
+    const actionGenerator2 = {
+        generator: new ActionGenerator(actionCreator.generate()),
+        creator: actionCreator
+    };
+
+    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+
+    const actionStack = battleContext.getActionGeneratorStack();
+
+    expect(actionStack).toBeDefined();
+    expect(actionStack.length).toBe(0);
+
+    battleContext.pushActionGenerator(actionGenerator1);
+   
+    expect(actionStack.length).toBe(1);
+    expect(actionStack[0]).toBe(actionGenerator1);
+    
+    battleContext.pushActionGenerator(actionGenerator2);
+
+    expect(actionStack.length).toBe(2);
+    expect(actionStack[1]).toBe(actionGenerator2);
+
+    let poppedActionGenerator = battleContext.popActionGenerator();
+
+    expect(poppedActionGenerator).toBeDefined();
+    expect(poppedActionGenerator).toBe(actionGenerator2);
+    expect(actionStack.length).toBe(1);
+
+    poppedActionGenerator = battleContext.popActionGenerator();
+
+    expect(poppedActionGenerator).toBeDefined();
+    expect(poppedActionGenerator).toBe(actionGenerator1);
+    expect(actionStack.length).toBe(0);
+});
+
+test("Action stack", () => {
+    const actionCreator = new ActionCreator();
+
+    /** @type {ActiveAction} */
+    const action1 = {
+        action: {
+            infoAction: {
+                description: "hello"
+            }
+        },
+        generator: new ActionGenerator(actionCreator.generate()),
+        creator: actionCreator
+    };
+
+    /** @type {ActiveAction} */
+    const action2 = {
+        action: {
+            infoAction: {
+                description: "hello"
+            }
+        },
+        generator: new ActionGenerator(actionCreator.generate()),
+        creator: actionCreator
+    };
+
+    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+
+    const actionStack = battleContext.getActionStack();
+
+    expect(actionStack).toBeDefined();
+    expect(actionStack.length).toBe(0);
+
+    battleContext.pushAction(action1);
+   
+    expect(actionStack.length).toBe(1);
+    expect(actionStack[0]).toBe(action1);
+    
+    battleContext.pushAction(action2);
+
+    expect(actionStack.length).toBe(2);
+    expect(actionStack[1]).toBe(action2);
+
+    let poppedActionGenerator = battleContext.popAction();
+
+    expect(poppedActionGenerator).toBeDefined();
+    expect(poppedActionGenerator).toBe(action2);
+    expect(actionStack.length).toBe(1);
+
+    poppedActionGenerator = battleContext.popAction();
+
+    expect(poppedActionGenerator).toBeDefined();
+    expect(poppedActionGenerator).toBe(action1);
+    expect(actionStack.length).toBe(0);
+});
+
+test("Adding and Removing Effects", () => {
+    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const effect1 = new Effect(new BattlePlayer());
+    const effect2 = new Effect(new BattlePlayer());
+
+    expect(battleContext.getActiveEffects().length).toBe(0);
+
+    battleContext.addEffect(effect1);
+
+    expect(battleContext.getActiveEffects().length).toBe(1);
+
+    battleContext.addEffect(effect2);
+
+    expect(battleContext.getActiveEffects().length).toBe(2);
+
+    let removedEffect = battleContext.removeEffect(effect1);
+
+    expect(removedEffect).toBe(effect1);
+    expect(battleContext.getActiveEffects().length).toBe(1);
+
+    removedEffect = battleContext.removeEffect(effect2);
+
+    expect(removedEffect).toBe(effect2);
+    expect(battleContext.getActiveEffects().length).toBe(0);
+
+});
+
+test("Pushing an ActionGenerator", () => {
+    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const actionCreator = new ActionCreator();
+    const actionGenerator1 = new ActionGenerator(actionCreator.generateRespondAll());
+    battleContext.addActionGenerator(actionGenerator1, actionCreator);
+
+    let topActionGenerator = battleContext.getTopActionGenerator();
+
+    expect(topActionGenerator).toBeDefined();
+    expect(topActionGenerator?.generator).toBe(actionGenerator1);
+    expect(topActionGenerator?.creator).toBe(actionCreator);
+
+    class TestEffect extends Effect {
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @param {ActiveActionGenerator} activeActionGenerator 
+         */
+        *actionGeneratorBeginEvent(battleContext, activeActionGenerator) {
+            this.lastBattleContext = battleContext;
+            this.lastActionGenerator = activeActionGenerator;
+        }
+    }
+
+    const testEffect = new TestEffect(new BattlePlayer());
+    battleContext.addEffect(testEffect);
+    const actionGenerator2 = new ActionGenerator(actionCreator.generateRespondAll());
+    battleContext.addActionGenerator(actionGenerator2, actionCreator);
+
+    expect(testEffect.lastActionGenerator?.generator).toBe(actionGenerator2);
+    expect(testEffect.lastActionGenerator?.creator).toBe(actionCreator);
+    expect(testEffect.lastBattleContext).toBe(battleContext);
+});
+
+test("Pushing an Action", () => {
+    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const actionCreator = new ActionCreator();
+    const actionGenerator = new ActionGenerator(actionCreator.generateRespondAll());
+    const action = {};
+
+    battleContext.addAction(action, actionGenerator, actionCreator);
+
+    expect(battleContext.getTopAction()?.action).toBe(action);
+});
+
+test("Activating battle moves", () => {
+    const player1  = new BattlePlayer();
+    const player2 = new BattleMonster();
+    const battleContext = new BattleContext({
+        player: player1.getData(),
+        monster: player2.getData(),
+        gameId: '',
+        strikeAnim: {},
+        environment: {},
+        round: 0,
+        active: true,
+        id: ''
+    });
+
+    const strikeMove = new StrikeBattleMove(player1);
+    battleContext.activateBattleMove(strikeMove);
+
+    expect(battleContext.getTopActionGenerator()?.creator).toBe(strikeMove)
+});
+
+test("Resolving battles", () => {
+    const battleContext = new BattleContext({
+        player: new BattlePlayer({id: 'player'}).getData(),
+        monster: new BattleMonster({id: 'monster'}).getData(),
+        gameId: '',
+        strikeAnim: {},
+        environment: {},
+        round: 0,
+        active: true,
+        id: ''
+    });
+
+    battleContext.activateBattleMove(new StrikeBattleMove(battleContext.player));
+    battleContext.activateBattleMove(new StrikeBattleMove(battleContext.monster));
+    const battleSteps = battleContext.resolve();
+
+    expect(battleSteps.length).toBeGreaterThan(0);
+    expect(battleContext.player.getData().health).toBeLessThan(battleContext.player.getData().maxHealth);
+    expect(battleContext.monster.getData().health).toBeLessThan(battleContext.monster.getData().maxHealth);
+    
+});

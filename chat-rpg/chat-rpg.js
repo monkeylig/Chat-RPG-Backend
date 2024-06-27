@@ -1,3 +1,8 @@
+/**
+ * @import {PlayerData} from "./datastore-objects/agent"
+ * @import {BattleData} from "./battle-system/battle-system"
+ */
+
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
@@ -9,16 +14,11 @@ const Item = require('./datastore-objects/item');
 const {MonsterClass} = require("./datastore-objects/monster-class");
 const {Weapon} = require("./datastore-objects/weapon");
 const { Shop } = require("./datastore-objects/shop");
-const BattleFunctions = require('./battle/battle')
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
-
-/**
- * @typedef {import("./datastore-objects/battle-agent").BattlePlayerData} BattlePlayerData
- * @typedef {import("./datastore-objects/battle-agent").BattleMonsterData} BattleMonsterData
- */
+const { BattleSystem } = require("./battle-system/battle-system");
 
 class ChatRPG {
     /** @member {IBackendDataSource} */
@@ -211,11 +211,13 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.battleNotFound);
         }
 
-        const battle = battleSnap.data();
-        const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
+        //const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
+        const battleSystem = new BattleSystem(battleSnap.data());
+        const steps = battleSystem.singlePlayerBattleIteration(actionRequest);
+        const battle = battleSystem.battle;
 
         const battlePlayer = new BattlePlayer(battle.player);
-        const battlePlayerData = battlePlayer.datastoreObject;
+        const battlePlayerData = battlePlayer.getData();
         const monster = new BattleMonster(battle.monster);
         const monsterData = monster.getData();
 
@@ -252,8 +254,11 @@ class ChatRPG {
 
             await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
 
-            const updatedPlayer = player.getData();
-            updatedPlayer.id = battlePlayerData.id;
+            /**@type {PlayerData & {id: string}} */
+            const updatedPlayer = {
+                ...player.getData(),
+                id: battlePlayerData.id
+            };
             return {
                 ...battle,
                 updatedPlayer,

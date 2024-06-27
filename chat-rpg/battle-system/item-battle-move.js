@@ -1,0 +1,74 @@
+/** @import {ItemData} from "../datastore-objects/item" */
+/** @import {ActionGeneratorObject} from "./action-generator" */
+
+const { BattleAgent } = require("../datastore-objects/battle-agent");
+const Item = require("../datastore-objects/item");
+const { generateAbilityActions } = require("./ability-utility");
+const { BattleContext } = require("./battle-context");
+const { BattleMove } = require("./battle-move");
+const { GeneratorCreatorType } = require("./battle-system-types");
+
+class ItemBattleMove extends BattleMove{
+    #item;
+    /**
+     * 
+     * @param {BattleAgent} srcPlayer 
+     * @param {Item} item 
+     */
+    constructor(srcPlayer, item) {
+        super(srcPlayer);
+        this.#item = item;
+    }
+
+    get creatorType() {
+        return GeneratorCreatorType.Item;
+    }
+
+    /**
+     * @override
+     * @returns {ItemData}
+     */
+    getInputData() {
+        return this.#item.getData();
+    }
+
+    /** 
+     * @override
+     * @param {BattleContext} battleContext
+     * @returns {ActionGeneratorObject}
+     */
+    *activate(battleContext) {
+        const inputData = /** @type {ItemData} */ (yield true);
+
+        const target = inputData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
+
+        if(!target) {
+            return;
+        }
+
+        yield {
+            infoAction: {
+                description: `${this.owner.getData().name} uses a ${inputData.name}!`,
+                action: 'item',
+                targetAgentId: target.getData().id,
+                srcAgentId: this.owner.getData().id,
+            }
+        };
+
+        for(const action of generateAbilityActions(this.owner, inputData, battleContext, {skipAnimation: true})) {
+            yield action;
+        }
+
+        yield {
+            playerAction: {
+                targetPlayer: this.owner,
+                srcPlayer: this.owner,
+                type: '',
+                style: '',
+                consumeItem: inputData.name
+            }
+        };
+    }
+}
+
+module.exports = {ItemBattleMove};

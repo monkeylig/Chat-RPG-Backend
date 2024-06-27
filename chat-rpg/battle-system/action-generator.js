@@ -2,15 +2,7 @@
  * @typedef {import("./action").Action} Action
  */
 
-/** @enum {string} */
-const ActionCreatorType =  {
-    Strike: 'strike',
-    Ability: 'ability',
-    StrikeAbility: 'strikeAbility',
-    Item: 'item',
-    Effect: 'effect',
-    None: '',
-};
+const { deepCopy } = require("../../utility");
 
 /**
  * @typedef {Generator<Action|boolean, void, Object>} ActionGeneratorObject
@@ -52,9 +44,9 @@ class ActionGenerator {
     }
 
     set inputData(newData) {
-        this.#inputData = newData
+        this.#inputData = deepCopy(newData);
     }
 
 };
 
-module.exports = {ActionGenerator, ActionCreatorType};
+module.exports = {ActionGenerator};

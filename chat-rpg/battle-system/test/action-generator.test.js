@@ -1,14 +1,11 @@
-
-const { BattlePlayer, BattleAgent } = require("../datastore-objects/battle-agent");
-const { PlayerActionType, PlayerActionStyle } = require("./action");
-const { ActionGenerator, ActionCreatorType } = require("./action-generator");
-
 /**
- * @typedef {import("./action").Action} Action
- * @typedef {import("./action-generator").ActionGeneratorObject} ActionGeneratorObject
- */
-
-
+ * @import {Action} from "../action"
+ * @import {ActionGeneratorObject} from "../action-generator"
+ */ 
+const { BattlePlayer, BattleAgent } = require("../../datastore-objects/battle-agent");
+const { PlayerActionType, PlayerActionStyle } = require("../action");
+const { ActionGenerator } = require("../action-generator");
+const { GeneratorCreatorType } = require("../battle-system-types");
 
 test('Creating generators and using them', () => {
     const player1 = new BattleAgent();
@@ -41,7 +38,7 @@ test('Creating generators and using them', () => {
 
     const actionCreator = {
         owner: new BattlePlayer(),
-        creatorType: ActionCreatorType.None,
+        creatorType: GeneratorCreatorType.None,
         getInputData() {
             return inputData;
         },
@@ -57,8 +54,10 @@ test('Creating generators and using them', () => {
     };
 
     const actionGenerator = new ActionGenerator(actionCreator.generate());
+    actionGenerator.inputData = inputData;
 
-    expect(actionGenerator.inputData).toBe(inputData);
+    expect(actionGenerator.inputData).not.toBe(inputData);
+    expect(actionGenerator.inputData).toStrictEqual(inputData);
 
     let action = actionGenerator.next();
 
@@ -70,7 +69,7 @@ test('Creating generators and using them', () => {
     expect(action).toBeDefined();
     expect(action.done).toBeFalsy();
     expect(action.value).toBe(action1);
-    expect(testInputData).toBe(inputData);
+    expect(testInputData).toStrictEqual(inputData);
 
     action = actionGenerator.next();
 

@@ -1,3 +1,4 @@
+const Ability = require('./ability');
 const DatastoreObject = require('./datastore-object');
 
 /**
@@ -8,7 +9,7 @@ const DatastoreObject = require('./datastore-object');
  * @property {string} style
  * @property {number} baseDamage
  * @property {number} speed
- * @property {Object} strikeAbility
+ * @property {Ability.AbilityData} strikeAbility
  * @property {Object} statGrowth
  * @property {string} description
  * @property {string} icon
@@ -40,7 +41,7 @@ class Weapon extends DatastoreObject {
             style: 'sword',
             baseDamage: 0,
             speed: 0,
-            strikeAbility: {},
+            strikeAbility: (new Ability()).getData(),
             statGrowth: {
                 maxHealth: 1,
                 strength: 1,

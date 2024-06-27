@@ -1,6 +1,14 @@
 const Ability = require("../datastore-objects/ability");
+const { BattleMonster, BattlePlayer, BattleAgent } = require("../datastore-objects/battle-agent");
 const chatRPGUtility = require("../utility");
 
+/**
+ * 
+ * @param {BattleMonster} monster 
+ * @param {BattleAgent} opponent 
+ * @param {import("../battle-system/battle-system").BattleData} battle 
+ * @returns {import("../battle-system/battle-system").PlayerActionRequest}
+ */
 function genericAi(monster, opponent, battle) {
     let choice = chatRPGUtility.getRandomIntInclusive(0, 1);
 
@@ -12,12 +20,16 @@ function genericAi(monster, opponent, battle) {
         if(monsterData.ap >= ability.getData().apCost) {
             return {
                 type: 'ability',
-                abilityName: ability.getData().name
+                abilityName: ability.getData().name,
+                battleId: battle.id
             };
         }
     }
 
-    return {type: 'strike'};
+    return {
+        type: 'strike',
+        battleId: battle.id
+    };
 }
 
 const monsterAi = {

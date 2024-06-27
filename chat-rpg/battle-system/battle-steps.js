@@ -1,3 +1,5 @@
+/** @import {BattleData} from './battle-system' */
+
 const { BattleWeapon, BattleAgent, BattlePlayer } = require('../datastore-objects/battle-agent');
 const gameplayObjects = require('../gameplay-objects');
 const chatRPGUtility = require('../utility');
@@ -156,6 +158,19 @@ function genStrikeSteps(srcPlayer, targetPlayer) {
     return [...hitSteps];
 }
 
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * damage: number,
+ * protectionDamage: number,
+ * protectionDamageType: number
+ * }} DamageInfo
+ * 
+ * @param {*} targetPlayer 
+ * @param {*} damage 
+ * @param {*} type 
+ * @returns 
+ */
 function damageStep(targetPlayer, damage, type) {
     const netDamage = Math.floor(damage);
     const targetPlayerData = targetPlayer.getData();
@@ -189,7 +204,22 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
     return healStep;
 }
 
-function infoStep(description, action, actorId='', targetId='', animation) {
+/**
+ * @typedef {BattleStep & {
+ * action?: string,
+ * actorId?: string,
+ * targetId?: string,
+ * animation?: object
+ * }} SInfoBattleStep
+ * 
+ * @param {string} description A description of an action that took place
+ * @param {string} [action] A short subject line for the action
+ * @param {string} [actorId] The id the of the battle agent that performed this action 
+ * @param {string} [targetId] The id of the target of the action
+ * @param {Object} [animation] Animation information to show a visual representation of the action
+ * @returns {SInfoBattleStep}
+ */
+function infoStep(description='', action, actorId='', targetId='', animation=undefined) {
     const infoStep = {
         type: 'info',
         description,
@@ -205,9 +235,32 @@ function infoStep(description, action, actorId='', targetId='', animation) {
     return infoStep;
 }
 
-function battleEndStep(description) {
+/**
+ * @typedef {BattleStep & {
+ * status: string,
+ * winner: string | null
+ * }} BattleEndStep
+ * 
+ * @param {BattleData} battleData
+ * @param {string} status
+ * @param {string | null} winnerId
+ * @param {string} [description]
+ * @returns {BattleEndStep}
+ */
+function battleEnd(battleData, status, winnerId, description) {
+    battleData.active = false;
+    battleData.result = {
+        status: status,
+        winner: winnerId,
+        expAward: 0,
+        levelGain: 0,
+        drops: []
+    };
+    
     return {
-        type: 'battle_end',
+        type: 'battleEnd',
+        status: status, 
+        winner: winnerId,
         description
     };
 }
@@ -391,6 +444,29 @@ function apGainStep(battlePlayer, apGain) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * netChange: number
+ * }} SApChangeBattleStep
+ * 
+ * @param {BattleAgent} battleAgent 
+ * @param {number} value 
+ * @returns {SApChangeBattleStep}
+ */
+function apChange(battleAgent, value) {
+    const battlePlayerData = battleAgent.getData();
+    const netChange = Math.min(battlePlayerData.maxAp - battlePlayerData.ap, Math.max(value, -battlePlayerData.ap))
+    battlePlayerData.ap += netChange;
+
+    return {
+        type: 'apChange',
+        targetId: battleAgent.getData().id,
+        netChange: netChange
+    };
+
+}
+
 function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
     battlePlayer.getData().autoRevive = reviveAmount;
     return {
@@ -517,6 +593,16 @@ function addAbilityStrikeStep(targetAgent, ability, durationCondition) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * netChange: number
+ * }} SStrikeLevelChangeStep
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {number} strikeLevelChange 
+ * @returns {SStrikeLevelChangeStep}
+ */
 function strikeLevelChangeStep(targetAgent, strikeLevelChange) {
     const oldValue = targetAgent.getData().strikeLevel;
     targetAgent.changeStrikeLevel(strikeLevelChange);
@@ -528,11 +614,34 @@ function strikeLevelChangeStep(targetAgent, strikeLevelChange) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * itemName: string,
+ * successful: boolean,
+ * itemDepleted: boolean,
+ * }} ConsumeItemStep
+ * 
+ * @param {BattlePlayer} targetAgent 
+ * @param {string} itemName 
+ * @returns {ConsumeItemStep}
+ */
+function consumeItem(targetAgent, itemName) {
+    const item = targetAgent.consumeItem(itemName);
+    return {
+        type: 'consumeItem',
+        targetId: targetAgent.getData().id,
+        itemName: itemName,
+        successful: item !== undefined,
+        itemDepleted: (item !== undefined && item.isDepleted())
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
     info: infoStep,
-    battleEnd: battleEndStep,
+    battleEnd,
     strengthAmp: strengthAmpStep,
     defenseAmp: defenseAmpStep,
     magicAmp: magicAmpStep,
@@ -546,6 +655,7 @@ const BattleSteps = {
     revive: reviveStep,
     apCost: apCostStep,
     apGain: apGainStep,
+    apChange,
     readyRevive: readyReviveStep,
     gainStatusEffect: gainStatusEffectStep,
     removeStatusEffect: removeStatusEffectStep,
@@ -556,6 +666,7 @@ const BattleSteps = {
     removeAbility: removeAblityStep,
     addAbilityStrike: addAbilityStrikeStep,
     strikeLevelChange: strikeLevelChangeStep,
+    consumeItem,
     genHitSteps,
     genStrikeSteps
 };

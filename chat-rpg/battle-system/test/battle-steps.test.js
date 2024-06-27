@@ -1,10 +1,14 @@
-// @ts-nocheck
+/**
+ * @import {BattleData} from '../battle-system'
+ */
+
 const seedrandom = require('seedrandom');
-const BattleSteps = require('./battle-steps');
-const { BattlePlayer } = require('../datastore-objects/battle-agent');
-const chatRPGUtility = require('../utility');
-const gameplayObjects = require('../gameplay-objects');
-const Ability = require('../datastore-objects/ability');
+const BattleSteps = require('../battle-steps');
+const { BattlePlayer, BattleMonster } = require('../../datastore-objects/battle-agent');
+const chatRPGUtility = require('../../utility');
+const gameplayObjects = require('../../gameplay-objects');
+const Ability = require('../../datastore-objects/ability');
+const Item = require('../../datastore-objects/item');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -27,9 +31,6 @@ test('Damage Step', ()=>{
 
     expect(battleStep).toBeDefined();
     expect(battleStep.type).toMatch('damage');
-
-    //const damage = Math.floor(((2 * player1.getData().level / 5 + 2) * baseDamage * player1.getData().strength / player2.getData().defense) / 50 + 2);
-
     expect(battleStep.damage).toBe(damage);
     expect(player1.getData().maxHealth - player1.getData().health).toBe(damage);
 });
@@ -62,10 +63,21 @@ test('Info Step', ()=>{
 });
 
 test('Battle End', ()=>{
-    const battleEndStep = BattleSteps.battleEnd("Game Over");
+    /** @type {BattleData} */
+    const battle = {
+        player: new BattlePlayer().getData(),
+        monster: new BattleMonster().getData(),
+        gameId: '',
+        strikeAnim: undefined,
+        environment: undefined,
+        round: 0,
+        active: false,
+        id: ''
+    };
+    const battleEndStep = BattleSteps.battleEnd(battle, 'victory', 'player', "Game Over");
 
     expect(battleEndStep).toBeDefined();
-    expect(battleEndStep.type).toMatch('battle_end');
+    expect(battleEndStep.type).toMatch('battleEnd');
     expect(battleEndStep.description).toMatch('Game Over');
 });
 
@@ -125,20 +137,31 @@ test('Revive step', () => {
     expect(player1.getData().health).toBeGreaterThan(0);
 });
 
-test('ApCost step', () => {
+test('Ap Change step', () => {
     const player1 = new BattlePlayer();
 
-    let apCostStep = BattleSteps.apCost(player1, 2);
+    let apChangeStep = BattleSteps.apChange(player1, -2);
 
-    expect(apCostStep).toBeDefined();
-    expect(apCostStep.type).toMatch('apCost');
-    expect(apCostStep.apCost).toBe(2);
+    expect(apChangeStep).toBeDefined();
+    expect(apChangeStep.type).toMatch('apChange');
+    expect(apChangeStep.netChange).toBe(-2);
     expect(player1.getData().ap).toBe(1);
 
-    apCostStep = BattleSteps.apCost(player1, 2);
+    apChangeStep = BattleSteps.apChange(player1, -2);
 
-    expect(apCostStep.apCost).toBe(1);
+    expect(apChangeStep.netChange).toBe(-1);
     expect(player1.getData().ap).toBe(0);
+
+    apChangeStep = BattleSteps.apChange(player1, 1);
+
+    expect(apChangeStep.netChange).toBe(1);
+    expect(player1.getData().ap).toBe(1);
+
+    apChangeStep = BattleSteps.apChange(player1, 3);
+
+    expect(apChangeStep.netChange).toBe(2);
+    expect(player1.getData().ap).toBe(3);
+
 });
 
 test('ReadyRevive Step', () => {
@@ -440,4 +463,79 @@ test('Set counter', () => {
     expect(counterStep.type).toBe('setCounter');
     expect(counterStep.targetId).toBe(player1.getData().id);
     expect(counterStep.counter).toStrictEqual({type: 'strike', ability: ability.getData()});
+});
+
+test('Strike Level change', () => {
+    const player = new BattlePlayer({id: 'player'});
+    let strikeLevelChange = BattleSteps.strikeLevelChange(player, 1);
+
+    expect(strikeLevelChange).toBeDefined();
+    expect(strikeLevelChange.type).toMatch('strikeLevelChange');
+    expect(strikeLevelChange.targetId).toMatch('player');
+    expect(strikeLevelChange.netChange).toBe(1);
+    expect(player.getData().strikeLevel).toBe(1);
+
+    strikeLevelChange = BattleSteps.strikeLevelChange(player, 1);
+
+    expect(strikeLevelChange).toBeDefined();
+    expect(strikeLevelChange.type).toMatch('strikeLevelChange');
+    expect(strikeLevelChange.targetId).toMatch('player');
+    expect(strikeLevelChange.netChange).toBe(1);
+    expect(player.getData().strikeLevel).toBe(2);
+
+    strikeLevelChange = BattleSteps.strikeLevelChange(player, 1);
+
+    expect(strikeLevelChange).toBeDefined();
+    expect(strikeLevelChange.type).toMatch('strikeLevelChange');
+    expect(strikeLevelChange.targetId).toMatch('player');
+    expect(strikeLevelChange.netChange).toBe(0);
+    expect(player.getData().strikeLevel).toBe(2);
+
+});
+
+test("Consume Item", () => {
+    const item = new Item({
+        name: 'testItem',
+        count: 2
+    });
+
+    const player = new BattlePlayer({id: "player"});
+    const itemEntry = player.addItemToBag(item);
+    if(!itemEntry) {
+        fail();
+    }
+
+    let stepInfo = BattleSteps.consumeItem(player, 'testItem');
+
+    expect(stepInfo.type).toBe('consumeItem');
+    expect(stepInfo.targetId).toBe('player');
+    expect(stepInfo.itemName).toBe('testItem');
+    expect(stepInfo.successful).toBe(true);
+    expect(stepInfo.itemDepleted).toBe(false);
+
+    let itemContainer = player.findObjectInBag(itemEntry.id);
+    if(!itemContainer) {
+        fail();
+    }
+
+    const itemData = /** @type {import('../../datastore-objects/item').ItemData} */ (itemContainer.content);
+
+    expect(itemData.count).toBe(1);
+
+    stepInfo = BattleSteps.consumeItem(player, 'testItem');
+
+    expect(stepInfo.type).toBe('consumeItem');
+    expect(stepInfo.targetId).toBe('player');
+    expect(stepInfo.itemName).toBe('testItem');
+    expect(stepInfo.successful).toBe(true);
+    expect(stepInfo.itemDepleted).toBe(true);
+    expect(player.findObjectInBag(itemEntry.id)).toBeUndefined();
+
+    stepInfo = BattleSteps.consumeItem(player, 'testItem');
+
+    expect(stepInfo.type).toBe('consumeItem');
+    expect(stepInfo.targetId).toBe('player');
+    expect(stepInfo.itemName).toBe('testItem');
+    expect(stepInfo.successful).toBe(false);
+    expect(stepInfo.itemDepleted).toBe(false);
 });

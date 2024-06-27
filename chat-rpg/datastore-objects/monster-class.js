@@ -1,9 +1,31 @@
+/**
+ * @import {WeaponData} from './weapon'
+ */
+
 const DatastoreObject = require('./datastore-object');
 const {Agent} = require('./agent');
 
 const utility = require("../../utility");
 const { Weapon } = require('./weapon');
 const chatRPGUtility = require('../utility');
+
+/** 
+ * @typedef {Object} MonsterClassData
+ * @property {Object[]} abilities
+ * @property {number} strengthRating
+ * @property {number} magicRating
+ * @property {number} defenseRating
+ * @property {number} healthRating
+ * @property {string} avatar
+ * @property {string} expYield
+ * @property {number} monsterNumber
+ * @property {string} name
+ * @property {WeaponData} weapon
+ * @property {number} weaponDropRate
+ * @property {string} class
+ * @property {number} coinDrop
+ * @property {string} description
+ */
 
 class MonsterClass extends DatastoreObject {
     constructor(objectData) {
@@ -36,8 +58,21 @@ class MonsterClass extends DatastoreObject {
         newMonster.setStatsAtLevel(level);
         return newMonster;
     }
+
+    /**
+     * @override
+     * @returns {MonsterClassData}
+     */
+    getData() {
+        return /** @type {MonsterClassData} */ (this.datastoreObject);
+    }
 }
 
+/**
+ * @typedef {MonsterClassData & {
+ * id: string
+ * }} MonsterData
+ */
 class Monster extends Agent {
     static EXP_MODIFIER = 6;
     static STAT_POINTS_PER_LEVEL = 5;
@@ -47,9 +82,9 @@ class Monster extends Agent {
     }
 
     constructNewObject(monster) {
-        super.constructNewObject(monster);
         MonsterClass.setFields(monster);
         monster.id = '';
+        super.constructNewObject(monster);
     }
 
     getExpGain() {
@@ -65,6 +100,14 @@ class Monster extends Agent {
             defense: monster.defenseRating * Monster.STAT_POINTS_PER_LEVEL,
             magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
         }, level);
+    }
+
+    /**
+     * @override
+     * @returns {MonsterData}
+     */
+    getData() {
+        return /** @type {MonsterData} */ (this.datastoreObject);
     }
 }
 

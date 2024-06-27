@@ -1,3 +1,5 @@
+/** @import {ItemData} from './item' */
+
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
 const Item = require('./item');
@@ -145,6 +147,11 @@ function BagHolderMixin(Base) {
             return this.addObjectToBag(book, 'book');
         }
 
+        /**
+         * 
+         * @param {Item} item 
+         * @returns {CollectionContainer | undefined}
+         */
         addItemToBag(item) {
             return this.addObjectToBag(item.getData(), 'item');
         }
@@ -162,6 +169,11 @@ function BagHolderMixin(Base) {
             this.datastoreObject.lastDrops.objects = [];
         }
 
+        /**
+         * 
+         * @param {Item} item 
+         * @returns {ItemData | undefined}
+         */
         onItemUsed(item) {
             const bag = this.datastoreObject.bag;
             const itemIndex = bag.objects.findIndex(element => element.content.name === item.getData().name);
@@ -173,10 +185,35 @@ function BagHolderMixin(Base) {
             Item.onUsed(thisItemData);
 
             if(!Item.isDepleted(thisItemData)) {
-                return;
+                return thisItemData;
             }
 
             bag.objects.splice(itemIndex, 1);
+            return thisItemData;
+        }
+
+        /**
+         * 
+         * @param {string} name 
+         * @returns {Item | undefined}
+         */
+        consumeItem(name) {
+            const bag = this.datastoreObject.bag;
+            const itemIndex = bag.objects.findIndex(element => element.content.name === name);
+            if(itemIndex === -1) {
+                return;
+            }
+
+            const thisItem = new Item(bag.objects[itemIndex].content);
+            thisItem.onUsed();
+
+            if(!thisItem.isDepleted()) {
+                bag.objects[itemIndex].content = thisItem.getData();
+                return thisItem;
+            }
+
+            bag.objects.splice(itemIndex, 1);
+            return thisItem;
         }
 
         addCoins(coins) {
@@ -354,14 +391,21 @@ class Agent extends DatastoreObject {
     }
 };
 
+/**
+ * @typedef {AgentData & BagHolderData & {
+ * currentGameId: string,
+ * twitchId: string,
+ * inventory: object,
+ * trackers: object
+ * }} PlayerData
+ */
 
 /**
- * A class representing a player
- * 
+ * A class representing a player 
  */
 class Player extends BagHolderMixin(Agent) {
     /**
-     * @param {*} objectData 
+     * @param {*} [objectData] 
      */
     constructor(objectData) {
         super(objectData);
@@ -383,6 +427,14 @@ class Player extends BagHolderMixin(Agent) {
             },
             deaths: 0
         };
+    }
+
+    /**
+     * @override
+     * @returns {PlayerData}
+     */
+    getData() {
+        return /** @type {PlayerData} */ (this.datastoreObject);
     }
 
     mergeBattlePlayer(battlePlayer) {

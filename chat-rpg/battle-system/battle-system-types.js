@@ -22,12 +22,14 @@ class ActionGeneratorCreator {
         return GeneratorCreatorType.None;
     }
 
-    getInputData() {}
+    getInputData() {
+        return {};
+    }
 }
 
 /**
  * @typedef {Object} ActiveActionGenerator
- * @property {Action} generator
+ * @property {ActionGenerator} generator
  * @property {ActionGeneratorCreator} creator
  */
 

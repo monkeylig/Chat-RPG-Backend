@@ -1,5 +1,17 @@
+/** @import {AgentActionData, TargetEnum} from "../battle-system/action" */
 const DatastoreObject = require('./datastore-object');
 const animations = require('../content/animations');
+
+/** 
+ * @typedef {AgentActionData & {
+ * name: string,
+ * speed: number,
+ * apCost?: number,
+ * target: TargetEnum,
+ * description: string,
+ * animation: object
+ * }} AbilityData
+ */
 
 class Ability extends DatastoreObject {
     constructor(objectData) {
@@ -7,10 +19,15 @@ class Ability extends DatastoreObject {
     }
 
     constructNewObject(ability) {
+        Ability.constructNewObject(ability);
+    }
+    static constructNewObject(ability) {
         ability.name = 'nothing';
         ability.baseDamage = 0;
         ability.baseDamageText = null;
         ability.speed = 0;
+        ability.apChange = 0;
+        ability.heal = 0;
         ability.effectName = '';
         ability.apCost = 0;
         ability.apGain = 0;
@@ -79,6 +96,14 @@ class Ability extends DatastoreObject {
         }
 
         return false;
+    }
+
+    /**
+     * @override
+     * @returns {AbilityData}
+     */
+    getData() {
+        return /** @type {AbilityData} */ (this.datastoreObject);
     }
 }
 
