@@ -1,10 +1,12 @@
-/** @import {ConsumeItemStep, SInfoBattleStep} from "../battle-steps" */
+/** @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep} from "../battle-steps" */
 /** @import {Action} from "../action" */
 
 const { BattlePlayer, BattleAgent } = require("../../datastore-objects/battle-agent");
 const Item = require("../../datastore-objects/item");
 const { PlayerActionType, PlayerActionStyle } = require("../action");
 const {ActionExecutor} = require("../action-executor");
+const { BattleContext } = require("../battle-context");
+const { Effect } = require("../effect");
 
 test('Empty action', () => {
     let battleSteps = ActionExecutor.execute();
@@ -51,7 +53,7 @@ test('Info action', () => {
     expect(battleSteps.length).toBe(1);
     expect(battleSteps[0].type).toMatch('info');
     expect(battleSteps[0].description).toMatch('Hello World');
-    expect(/** @type {SInfoBattleStep} */(battleSteps[0]).action).toMatch('generic');
+    expect(/** @type {InfoBattleStep} */(battleSteps[0]).action).toMatch('generic');
 });
 
 test('Strike Level change', () => {
@@ -127,4 +129,87 @@ test("Consume Item", () => {
     expect(consumeStep.type).toMatch("consumeItem");
     expect(consumeStep.targetId).toMatch("player");
 
+});
+
+test("Heal", () => {
+    const player = new BattleAgent({id: 'player', health: 1});
+    /** @type {Action} */
+    const apChangeAction = {
+        playerAction: {
+            targetPlayer: player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            heal: 5
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(apChangeAction);
+
+    const apStep = /** @type {HealStep} */(battleSteps[0]);
+
+    expect(apStep.type).toMatch('heal');
+    expect(apStep.healAmount).toBe(5);
+    expect(apStep.targetId).toBe('player');
+});
+
+test("Revive", () => {
+    const player = new BattleAgent({id: 'player', health: 0});
+    /** @type {Action} */
+    const apChangeAction = {
+        playerAction: {
+            targetPlayer: player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            revive: 0.5
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(apChangeAction);
+
+    const reviveStep = /** @type {ReviveStep} */(battleSteps[0]);
+
+    expect(reviveStep.type).toMatch('revive');
+    expect(reviveStep.healAmount).toBe(Math.floor(player.getData().maxHealth * 0.5));
+    expect(reviveStep.targetId).toBe('player');
+});
+
+test('Add Effect', () => {
+    const battleContext = new BattleContext();
+    const testEffect = new Effect(battleContext.player, {});
+
+    /** @type {Action} */
+    const effectAction = {
+        battleContextAction: {
+            addEffect: testEffect,
+            battleContext: battleContext
+        }
+    };
+
+    const battleSteps = ActionExecutor.execute(effectAction);
+    const effectStep = /**@type {AddEffectStep} */(battleSteps[0]);
+
+    expect(effectStep.type).toMatch('addEffect');
+    expect(effectStep.successful).toBeTruthy();
+    expect(effectStep.effect.name).toMatch(testEffect.name);
+});
+
+test('Remove Effect', () => {
+    const battleContext = new BattleContext();
+    const testEffect = new Effect(battleContext.player, {});
+    battleContext.addEffect(testEffect);
+
+    /** @type {Action} */
+    const effectAction = {
+        battleContextAction: {
+            removeEffect: testEffect,
+            battleContext: battleContext
+        }
+    };
+
+    const battleSteps = ActionExecutor.execute(effectAction);
+    const effectStep = /**@type {AddEffectStep} */(battleSteps[0]);
+
+    expect(effectStep.type).toMatch('removeEffect');
+    expect(effectStep.successful).toBeTruthy();
+    expect(effectStep.effect.name).toMatch(testEffect.name);
 });

@@ -6,6 +6,7 @@ const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
+const { genId } = require('../../utility');
 
 /**
  * @typedef {import('./utilities').Collection} Collection
@@ -259,6 +260,10 @@ function BagHolderMixin(Base) {
  * @property {number} level
  * @property {number} exp
  * @property {number} expToNextLevel
+ * @property {Object.<string, {
+ * name: string,
+ * data: object
+ * }>} effectsMap
  */
 
 class Agent extends DatastoreObject {
@@ -281,8 +286,17 @@ class Agent extends DatastoreObject {
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
+        agent.effectsMap = {};
 
         this.setStatsAtLevel(1);
+    }
+
+    /**
+     * @override
+     * @returns {AgentData}
+     */
+    getData() {
+        return /** @type {AgentData} */ (this.datastoreObject);
     }
 
     setStatsAtLevel(level) {
@@ -321,7 +335,16 @@ class Agent extends DatastoreObject {
         return datastoreObject.health <= 0;
     }
 
+    /**
+     * 
+     * @param {number} hp 
+     * @returns {number}
+     */
     heal(hp) {
+        if (this.isDefeated()) {
+            return 0;
+        }
+
         let healAmount = Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health);
 
         if (healAmount > 0) {
@@ -380,14 +403,41 @@ class Agent extends DatastoreObject {
         return this.datastoreObject;
     }
 
+    /**
+     * 
+     * @param {number} healPercent 
+     * @returns {number}
+     */
     revive(healPercent = 1) {
-        Agent.revive(this.datastoreObject, healPercent);
+        return Agent.revive(this.datastoreObject, healPercent);
     }
 
     static revive(datastoreObject, healPercent = 1) {
-        if(Agent.isDefeated(datastoreObject)) {
-            datastoreObject.health = Math.floor(datastoreObject.maxHealth * healPercent);
+        if(!Agent.isDefeated(datastoreObject)) {
+            return 0;
         }
+
+        const healAmount = Math.floor(datastoreObject.maxHealth * healPercent);
+        datastoreObject.health = healAmount;
+        return healAmount;
+    }
+
+    /**
+     * 
+     * @param {string} id
+     * @param {string} name 
+     * @param {object} data
+     */
+    setEffect(id, name, data) {
+        this.getData().effectsMap[id] = {name, data};
+    }
+
+    /**
+     * 
+     * @param {string} id 
+     */
+    removeEffect(id) {
+        delete this.getData().effectsMap[id];
     }
 };
 

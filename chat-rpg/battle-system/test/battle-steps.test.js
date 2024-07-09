@@ -4,11 +4,13 @@
 
 const seedrandom = require('seedrandom');
 const BattleSteps = require('../battle-steps');
-const { BattlePlayer, BattleMonster } = require('../../datastore-objects/battle-agent');
+const { BattlePlayer, BattleMonster, BattleAgent } = require('../../datastore-objects/battle-agent');
 const chatRPGUtility = require('../../utility');
 const gameplayObjects = require('../../gameplay-objects');
 const Ability = require('../../datastore-objects/ability');
 const Item = require('../../datastore-objects/item');
+const { Effect } = require('../effect');
+const { BattleContext } = require('../battle-context');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -41,7 +43,7 @@ test('Heal Step', ()=>{
 
     player1.getData().health = player1.getData().maxHealth / 2;
 
-    const healStep = BattleSteps.heal(player1, player1, player1.getData().maxHealth);
+    const healStep = BattleSteps.heal(player1, player1.getData().maxHealth);
 
     expect(healStep).toBeDefined();
     expect(healStep.type).toMatch('heal');
@@ -538,4 +540,143 @@ test("Consume Item", () => {
     expect(stepInfo.itemName).toBe('testItem');
     expect(stepInfo.successful).toBe(false);
     expect(stepInfo.itemDepleted).toBe(false);
+});
+
+test("Add Effect", () => {
+    const battleContext = new BattleContext();
+    class TestEffect extends Effect {
+        /**
+         * 
+         * @param {BattleAgent} battleAgent 
+         * @param {Object} inputData 
+         */
+        constructor(battleAgent, inputData) {
+            super(battleAgent, inputData);
+            this.name = "test1";
+        }
+    };
+    const testEffect = new TestEffect(battleContext.player, {});
+    let effectStep = BattleSteps.addEffect(battleContext, testEffect);
+
+    expect(effectStep.successful).toBeTruthy();
+    expect(effectStep.type).toMatch('addEffect');
+    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.data).toStrictEqual(testEffect.getInputData());
+    expect(battleContext.isEffectActive(testEffect)).toBeTruthy();
+    expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeUndefined();
+
+    effectStep = BattleSteps.addEffect(battleContext, testEffect);
+
+    expect(effectStep.successful).toBeFalsy();
+
+    const testEffect2 = new TestEffect(battleContext.player, {});
+    effectStep = BattleSteps.addEffect(battleContext, testEffect2);
+
+    expect(effectStep.successful).toBeTruthy();
+    expect(effectStep.type).toMatch('addEffect');
+    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.data).toStrictEqual(testEffect2.getInputData());
+    expect(battleContext.isEffectActive(testEffect2)).toBeTruthy();
+    expect(battleContext.player.getData().effectsMap[testEffect2.persistentId]).toBeUndefined();
+
+});
+
+test('Add Effect Unique', () => {
+    const battleContext = new BattleContext();
+    class TestEffect extends Effect {
+        /**
+         * 
+         * @param {BattleAgent} battleAgent 
+         * @param {Object} inputData 
+         */
+        constructor(battleAgent, inputData) {
+            super(battleAgent, inputData);
+            this.name = "test1";
+            this.unique = true;
+        }
+    };
+
+    const testEffect = new TestEffect(battleContext.player, {});
+    const testEffect2 = new TestEffect(battleContext.player, {});
+
+    BattleSteps.addEffect(battleContext, testEffect);
+    let effectStep = BattleSteps.addEffect(battleContext, testEffect2);
+
+    expect(effectStep.successful).toBeFalsy();
+});
+
+test('Add effect persistent', () => {
+    const battleContext = new BattleContext();
+    class TestEffect extends Effect {
+        /**
+         * 
+         * @param {BattleAgent} battleAgent 
+         * @param {Object} inputData 
+         */
+        constructor(battleAgent, inputData) {
+            super(battleAgent, inputData);
+            this.name = "test1";
+            this.persistentId = 'testId';
+        }
+    };
+
+    const testEffect = new TestEffect(battleContext.player, {});
+    BattleSteps.addEffect(battleContext, testEffect);
+
+    expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeDefined();
+
+});
+
+test('Remove Effect', () => {
+    const battleContext = new BattleContext();
+    class TestEffect extends Effect {
+        /**
+         * 
+         * @param {BattleAgent} battleAgent 
+         * @param {Object} inputData 
+         */
+        constructor(battleAgent, inputData) {
+            super(battleAgent, inputData);
+            this.name = "test1";
+        }
+    };
+
+    const testEffect = new TestEffect(battleContext.player, {});
+    BattleSteps.addEffect(battleContext, testEffect); 
+    let effectStep = BattleSteps.removeEffect(battleContext, testEffect);
+    
+    expect(effectStep.successful).toBeTruthy();
+    expect(effectStep.type).toMatch('removeEffect');
+    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.data).toStrictEqual(testEffect.getInputData());
+    expect(battleContext.isEffectActive(testEffect)).toBeFalsy();
+
+    effectStep = BattleSteps.removeEffect(battleContext, testEffect);
+
+    expect(effectStep.successful).toBeFalsy();
+});
+
+test('Remove Effect Persisent', () => {
+    const battleContext = new BattleContext();
+    class TestEffect extends Effect {
+        /**
+         * 
+         * @param {BattleAgent} battleAgent 
+         * @param {Object} inputData 
+         */
+        constructor(battleAgent, inputData) {
+            super(battleAgent, inputData);
+            this.name = "test1";
+            this.persistentId = 'testId';
+        }
+    };
+
+    const testEffect = new TestEffect(battleContext.player, {});
+    BattleSteps.addEffect(battleContext, testEffect);
+    BattleSteps.removeEffect(battleContext, testEffect);
+
+    expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeUndefined();
 });

@@ -1,3 +1,8 @@
+/**
+ * @import {ActiveActionGenerator, ActiveAction} from "../battle-system-types"
+ * @import {ActionGeneratorObject} from "../action-generator"
+ * @import {BattleData} from "../battle-system"
+ */
 
 const { ActionGeneratorCreator } = require("../battle-system-types");
 const { ActionGenerator } = require("../action-generator");
@@ -22,14 +27,6 @@ class ActionCreator extends ActionGeneratorCreator {
         yield true;
     }
 };
-
-/**
- * @typedef {import("../action").Action} Action
- * @typedef {import("../battle-system-types").ActiveActionGenerator} ActiveActionGenerator
- * @typedef {import("../battle-system-types").ActiveAction} ActiveAction
- * @typedef {import("../action-generator").ActionGeneratorObject} ActionGeneratorObject
- * @typedef {import("../battle-system").BattleData} BattleData
- */
 
 test("Action generator stack", () => {
     

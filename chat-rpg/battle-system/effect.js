@@ -1,24 +1,32 @@
+/**
+ * @import {BattleStep} from "./battle-steps"
+ * @import {ActionGeneratorObject} from "./action-generator"
+ * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
+ * @import {BattleContext} from "./battle-context"
+ */
+
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { ActionGenerator } = require("./action-generator");
-const { BattleContext } = require("./battle-context");
 const { ActionGeneratorCreator, GeneratorCreatorType } = require("./battle-system-types");
-
-/**
- * @typedef {import("./action").Action} Action
- * @typedef {import("./battle-steps").BattleStep} BattleStep
- * @typedef {import("./action-generator").ActionGeneratorObject} ActionGeneratorObject
- * @typedef {import("./battle-system-types").ActiveActionGenerator} ActiveActionGenerator
- * @typedef {import("./battle-system-types").ActiveAction} ActiveAction
- */
 
 class Effect extends ActionGeneratorCreator {
     /**
      * 
      * @param {BattleAgent} targetPlayer
+     * @param {Object} [inputData]
      */
-    constructor(targetPlayer) {
+    constructor(targetPlayer, inputData) {
         super();
+        /** @type {BattleAgent} */
         this.targetPlayer = targetPlayer;
+        /** @type {string} */
+        this.persistentId = '';
+        /** @type {boolean} */
+        this.unique = false;
+        /** @type {string} */
+        this.name = 'Battle Effect';
+
+        this._inputData = inputData ? inputData : {};
     }
 
     /**
@@ -29,7 +37,7 @@ class Effect extends ActionGeneratorCreator {
     }
 
     getInputData() {
-        return {};
+        return this._inputData;
     }
 
     /**

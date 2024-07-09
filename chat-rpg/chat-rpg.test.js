@@ -1,5 +1,5 @@
 /**
- * @import {SInfoBattleStep} from './battle-system/battle-steps'
+ * @import {DamageInfo, InfoBattleStep} from './battle-system/battle-steps'
  */
 
 const ChatRPG = require('./chat-rpg');
@@ -137,7 +137,7 @@ test('Testing joining a Twitch game', async () => {
     expect(gameState.monsters.length).toBe(0);
     let players = dataSource.dataSource.accounts;
 
-    for(player in players) {
+    for(const player in players) {
         expect(players[player].currentGameId).toBe('new game');
     }
 
@@ -185,7 +185,7 @@ test('Testing joining a Twitch game', async () => {
 
     players = dataSource.dataSource.accounts;
 
-    for(player in players) {
+    for(const player in players) {
         expect(players[player].currentGameId).toBe('new game2');
     }
 });
@@ -215,7 +215,7 @@ test('Getting a game update', async () => {
     let playerId = await chatrpg.addNewPlayer('jhard', 'big-bad.png', 'physical', 'health', 'fr4wt4', 'twitch');
     await chatrpg.joinGame(playerId.id, 'new game');
 
-    const gameUpdate = await chatrpg.getGame('new game', playerId.id);
+    const gameUpdate = await chatrpg.getGame('new game');
 
     expect(gameUpdate.id).toEqual('new game');
     expect(gameUpdate.monsters.length).toBeGreaterThan(0);
@@ -462,7 +462,8 @@ test('Magic Strike', async () => {
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.steps[2].type).toMatch('damage');
-    expect(battleUpdate.steps[2].damage).toBeGreaterThan(2);
+    const damageStep = /**@type {DamageInfo}*/(battleUpdate.steps[2])
+    expect(damageStep.damage).toBeGreaterThan(2);
 
 });
 
@@ -523,7 +524,7 @@ test('Battle Actions: Ability', async () => {
         if(step.type !== 'info') {
             continue;
         }
-        const infoStep = /**@type {SInfoBattleStep} */(step);
+        const infoStep = /**@type {InfoBattleStep} */(step);
         if(infoStep.action === 'ability') {
             expect(infoStep.description).toMatch(/Big Bang/);
             abilityFound = true;
@@ -589,7 +590,7 @@ test('Battle Actions: Item', async () => {
         if(step.type !== 'info') {
             continue;
         }
-        const infoStep = /**@type {SInfoBattleStep} */(step);
+        const infoStep = /**@type {InfoBattleStep} */(step);
 
         if (infoStep.action === 'item') {
             expect(infoStep.description).toMatch(/Big Bang/);
@@ -1182,6 +1183,10 @@ test('Equip Ability', async () => {
         ]
     });
 
+    if (!book1Object) {
+        fail();
+    }
+
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
         accounts: {
@@ -1288,7 +1293,9 @@ test('Escape from battle', async () => {
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'escape'});
     //TODO check to see if the monster did not make a move before the player escaped
-    expect(battleUpdate.result).toBeDefined();
+    if (!battleUpdate.result) {
+        fail();
+    }
     expect(battleUpdate.result.winner).toBeNull();
 
     const player = await chatrpg.findPlayerById('fr4wt4', 'twitch');
@@ -1342,6 +1349,10 @@ test('Equip Ability with requirements', async () => {
             }
         ]
     });
+
+    if (!incompleteBookObject || !completeBookObject) {
+        fail();
+    }
 
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
@@ -1433,7 +1444,9 @@ test('Buying Items', async () => {
     player = new Player(player);
     let newItem = player.findObjectInBagByName('Test Product');
 
-    expect(newItem).toBeDefined();
+    if (!newItem) {
+        fail();
+    }
     expect(newItem.content).toBeDefined();
     expect(newItem.content.count).toBe(1);
     expect(player.getData().bag.objects.length).toBe(1);
@@ -1444,6 +1457,10 @@ test('Buying Items', async () => {
 
     player = new Player(player);
     newItem = player.findObjectInBagByName('Test Product');
+
+    if (!newItem) {
+        fail();
+    }
 
     expect(newItem).toBeDefined();
     expect(newItem.content).toBeDefined();
@@ -1548,6 +1565,10 @@ test('Buying Books', async () => {
     player = new Player(player);
     let newItem = player.findObjectInBagByName('Test Product');
 
+    if (!newItem) {
+        fail();
+    }
+
     expect(newItem).toBeDefined();
     expect(newItem.content).toBeDefined();
 
@@ -1557,6 +1578,10 @@ test('Buying Books', async () => {
 
     player = new Player(player);
     newItem = player.findObjectInBagByName('Test Product');
+
+    if (!newItem) {
+        fail();
+    }
 
     expect(newItem).toBeDefined();
     expect(newItem.content).toBeDefined();
@@ -1662,6 +1687,9 @@ test('Moving objects from inventory to bag', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
 
+    if (!inventoryObject) {
+        fail();
+    }
     let {player: playerData, page: pageData} = await chatrpg.moveObjectFromInventoryToBag('player1', page1Id, inventoryObject.id);
 
     expect(playerData.bag.objects.length).toBe(1);
@@ -1709,6 +1737,9 @@ test('Dropping objects from inventory', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
 
+    if (!inventoryObject) {
+        fail();
+    }
     let {player: playerData, page: pageData} = await chatrpg.dropObjectFromInventory('player1', page1Id, inventoryObject.id);
 
     expect(pageData.objects.length).toBe(0);
@@ -1730,6 +1761,10 @@ test('Claim Object', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
 
+    if (!object1) {
+        fail();
+    }
+
     let playerData = await chatrpg.claimObject('player1', object1.id);
 
     expect(playerData).toBeDefined();
@@ -1739,6 +1774,9 @@ test('Claim Object', async () => {
     expect(player1.removeLastDrop(object1.id)).toBeFalsy();
     expect(player1.getData().bag.objects[0].content).toStrictEqual(object1.content);
 
+    if (!object2) {
+        fail();
+    }
     playerData = await chatrpg.claimObject('player1', object2.id);
 
     expect(playerData).toBeDefined();
@@ -1775,6 +1813,9 @@ test('Get Inventory Page', async () => {
 
     let pageData = await chatrpg.getInventoryPage('player1', 'page1');
 
+    if (!object1 || !object2) {
+        fail();
+    }
     expect(pageData).toBeDefined();
     expect(pageData.objects[0].content).toStrictEqual(object1.content);
     expect(pageData.objects[1].content).toStrictEqual(object2.content);

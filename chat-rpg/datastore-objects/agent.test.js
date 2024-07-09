@@ -1,6 +1,18 @@
 const Ability = require("./ability");
-const { Player } = require("./agent");
+const { Player, Agent } = require("./agent");
 const { InventoryPage } = require("./inventory-page");
+
+test('Adding and removing effects', () => {
+    const agent = new Agent();
+    agent.setEffect("hf", 'healing factor', {hps: 50});
+
+    expect(agent.getData().effectsMap.hf.name).toMatch('healing factor');
+    expect(agent.getData().effectsMap.hf.data.hps).toBe(50);
+
+    agent.removeEffect('hf');
+
+    expect(agent.getData().effectsMap.hf).toBeUndefined();
+});
 
 test('Revive', () => {
     const player = new Player();

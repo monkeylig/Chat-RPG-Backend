@@ -1,10 +1,10 @@
+/**
+ * @import {Action} from "./action"
+ * @import {BattleStep} from "./battle-steps"
+ */
+
 const { BattlePlayer } = require("../datastore-objects/battle-agent");
 const BattleSteps = require("./battle-steps");
-
-/**
- * @typedef {import("./battle-steps").BattleStep} BattleStep
- * @typedef {import("./action").Action} Action
- */
 
 /**
  * Executes an action that will have side effects on game objects.
@@ -19,34 +19,59 @@ function executeAction(action) {
 
     const steps = [];
     if(action.playerAction) {
-        if(action.playerAction.baseDamage && action.playerAction.srcPlayer) {
-            const hitSteps = BattleSteps.genHitSteps(action.playerAction.srcPlayer,
-                action.playerAction.targetPlayer,
-                action.playerAction.baseDamage,
-                action.playerAction.type, action.playerAction.style, [], {}, {})
+        const playerAction = action.playerAction;
+        if(playerAction.baseDamage && playerAction.srcPlayer && playerAction.type && playerAction.style) {
+            const hitSteps = BattleSteps.genHitSteps(playerAction.srcPlayer,
+                playerAction.targetPlayer,
+                playerAction.baseDamage,
+                playerAction.type, playerAction.style, [], {}, {})
             steps.push(...hitSteps);
         }
 
-        if(action.playerAction.strikeLevelChange) {
-            const strikeLevelChangeStep = BattleSteps.strikeLevelChange(action.playerAction.targetPlayer, action.playerAction.strikeLevelChange);
+        if(playerAction.heal) {
+            const healStep = BattleSteps.heal(playerAction.targetPlayer, playerAction.heal);
+            steps.push(healStep);
+        }
+
+        if(playerAction.revive) {
+            const reviveStep = BattleSteps.revive(playerAction.targetPlayer, playerAction.revive);
+            steps.push(reviveStep);
+        }
+
+        if(playerAction.strikeLevelChange) {
+            const strikeLevelChangeStep = BattleSteps.strikeLevelChange(playerAction.targetPlayer, playerAction.strikeLevelChange);
             steps.push(strikeLevelChangeStep);
         }
 
-        if(action.playerAction.apChange) {
-            const apChangeStep = BattleSteps.apChange(action.playerAction.targetPlayer, action.playerAction.apChange);
+        if(playerAction.apChange) {
+            const apChangeStep = BattleSteps.apChange(playerAction.targetPlayer, playerAction.apChange);
             steps.push(apChangeStep);
         }
 
-        if(action.playerAction.consumeItem) {
-            const consumeItemStep = BattleSteps.consumeItem(/** @type {BattlePlayer} */(action.playerAction.targetPlayer), action.playerAction.consumeItem);
+        if(playerAction.consumeItem) {
+            const consumeItemStep = BattleSteps.consumeItem(/** @type {BattlePlayer} */(playerAction.targetPlayer), playerAction.consumeItem);
             steps.push(consumeItemStep);
         }
 
     }
+
     if(action.infoAction) {
         const infoActionData = action.infoAction;
         const infoAction = BattleSteps.info(infoActionData.description, action.infoAction.action, infoActionData.srcAgentId, infoActionData.targetAgentId, infoActionData.animation);
         steps.push(infoAction);
+    }
+
+    if(action.battleContextAction) {
+        const battleContextAction = action.battleContextAction;
+        if(battleContextAction.addEffect) {
+            const addEffectStep = BattleSteps.addEffect(battleContextAction.battleContext, battleContextAction.addEffect);
+            steps.push(addEffectStep);
+        }
+
+        if(battleContextAction.removeEffect) {
+            const removeEffectStep = BattleSteps.removeEffect(battleContextAction.battleContext, battleContextAction.removeEffect);
+            steps.push(removeEffectStep);
+        }
     }
     return steps;
 }

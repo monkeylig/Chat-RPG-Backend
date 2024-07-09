@@ -1,15 +1,15 @@
-const { generateAbilityActions } = require("../ability-utility");
+const { generateAbilityActions, generateMoveActions } = require("../ability-utility");
 const Ability = require("../../datastore-objects/ability");
 const { BattleContext } = require("../battle-context");
 const ActionTypes = require("../action");
+const Item = require("../../datastore-objects/item");
 
 test('Generate root level hit action', () => {
     const battleContext = new BattleContext();
-    battleContext.player.getData().id = "player";
-    battleContext.monster.getData().id = "monster";
     const ability = new Ability({
         baseDamage: 10,
-        target: 'opponent'
+        target: 'opponent',
+        animation: {}
     });
 
     const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext);
@@ -29,4 +29,27 @@ test('Generate root level hit action', () => {
     expect(lastYield.done).toBeTruthy();
     expect(lastYield.value).toBeUndefined();
 
+});
+
+test('Revive Effect', () => {
+    const battleContext = new BattleContext();
+    const item = new Item({
+        count: 1,
+        name: 'testItem',
+        customActions: {
+            name: 'revive-item',
+            data: {
+                healthRecoverPercent: 0.75
+            }
+        },
+        target: 'self'
+    });
+
+    const actions = generateMoveActions(battleContext.player, item.getData(), battleContext, {skipAnimation: true});
+    let action = /** @type {ActionTypes.Action} */(actions.next().value);
+
+    expect(action.battleContextAction).toBeDefined();
+    expect(action.battleContextAction?.addEffect?.name).toMatch('Revive');
+    expect(action.battleContextAction?.addEffect?.getInputData().healthRecoverPercent).toBe(0.75);
+    expect(action.battleContextAction?.addEffect?.targetPlayer).toBe(battleContext.player);
 });

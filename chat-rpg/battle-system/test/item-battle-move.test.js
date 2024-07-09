@@ -2,6 +2,7 @@
 
 const Item = require("../../datastore-objects/item");
 const { BattleContext } = require("../battle-context");
+const { revive } = require("../battle-steps");
 const { ItemBattleMove } = require("../item-battle-move");
 
 test("Increase AP Item", () => {
@@ -43,5 +44,4 @@ test("Increase AP Item", () => {
 
     expect(lastYield.done).toBeTruthy();
     expect(lastYield.value).toBeUndefined();
-
 });

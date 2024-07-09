@@ -1,3 +1,10 @@
+/**
+ * @import {Action} from "./action"
+ * @import {BattleData} from "./battle-system"
+ * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
+ * @import {BattleStep} from "./battle-steps"
+ */
+
 const {Effect} = require("./effect");
 const { ActionGeneratorCreator } = require("./battle-system-types");
 const { ActionGenerator } = require("./action-generator");
@@ -5,15 +12,6 @@ const chatRPGUtility = require("../utility");
 const {ActionExecutor} = require("./action-executor");
 const { BattlePlayer, BattleMonster, BattleAgent } = require("../datastore-objects/battle-agent");
 const { BattleMove } = require("./battle-move");
-
-
-/**
- * @typedef {import("./action").Action} Action
- * @typedef {import("./battle-system").BattleData} BattleData
- * @typedef {import("./battle-system-types").ActiveActionGenerator} ActiveActionGenerator
- * @typedef {import("./battle-system-types").ActiveAction} ActiveAction
- * @typedef {import("./battle-steps").BattleStep} BattleStep
- */
 
 class BattleContext {
     /** @type {BattleData} */
@@ -179,6 +177,30 @@ class BattleContext {
      */
     removeEffect(effect) {
         return chatRPGUtility.findAndRemoveFromArray(this.#effects, effect);
+    }
+
+    /**
+     * 
+     * @param {Effect} effect 
+     * @returns {boolean}
+     */
+    isEffectActive(effect) {
+        return this.#effects.find((_effect) => _effect == effect) !== undefined;
+    }
+
+    /**
+     * 
+     * @param {string} effectName
+     * @returns {number} 
+     */
+    getEffectCount(effectName) {
+        let count = 0;
+        for (const effect of this.#effects) {
+            if (effect.name === effectName) {
+                count += 1;
+            }
+        }
+        return count;
     }
 
     /**

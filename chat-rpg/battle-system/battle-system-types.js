@@ -1,8 +1,8 @@
-const {ActionGenerator} = require("./action-generator");
-
 /**
- * @typedef {import("./action").Action} Action
+ * @import {Action} from "./action"
  */
+
+const {ActionGenerator} = require("./action-generator");
 
 /** @enum {string} */
 const GeneratorCreatorType =  {

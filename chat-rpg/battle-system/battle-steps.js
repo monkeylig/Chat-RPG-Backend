@@ -1,8 +1,10 @@
 /** @import {BattleData} from './battle-system' */
+/** @import {BattleContext} from './battle-context' */
 
 const { BattleWeapon, BattleAgent, BattlePlayer } = require('../datastore-objects/battle-agent');
 const gameplayObjects = require('../gameplay-objects');
 const chatRPGUtility = require('../utility');
+const { Effect } = require('./effect');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
 const ELEMENTAL_BURST_BONUS = 1.5;
@@ -162,14 +164,14 @@ function genStrikeSteps(srcPlayer, targetPlayer) {
  * @typedef {BattleStep & {
  * targetId: string,
  * damage: number,
- * protectionDamage: number,
- * protectionDamageType: number
- * }} DamageInfo
+ * protectedDamage: number,
+ * protectedDamageType: string
+ * }} DamageStep
  * 
- * @param {*} targetPlayer 
- * @param {*} damage 
- * @param {*} type 
- * @returns 
+ * @param {BattleAgent} targetPlayer 
+ * @param {number} damage 
+ * @param {string} type 
+ * @returns {DamageStep}
  */
 function damageStep(targetPlayer, damage, type) {
     const netDamage = Math.floor(damage);
@@ -189,12 +191,20 @@ function damageStep(targetPlayer, damage, type) {
     return damageStep;
 }
 
-function healStep(srcPlayer, targetPlayer, healAmount) {
-    const srcPlayerData = srcPlayer.getData();
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * healAmount: number
+ * }} HealStep
+ * 
+ * @param {BattleAgent} targetPlayer 
+ * @param {number} healAmount 
+ * @returns {HealStep}
+ */
+function healStep(targetPlayer, healAmount) {
     const targetPlayerData = targetPlayer.getData();
     const healStep = {
         type: 'heal',
-        actorId: srcPlayerData.id,
         targetId: targetPlayerData.id,
         healAmount: 0
     };
@@ -210,14 +220,14 @@ function healStep(srcPlayer, targetPlayer, healAmount) {
  * actorId?: string,
  * targetId?: string,
  * animation?: object
- * }} SInfoBattleStep
+ * }} InfoBattleStep
  * 
  * @param {string} description A description of an action that took place
  * @param {string} [action] A short subject line for the action
  * @param {string} [actorId] The id the of the battle agent that performed this action 
  * @param {string} [targetId] The id of the target of the action
  * @param {Object} [animation] Animation information to show a visual representation of the action
- * @returns {SInfoBattleStep}
+ * @returns {InfoBattleStep}
  */
 function infoStep(description='', action, actorId='', targetId='', animation=undefined) {
     const infoStep = {
@@ -403,20 +413,24 @@ function protectionStep(battlePlayer, type, value) {
     };
 }
 
-function reviveStep(battlePlayer) {
-    if (!battlePlayer.isDefeated()) {
-        return BattleSteps.info(`${battlePlayer.getData().name} is not defeated.`);
-    }
-
-    battlePlayer.revive(battlePlayer.getData().autoRevive);
-    battlePlayer.getData().autoRevive = 0;
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * healAmount: number
+ * }} ReviveStep
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {number} healPercent
+ * @returns {ReviveStep}
+ */
+function reviveStep(targetAgent, healPercent) {
+    const healAmount = targetAgent.revive(healPercent);
 
     return {
         type: 'revive',
-        actorId: battlePlayer.getData().id,
-        targetId: battlePlayer.getData().id,
-        healAmount: battlePlayer.getData().health,
-        description: `${battlePlayer.getData().name} was revived!`
+        targetId: targetAgent.getData().id,
+        healAmount: healAmount,
+        description: healAmount ? `${targetAgent.getData().name} was revived!` : `${targetAgent.getData().name} is not defeated.`
     };
 }
 
@@ -637,6 +651,71 @@ function consumeItem(targetAgent, itemName) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * successful: boolean,
+ * effect: {name: string, persistentId: string, data: object}
+ * }} AddEffectStep
+ * 
+ * @param {BattleContext} battleContext 
+ * @param {Effect} effect 
+ * @returns {AddEffectStep}
+ */
+function addEffect(battleContext, effect) {
+    const step = {
+        type: 'addEffect',
+        successful: false,
+        effect: {
+            name: effect.name,
+            persistentId: effect.persistentId,
+            data: effect.getInputData()
+        }
+    };
+    if (effect.unique && battleContext.getEffectCount(effect.name) > 0 || battleContext.isEffectActive(effect)) {
+        return step;
+    }
+
+    battleContext.addEffect(effect);
+
+    if (effect.persistentId && effect.persistentId != '') {
+        effect.targetPlayer.setEffect(effect.persistentId, effect.name, effect.getInputData());
+    }
+
+    step.successful = true;
+    return step;
+}
+
+/**
+ * @typedef {AddEffectStep} RemoveEffectStep
+ * 
+ * @param {BattleContext} battleContext 
+ * @param {Effect} effect 
+ * @returns {RemoveEffectStep}
+ */
+function removeEffect(battleContext, effect) {
+    const step = {
+        type: 'removeEffect',
+        successful: false,
+        effect: {
+            name: effect.name,
+            persistentId: effect.persistentId,
+            data: effect.getInputData()
+        }
+    };
+    if (!battleContext.isEffectActive(effect)) {
+        return step;
+    }
+
+    battleContext.removeEffect(effect);
+
+    if (effect.persistentId && effect.persistentId != '') {
+        effect.targetPlayer.removeEffect(effect.persistentId);
+    }
+
+    step.successful = true;
+    return step;
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -667,6 +746,8 @@ const BattleSteps = {
     addAbilityStrike: addAbilityStrikeStep,
     strikeLevelChange: strikeLevelChangeStep,
     consumeItem,
+    addEffect,
+    removeEffect,
     genHitSteps,
     genStrikeSteps
 };

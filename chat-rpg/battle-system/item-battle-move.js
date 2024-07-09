@@ -48,26 +48,32 @@ class ItemBattleMove extends BattleMove{
 
         yield {
             infoAction: {
-                description: `${this.owner.getData().name} uses a ${inputData.name}!`,
+                description: `${this.owner.getData().name} used a ${inputData.name}!`,
                 action: 'item',
                 targetAgentId: target.getData().id,
                 srcAgentId: this.owner.getData().id,
             }
         };
 
+        let itemUsed = true;
         for(const action of generateAbilityActions(this.owner, inputData, battleContext, {skipAnimation: true})) {
+            if (action.infoAction && action.infoAction.action === 'itemNotReady') {
+                itemUsed = false;
+            }
             yield action;
         }
 
-        yield {
-            playerAction: {
-                targetPlayer: this.owner,
-                srcPlayer: this.owner,
-                type: '',
-                style: '',
-                consumeItem: inputData.name
-            }
-        };
+        if(itemUsed) {
+            yield {
+                playerAction: {
+                    targetPlayer: this.owner,
+                    srcPlayer: this.owner,
+                    type: '',
+                    style: '',
+                    consumeItem: inputData.name
+                }
+            };
+        }
     }
 }
 

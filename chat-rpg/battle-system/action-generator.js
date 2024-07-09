@@ -1,5 +1,5 @@
 /**
- * @typedef {import("./action").Action} Action
+ * @import {Action} from "./action"
  */
 
 const { deepCopy } = require("../../utility");

@@ -1,16 +1,12 @@
 /**
- * @import {BattleEndStep, SInfoBattleStep} from "../battle-steps"
- * @import {ActionGeneratorObject} from "../action-generator"
+ * @import {BattleEndStep, InfoBattleStep} from "../battle-steps"
  */
 
 const Ability = require("../../datastore-objects/ability");
 const { BattlePlayer, BattleMonster, BattleWeapon } = require("../../datastore-objects/battle-agent");
 const Item = require("../../datastore-objects/item");
 const chatRPGUtility = require("../../utility");
-const { ActionGenerator } = require("../action-generator");
-const { apChange } = require("../battle-steps");
 const { BattleSystem } = require("../battle-system");
-const { ActionGeneratorCreator } = require("../battle-system-types");
 const seedrandom = require('seedrandom');
 
 function testSuccessRate(testFunc, totalAttempts = 100) {
@@ -25,7 +21,7 @@ function testSuccessRate(testFunc, totalAttempts = 100) {
     return passes / totalAttempts;
 }
 
-test("Basic strikes", () => {
+test.only("Basic strikes", () => {
     chatRPGUtility.random = seedrandom('0');
     
     const battle = {
@@ -44,23 +40,23 @@ test("Basic strikes", () => {
 
     expect(steps.length).toBe(10);
     expect(steps[0].type).toMatch('info');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).targetId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('player');
     expect(steps[1].type).toMatch('info');
     expect(steps[2].type).toMatch('damage');
-    expect(/** @type {SInfoBattleStep} */(steps[2]).targetId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[2]).targetId).toMatch('player');
     expect(steps[3].type).toMatch('strikeLevel');
-    expect(/** @type {SInfoBattleStep} */(steps[3]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[3]).targetId).toMatch('monster');
     expect(steps[4].type).toMatch('apChange');
-    expect(/** @type {SInfoBattleStep} */(steps[4]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[4]).targetId).toMatch('monster');
     expect(steps[5].type).toMatch('info');
-    expect(/** @type {SInfoBattleStep} */(steps[5]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[5]).targetId).toMatch('monster');
     expect(steps[6].type).toMatch('info');
     expect(steps[7].type).toMatch('damage');
-    expect(/** @type {SInfoBattleStep} */(steps[7]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[7]).targetId).toMatch('monster');
     expect(steps[8].type).toMatch('strikeLevel');
-    expect(/** @type {SInfoBattleStep} */(steps[8]).targetId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[8]).targetId).toMatch('player');
     expect(steps[9].type).toMatch('apChange');
-    expect(/** @type {SInfoBattleStep} */(steps[9]).targetId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[9]).targetId).toMatch('player');
 });
 
 test("Strike abilities", () => {
@@ -82,9 +78,9 @@ test("Strike abilities", () => {
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
 
     expect(steps[0].type).toMatch('info');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).action).toMatch('strikeAbility');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).targetId).toMatch('monster');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('strikeAbility');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
     
 });
 
@@ -116,9 +112,9 @@ test("Abilities", () => {
     const steps = battleSystem.singlePlayerBattleIteration({type: 'ability', abilityName: 'testAbility', battleId: ""});
 
     expect(steps[0].type).toMatch('info');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).action).toMatch('ability');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).targetId).toMatch('monster');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('ability');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
     
 });
 
@@ -150,9 +146,9 @@ test("Items", () => {
     const steps = battleSystem.singlePlayerBattleIteration({type: 'item', itemId: itemContainer?.id, battleId: ""});
 
     expect(steps[0].type).toMatch('info');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).action).toMatch('item');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).targetId).toMatch('player');
-    expect(/** @type {SInfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('item');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('player');
+    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
 
 });
 
@@ -161,7 +157,7 @@ test("Escaping", () => {
     const steps = battleSystem.singlePlayerBattleIteration({type: 'escape', battleId: ''});
 
     expect(steps[0].type).toMatch('info');
-    const escapeInfo = /** @type {SInfoBattleStep} */ (steps[0]);
+    const escapeInfo = /** @type {InfoBattleStep} */ (steps[0]);
     expect(escapeInfo.action).toMatch('escape');
     expect(steps[1].type).toMatch('battleEnd');
     const battleEndStep = /** @type {BattleEndStep} */ (steps[1]);
