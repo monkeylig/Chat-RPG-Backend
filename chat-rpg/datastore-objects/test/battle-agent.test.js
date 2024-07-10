@@ -1,5 +1,5 @@
-const Ability = require('./ability');
-const {BattlePlayer, BattleMonster, BattleWeapon} = require('./battle-agent');
+const Ability = require('../ability');
+const {BattlePlayer, BattleMonster, BattleWeapon} = require('../battle-agent');
 const MAX_STAT_AMP = 12;
 
 const statAmpTable = {

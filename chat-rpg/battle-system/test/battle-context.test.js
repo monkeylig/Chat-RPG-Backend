@@ -10,6 +10,9 @@ const { BattleContext } = require("../battle-context");
 const { Effect } = require("../effect");
 const { BattlePlayer, BattleAgent, BattleMonster } = require("../../datastore-objects/battle-agent");
 const { StrikeBattleMove } = require("../strike-battle-move");
+const { effect, ReviveEffect } = require("../effects/revive-effect");
+const { Battle } = require("../../datastore-objects/battle");
+const monsterAi = require("../../monster-ai/monster-ai");
 
 class ActionCreator extends ActionGeneratorCreator {
     constructor() {
@@ -202,36 +205,16 @@ test("Pushing an Action", () => {
 });
 
 test("Activating battle moves", () => {
-    const player1  = new BattlePlayer();
-    const player2 = new BattleMonster();
-    const battleContext = new BattleContext({
-        player: player1.getData(),
-        monster: player2.getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    });
+    const battleContext = new BattleContext();
 
-    const strikeMove = new StrikeBattleMove(player1);
+    const strikeMove = new StrikeBattleMove(battleContext.player);
     battleContext.activateBattleMove(strikeMove);
 
     expect(battleContext.getTopActionGenerator()?.creator).toBe(strikeMove)
 });
 
 test("Resolving battles", () => {
-    const battleContext = new BattleContext({
-        player: new BattlePlayer({id: 'player'}).getData(),
-        monster: new BattleMonster({id: 'monster'}).getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    });
+    const battleContext = new BattleContext();
 
     battleContext.activateBattleMove(new StrikeBattleMove(battleContext.player));
     battleContext.activateBattleMove(new StrikeBattleMove(battleContext.monster));
@@ -241,4 +224,44 @@ test("Resolving battles", () => {
     expect(battleContext.player.getData().health).toBeLessThan(battleContext.player.getData().maxHealth);
     expect(battleContext.monster.getData().health).toBeLessThan(battleContext.monster.getData().maxHealth);
     
+});
+
+test.only('Restoring persistent Effects', () => {
+    const player = new BattlePlayer({
+        id: 'player'
+    });
+    const reviveEfect = new ReviveEffect(player);
+    player.setEffect(reviveEfect.getData());
+
+    const battleData = new Battle({
+        player: player.getData(),
+        monster: new BattleMonster().getData()
+    }).getData();
+    const battleContext = new BattleContext(battleData, true);
+
+    expect(battleContext.getEffectCount(reviveEfect.name)).toBe(1);
+    expect(battleContext.getActiveEffects()[0].targetPlayer).toBe(battleContext.player);
+    expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());
+});
+
+test.only('Restoring effects mid battle', () => {
+    const player = new BattlePlayer({
+        id: 'player'
+    });
+    const reviveEfect = new ReviveEffect(player);
+
+    const battleData = new Battle({
+        player: player.getData(),
+        monster: new BattleMonster().getData(),
+        effects: [
+            reviveEfect.getData()
+        ]
+    }).getData();
+    const battleContext = new BattleContext(battleData);
+
+    expect(battleContext.getEffectCount(reviveEfect.name)).toBe(1);
+    expect(battleContext.getActiveEffects()[0].targetPlayer).toBe(battleContext.player);
+    expect(battleContext.getActiveEffects()[0].persistentId).toBe(reviveEfect.persistentId);
+    expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());
+
 });

@@ -1,4 +1,10 @@
-/** @import {ItemData} from './item' */
+/**
+ * @import {ItemData} from './item'
+ * @import {EffectData} from '../battle-system/effect'
+ * @import {CollectionContainer} from './utilities'
+ * @import {DatastoreConstructor} from './datastore-object'
+ * @import {WeaponData} from './weapon'
+ */
 
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
@@ -6,14 +12,6 @@ const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
-const { genId } = require('../../utility');
-
-/**
- * @typedef {import('./utilities').Collection} Collection
- * @typedef {import('./utilities').CollectionContainer} CollectionContainer
- * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
- * @typedef {import('./weapon').WeaponData} WeaponData
- */
 
 /**
  * Calculates how much exp is needed to reach a level
@@ -260,10 +258,7 @@ function BagHolderMixin(Base) {
  * @property {number} level
  * @property {number} exp
  * @property {number} expToNextLevel
- * @property {Object.<string, {
- * name: string,
- * data: object
- * }>} effectsMap
+ * @property {Object.<string, EffectData>} effectsMap
  */
 
 class Agent extends DatastoreObject {
@@ -424,12 +419,19 @@ class Agent extends DatastoreObject {
 
     /**
      * 
-     * @param {string} id
-     * @param {string} name 
-     * @param {object} data
+     * @param {EffectData} effectData 
      */
-    setEffect(id, name, data) {
-        this.getData().effectsMap[id] = {name, data};
+    setEffect(effectData) {
+        this.getData().effectsMap[effectData.persistentId] = effectData;
+    }
+
+    /**
+     * 
+     * @param {string} id
+     * @returns {EffectData | undefined} 
+     */
+    getEffect(id) {
+        return this.getData().effectsMap[id];
     }
 
     /**

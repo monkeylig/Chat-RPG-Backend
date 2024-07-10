@@ -1,5 +1,6 @@
 /**
  * @import {WeaponData} from './weapon'
+ * @import {AgentData} from './agent'
  */
 
 const DatastoreObject = require('./datastore-object');
@@ -69,7 +70,7 @@ class MonsterClass extends DatastoreObject {
 }
 
 /**
- * @typedef {MonsterClassData & {
+ * @typedef {MonsterClassData & AgentData & {
  * id: string
  * }} MonsterData
  */

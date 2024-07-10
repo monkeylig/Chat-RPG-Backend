@@ -1,9 +1,12 @@
+/**
+ * @import {BattleStep} from "./battle-steps"
+ * @import {BattleData} from "../datastore-objects/battle"
+ */
+
 const { BattlePlayer, BattleWeapon, BattleAgent } = require("../datastore-objects/battle-agent");
 const monsterAi = require("../monster-ai/monster-ai");
 const chatRPGUtility = require("../utility");
-const { ActionGenerator } = require("./action-generator");
 const { BattleContext } = require("./battle-context");
-const { ActionGeneratorCreator } = require("./battle-system-types");
 const { StrikeAbilityBattleMove } = require("./strike-ability-battle-move");
 const { StrikeBattleMove } = require("./strike-battle-move");
 const ChatRPGErrors = require('../errors');
@@ -16,41 +19,11 @@ const { Weapon } = require("../datastore-objects/weapon");
 const { Book } = require("../datastore-objects/book");
 
 /**
- * @typedef {import("../datastore-objects/battle-agent").BattlePlayerData} BattlePlayerData
- * @typedef {import("../datastore-objects/battle-agent").BattleMonsterData} BattleMonsterData
- * @typedef {import("./battle-system-types").ActiveActionGenerator} ActiveActionGenerator
- * @typedef {import("./battle-steps").BattleStep} BattleStep
- */
-
-/**
  * @typedef {Object} PlayerActionRequest
  * @property {string} battleId
  * @property {string} type
  * @property {string} [abilityName]
  * @property {string} [itemId]
- */
-
-/**
- * @typedef {Object} DropItem
- * @property {string} type
- * @property {Object} content
- * @property {boolean} [bagFull]
- * 
- * @typedef {Object} BattleData
- * @property {BattlePlayerData} player
- * @property {BattleMonsterData} monster
- * @property {string} gameId
- * @property {Object} strikeAnim
- * @property {Object} environment
- * @property {number} round
- * @property {boolean} active
- * @property {string} id
- * @property {{status: string,
- * winner: string|null,
- * expAward: number,
- * levelGain: number,
- * drops: DropItem[]
- * }} [result]
  */
 
 const ESCAPE_PRIORITY = 30000;

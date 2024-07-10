@@ -1,4 +1,4 @@
-const { InventoryPage } = require("./inventory-page");
+const { InventoryPage } = require("../inventory-page");
 
 test('Add object to inventory', () => {
     const page = new InventoryPage();

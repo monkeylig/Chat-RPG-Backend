@@ -1,5 +1,5 @@
-const { BattlePlayer } = require("./battle-agent");
-const { BookRequirement, Book } = require("./book");
+const { BattlePlayer } = require("../battle-agent");
+const { BookRequirement, Book } = require("../book");
 
 test('Is Book Requirement met', () => {
     const requirement = new BookRequirement({

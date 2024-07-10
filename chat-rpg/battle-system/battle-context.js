@@ -1,8 +1,8 @@
 /**
  * @import {Action} from "./action"
- * @import {BattleData} from "./battle-system"
  * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
  * @import {BattleStep} from "./battle-steps"
+ * @import {BattleData} from "../datastore-objects/battle"
  */
 
 const {Effect} = require("./effect");
@@ -12,6 +12,8 @@ const chatRPGUtility = require("../utility");
 const {ActionExecutor} = require("./action-executor");
 const { BattlePlayer, BattleMonster, BattleAgent } = require("../datastore-objects/battle-agent");
 const { BattleMove } = require("./battle-move");
+const {Battle} = require("../datastore-objects/battle");
+const { effectExists, createEffect } = require("./effects/effects");
 
 class BattleContext {
     /** @type {BattleData} */
@@ -26,20 +28,15 @@ class BattleContext {
     /**
      * 
      * @param {BattleData} [battle] 
+     * @param {boolean} [initializeBattle] 
      */
-    constructor(battle) {
+    constructor(battle, initializeBattle = false) {
 
         if (!battle) {
-            battle = {
+            battle = new Battle({
                 player: new BattlePlayer({id: 'player'}).getData(),
                 monster: new BattleMonster({id: 'monster'}).getData(),
-                gameId: '',
-                strikeAnim: {},
-                environment: {},
-                round: 0,
-                active: true,
-                id: ''
-            };
+            }).getData();
         }
         this.player = new BattlePlayer(battle.player);
         this.monster = new BattleMonster(battle.monster);
@@ -47,6 +44,44 @@ class BattleContext {
         this.#actionGeneratorStack = [];
         this.#actionStack = [];
         this.#effects = [];
+
+        // The Battle has just started restore the player effects
+        if(initializeBattle) {
+            const playerEffectsMap = this.player.getData().effectsMap;
+            for(const effectId in playerEffectsMap) {
+                const effectData = playerEffectsMap[effectId];
+                const newEffect = createEffect(effectData, this.player);
+                if (newEffect) {
+                    this.addEffect(newEffect);
+                }
+            }
+            this.#battle.round = 1;
+        }
+        else {
+            for (const effectData of this.#battle.effects) {
+                const agent = this.findAgentById(effectData.targetId);
+                if (agent) {
+                    const newEffect = createEffect(effectData, agent);
+                    if (newEffect) {
+                        this.addEffect(newEffect);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param {string} id
+     * @returns {BattleAgent | undefined} 
+     */
+    findAgentById(id) {
+        if (this.player.getData().id === id) {
+            return this.player;
+        }
+        else if (this.monster.getData().id === id) {
+            return this.monster;
+        }
     }
 
     /**

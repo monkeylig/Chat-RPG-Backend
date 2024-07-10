@@ -5,6 +5,14 @@
  * @import {BattleContext} from "./battle-context"
  */
 
+/**
+ * @typedef {Object} EffectData
+ * @property {string} targetId
+ * @property {string} className
+ * @property {Object} inputData
+ * @property {string} persistentId
+ */
+
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { ActionGenerator } = require("./action-generator");
 const { ActionGeneratorCreator, GeneratorCreatorType } = require("./battle-system-types");
@@ -29,11 +37,27 @@ class Effect extends ActionGeneratorCreator {
         this._inputData = inputData ? inputData : {};
     }
 
+    get className() {
+        return this.constructor.name;
+    }
     /**
      * @returns {GeneratorCreatorType}
      */
     get creatorType() {
         return GeneratorCreatorType.Effect;
+    }
+
+    /**
+     * 
+     * @returns {EffectData}
+     */
+    getData() {
+        return {
+            targetId: this.targetPlayer.getData().id,
+            className: this.className,
+            inputData: this.getInputData(),
+            persistentId: this.persistentId
+        };
     }
 
     getInputData() {

@@ -1,4 +1,4 @@
-const Ability = require("./ability");
+const Ability = require("../ability");
 
 test('Has element', () => {
     const ability = new Ability();
