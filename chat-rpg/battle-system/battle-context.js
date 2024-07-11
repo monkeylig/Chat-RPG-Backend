@@ -140,6 +140,12 @@ class BattleContext {
 
         this.#battle.player = this.player.getData();
         this.#battle.monster = this.monster.getData();
+        const effectList = [];
+        for (const effect of this.getActiveEffects()) {
+            effectList.push(effect.getData());
+        }
+
+        this.#battle.effects = effectList;
         return battleSteps;
     }
 

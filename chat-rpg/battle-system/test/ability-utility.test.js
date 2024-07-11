@@ -37,7 +37,7 @@ test('Revive Effect', () => {
         count: 1,
         name: 'testItem',
         customActions: {
-            name: 'revive-item',
+            name: 'ReviveItem',
             data: {
                 healthRecoverPercent: 0.75
             }
@@ -52,4 +52,18 @@ test('Revive Effect', () => {
     expect(action.battleContextAction?.addEffect?.name).toMatch('Revive');
     expect(action.battleContextAction?.addEffect?.getInputData().healthRecoverPercent).toBe(0.75);
     expect(action.battleContextAction?.addEffect?.targetPlayer).toBe(battleContext.player);
+});
+
+describe.each([
+    ['defenceAmp']
+])('test', (stat) => {
+    test('basic modding', () => {
+        const battleContext = new BattleContext();
+        const ability = new Ability({
+            [stat]: 1,
+            target: 'self',
+        });
+
+        const actions = generateAbilityActions();
+    });
 });

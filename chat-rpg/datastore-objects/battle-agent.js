@@ -57,7 +57,7 @@ function statAmp(datastoreObject, statAmp, stages) {
     }
 
     datastoreObject[statAmp] += ampAmount;
-    return ampAmount !== 0;
+    return ampAmount;
 }
 
 function getModifiedStat(datastoreObject, stat, statAmp) {
@@ -112,7 +112,7 @@ function BattleAgentMixin(Base) {
             agent.ap = BATTLE_AP;
             agent.maxAp = BATTLE_AP;
             agent.strikeLevel = 0;
-            agent.id = 0;
+            agent.id = '';
             agent.strengthAmp = 0;
             agent.defenseAmp = 0;
             agent.magicAmp = 0;

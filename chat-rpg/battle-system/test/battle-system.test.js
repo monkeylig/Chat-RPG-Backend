@@ -3,6 +3,7 @@
  */
 
 const Ability = require("../../datastore-objects/ability");
+const { Battle } = require("../../datastore-objects/battle");
 const { BattlePlayer, BattleMonster, BattleWeapon } = require("../../datastore-objects/battle-agent");
 const Item = require("../../datastore-objects/item");
 const chatRPGUtility = require("../../utility");
@@ -21,20 +22,10 @@ function testSuccessRate(testFunc, totalAttempts = 100) {
     return passes / totalAttempts;
 }
 
-test.only("Basic strikes", () => {
+test("Basic strikes", () => {
     chatRPGUtility.random = seedrandom('0');
     
-    const battle = {
-        player: new BattlePlayer({id: 'player'}).getData(),
-        monster: new BattleMonster({id: 'monster'}).getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-    const battleSystem = new BattleSystem(battle);
+    const battleSystem = new BattleSystem();
 
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
 
@@ -61,17 +52,7 @@ test.only("Basic strikes", () => {
 
 test("Strike abilities", () => {
     chatRPGUtility.random = seedrandom('0');
-    const battle = {
-        player: new BattlePlayer({id: 'player'}).getData(),
-        monster: new BattleMonster({id: 'monster'}).getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-    const battleSystem = new BattleSystem(battle);
+    const battleSystem = new BattleSystem();
 
     battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
     battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
@@ -97,18 +78,10 @@ test("Abilities", () => {
     const player = new BattlePlayer({id: 'player'});
     player.addAbility(ability.getData());
 
-    const battle = {
+    const battleSystem = new BattleSystem(new Battle({
         player: player.getData(),
-        monster: new BattleMonster({id: 'monster'}).getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-
-    const battleSystem = new BattleSystem(battle);
+        monster: new BattleMonster({id: 'monster'}).getData()
+    }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'ability', abilityName: 'testAbility', battleId: ""});
 
     expect(steps[0].type).toMatch('info');
@@ -131,18 +104,10 @@ test("Items", () => {
     const player = new BattlePlayer({id: 'player'});
     const itemContainer = player.addItemToBag(item);
 
-    const battle = {
+    const battleSystem = new BattleSystem(new Battle({
         player: player.getData(),
-        monster: new BattleMonster({id: 'monster'}).getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-
-    const battleSystem = new BattleSystem(battle);
+        monster: new BattleMonster().getData()
+    }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'item', itemId: itemContainer?.id, battleId: ""});
 
     expect(steps[0].type).toMatch('info');
@@ -168,18 +133,10 @@ test("Losing Battles", () => {
     const monster = new BattleMonster({id: 'monster'});
     monster.getData().weapon.speed = 100;
 
-    const battle = {
-        player:  new BattlePlayer({id: 'player', health: 1}).getData(),
-        monster: monster.getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-
-    const battleSystem = new BattleSystem(battle);
+    const battleSystem = new BattleSystem(new Battle({
+        player: new BattlePlayer({health: 1}).getData(),
+        monster: monster.getData()
+    }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
 
     expect(battleSystem.battle.active).toBeFalsy();
@@ -205,18 +162,10 @@ test("Winning Battles", () => {
     })
     player.getData().weapon.speed = 100;
 
-    const battle = {
+    const battleSystem = new BattleSystem(new Battle({
         player: player.getData(),
-        monster: monster.getData(),
-        gameId: '',
-        strikeAnim: {},
-        environment: {},
-        round: 0,
-        active: true,
-        id: ''
-    };
-
-    const battleSystem = new BattleSystem(battle);
+        monster: monster.getData()
+    }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
 
     expect(battleSystem.battle.active).toBeFalsy();
@@ -254,18 +203,10 @@ test('Monster Weapon Drop rate', () => {
         })
         player.getData().weapon.speed = 100;
 
-        const battle = {
+        const battleSystem = new BattleSystem(new Battle({
             player: player.getData(),
-            monster: monster.getData(),
-            gameId: '',
-            strikeAnim: {},
-            environment: {},
-            round: 0,
-            active: true,
-            id: ''
-        };
-
-        const battleSystem = new BattleSystem(battle);
+            monster: monster.getData()
+        }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
         if(!battleSystem.battle.result) {
             fail();
@@ -297,18 +238,10 @@ test('Monster Coin Drop rate', () => {
         });
         monster.getData().health = 1;
 
-        const battle = {
+        const battleSystem = new BattleSystem(new Battle({
             player: player.getData(),
-            monster: monster.getData(),
-            gameId: '',
-            strikeAnim: {},
-            environment: {},
-            round: 0,
-            active: true,
-            id: ''
-        };
-
-        const battleSystem = new BattleSystem(battle);
+            monster: monster.getData()
+        }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
         if(!battleSystem.battle.result) {
             fail();
@@ -341,18 +274,10 @@ test('Low level Monster Coin Drop rate', () => {
         monster.setStatsAtLevel(9);
         monster.getData().health = 1;
 
-        const battle = {
-            player: player.getData(),
+        const battleSystem = new BattleSystem(new Battle({
             monster: monster.getData(),
-            gameId: '',
-            strikeAnim: {},
-            environment: {},
-            round: 0,
-            active: true,
-            id: ''
-        };
-
-        const battleSystem = new BattleSystem(battle);
+            player: player.getData()
+        }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
         if(!battleSystem.battle.result) {
             fail();

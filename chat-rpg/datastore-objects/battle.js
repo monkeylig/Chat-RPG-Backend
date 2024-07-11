@@ -19,7 +19,6 @@ const DatastoreObject = require("./datastore-object");
  * @property {Object} environment
  * @property {number} round
  * @property {boolean} active
- * @property {string} id
  * @property {EffectData[]} effects
  * @property {{status: string,
  * winner: string|null,
@@ -49,7 +48,6 @@ class Battle extends DatastoreObject {
         battle.strikeAnim = {};
         battle.environment = {};
         battle.round = 0;
-        battle.id = '';
         battle.active = true;
         battle.effects = [];
     }

@@ -7,7 +7,6 @@ const animations = require('../content/animations');
  * animation: object,
  * target: TargetEnum,
  * customActions?: {name: string, data: object}
- * apCost?: number,
  * }} AbilityActionData
  * 
  * @typedef {AgentActionData & 
@@ -15,6 +14,7 @@ const animations = require('../content/animations');
  * name: string,
  * speed: number,
  * description: string,
+ * apCost?: number,
  * }} AbilityData
  */
 
@@ -28,6 +28,7 @@ class Ability extends DatastoreObject {
     }
     static constructNewObject(ability) {
         ability.name = 'nothing';
+        ability.target = 'opponent';
         ability.baseDamage = 0;
         ability.customActions = null;
         ability.baseDamageText = null;
@@ -85,7 +86,6 @@ class Ability extends DatastoreObject {
         ability.addAbilities = []
         ability.addAbilityStrikes = [];
         ability.setCounterAbility = null;
-        ability.target = 'opponent';
     }
 
     getSpecialStat(stat, defaultValue = 0) {

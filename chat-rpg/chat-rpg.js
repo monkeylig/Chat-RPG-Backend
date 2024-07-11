@@ -19,6 +19,7 @@ const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
 const { BattleSystem } = require("./battle-system/battle-system");
+const { Battle } = require("./datastore-objects/battle");
 
 class ChatRPG {
     /** @member {IBackendDataSource} */
@@ -184,24 +185,22 @@ class ChatRPG {
         const battlePlayer = new BattlePlayer(player.datastoreObject);
         const battleMonster = new BattleMonster(targetMonsterData);
 
-        /** @type {BattleData} */
-        const battle = {
+        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
+        const battle = new Battle({
             player: battlePlayer.getData(),
             monster: battleMonster.getData(),
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
             environment: {},
             round: 1,
-            id: '',
             active: true
+        });
+
+        await battleRef.set(battle.getData());
+        return {
+            ...battle.getData(),
+            id: battleRef.id
         };
-
-        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
-        await battleRef.set(battle);
-
-        battle.id = battleRef.id;
-
-        return battle;
     }
 
     async battleAction(battleId, actionRequest) {

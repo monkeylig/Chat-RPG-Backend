@@ -275,6 +275,18 @@ function battleEnd(battleData, status, winnerId, description) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * ampAmount: number
+ * }} StatAmpStep
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {string} stat 
+ * @param {string} ampFunctionName 
+ * @param {number} stages 
+ * @param {string} [prefix]
+ * @returns {StatAmpStep}
+ */
 function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
 
     let descBeginning = `${battlePlayer.getData().name}'s ${stat}`;
@@ -282,105 +294,163 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
         descBeginning = prefix;
     }
 
-    if(!battlePlayer[ampFunctionName](stages)) {
-        return infoStep(`${descBeginning} can't rise any higher.`);
-    }
-
-    switch(stages) {
+    const ampAmount = battlePlayer[ampFunctionName](stages);
+    switch(ampAmount) {
         case 0: {
-            return {
-                type: ampFunctionName,
-                description: `${descBeginning} did not rise at all.`
-            };
+            if (stages > 0) {
+                return {
+                    type: ampFunctionName,
+                    description: `${descBeginning} can't rise any higher.`,
+                    ampAmount
+                };
+            } else {
+                return {
+                    type: ampFunctionName,
+                    description: `${descBeginning} can't fall any lower.`,
+                    ampAmount
+                };
+            }
         }
         case 1: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} rose slightly.`
+                description: `${descBeginning} rose slightly.`,
+                ampAmount
             };
         }
         case -1: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} fell slightly.`
+                description: `${descBeginning} fell slightly.`,
+                ampAmount
             };
         }
         case 3: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} rose suddenly!`
+                description: `${descBeginning} rose suddenly!`,
+                ampAmount
             };
         }
         case -3: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} fell suddenly!`
+                description: `${descBeginning} fell suddenly!`,
+                ampAmount
             };
         }
         case  4: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} rose significantly!`
+                description: `${descBeginning} rose significantly!`,
+                ampAmount
             };
         }
         case -4: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} fell significantly!`
+                description: `${descBeginning} fell significantly!`,
+                ampAmount
             };
         }
         case  6: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} rose tremendously!`
+                description: `${descBeginning} rose tremendously!`,
+                ampAmount
             };
         }
         case -6: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} fell tremendously!`
+                description: `${descBeginning} fell tremendously!`,
+                ampAmount
             };
         }
         case 12: {
             return {
                 type: ampFunctionName,
-                description: `${descBeginning} was maximized!`
+                description: `${descBeginning} was maximized!`,
+                ampAmount
             };
         }
         case 2:
         default: {
             return {
                 type: ampFunctionName,
-                description: stages > 0 ? `${descBeginning} rose!` : `${descBeginning} fell.`
+                description: stages > 0 ? `${descBeginning} rose!` : `${descBeginning} fell.`,
+                ampAmount
             };
         }
     }
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function strengthAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'strength', 'strengthAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function defenseAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'defense', 'defenseAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function magicAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'magic', 'magicAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function fireResistAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'fire resistance', 'fireResistAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function lightningResistAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'lightning resistance', 'lightningResistAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function waterResistAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'water resistance', 'waterResistAmp', stages);
 }
 
+/**
+ * 
+ * @param {BattleAgent} battlePlayer 
+ * @param {number} stages 
+ * @returns {StatAmpStep}
+ */
 function iceResistAmpStep(battlePlayer, stages) {
     return statAmpStep(battlePlayer, 'ice resistance', 'iceResistAmp', stages);
 }
@@ -678,7 +748,7 @@ function addEffect(battleContext, effect) {
     battleContext.addEffect(effect);
 
     if (effect.persistentId && effect.persistentId != '') {
-        effect.targetPlayer.setEffect(effect.persistentId, effect.name, effect.getInputData());
+        effect.targetPlayer.setEffect(effect.getData());
     }
 
     step.successful = true;

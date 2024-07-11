@@ -1,4 +1,4 @@
-/** @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep} from "../battle-steps" */
+/** @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep} from "../battle-steps" */
 /** @import {Action} from "../action" */
 
 const { BattlePlayer, BattleAgent } = require("../../datastore-objects/battle-agent");
@@ -213,3 +213,49 @@ test('Remove Effect', () => {
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.effect.name).toMatch(testEffect.name);
 });
+
+describe.each([
+    ['defenceAmp', 'defenseAmp']
+])('%s test', (statAmp, stepType) => {
+    test.only('Stat increase action', () => {
+        
+        /** @type {Action} */
+        let statAction = {
+            playerAction: {
+                targetPlayer: new BattlePlayer(),
+                [statAmp]: 2
+            }
+        };
+
+        const battleSteps = ActionExecutor.execute(statAction);
+
+        expect(battleSteps.length).toBe(1);
+        expect(battleSteps[0].type).toMatch(stepType);
+
+        let statModStep = /**@type {StatAmpStep} */(battleSteps[0]);
+
+        expect(statModStep.ampAmount).toBe(2);
+        
+    });
+    test.only('Stat decrease action', () => {
+        
+        /** @type {Action} */
+        let statAction = {
+            playerAction: {
+                targetPlayer: new BattlePlayer(),
+                [statAmp]: -2
+            }
+        };
+
+        const battleSteps = ActionExecutor.execute(statAction);
+
+        expect(battleSteps.length).toBe(1);
+        expect(battleSteps[0].type).toMatch(stepType);
+
+        let statModStep = /**@type {StatAmpStep} */(battleSteps[0]);
+
+        expect(statModStep.ampAmount).toBe(-2);
+        
+    });
+});
+

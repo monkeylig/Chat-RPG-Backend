@@ -47,7 +47,7 @@ test("Action generator stack", () => {
         creator: actionCreator
     };
 
-    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const battleContext = new BattleContext();
 
     const actionStack = battleContext.getActionGeneratorStack();
 
@@ -102,7 +102,7 @@ test("Action stack", () => {
         creator: actionCreator
     };
 
-    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const battleContext = new BattleContext();
 
     const actionStack = battleContext.getActionStack();
 
@@ -133,7 +133,7 @@ test("Action stack", () => {
 });
 
 test("Adding and Removing Effects", () => {
-    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const battleContext = new BattleContext();
     const effect1 = new Effect(new BattlePlayer());
     const effect2 = new Effect(new BattlePlayer());
 
@@ -160,7 +160,7 @@ test("Adding and Removing Effects", () => {
 });
 
 test("Pushing an ActionGenerator", () => {
-    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const battleContext = new BattleContext();
     const actionCreator = new ActionCreator();
     const actionGenerator1 = new ActionGenerator(actionCreator.generateRespondAll());
     battleContext.addActionGenerator(actionGenerator1, actionCreator);
@@ -194,7 +194,7 @@ test("Pushing an ActionGenerator", () => {
 });
 
 test("Pushing an Action", () => {
-    const battleContext = new BattleContext(/** @type {BattleData} */({}));
+    const battleContext = new BattleContext();
     const actionCreator = new ActionCreator();
     const actionGenerator = new ActionGenerator(actionCreator.generateRespondAll());
     const action = {};
@@ -226,7 +226,7 @@ test("Resolving battles", () => {
     
 });
 
-test.only('Restoring persistent Effects', () => {
+test('Restoring persistent Effects', () => {
     const player = new BattlePlayer({
         id: 'player'
     });
@@ -244,7 +244,7 @@ test.only('Restoring persistent Effects', () => {
     expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());
 });
 
-test.only('Restoring effects mid battle', () => {
+test('Restoring effects mid battle', () => {
     const player = new BattlePlayer({
         id: 'player'
     });
@@ -264,4 +264,27 @@ test.only('Restoring effects mid battle', () => {
     expect(battleContext.getActiveEffects()[0].persistentId).toBe(reviveEfect.persistentId);
     expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());
 
+});
+
+test('Serializing effects after iteration', () => {
+    const player = new BattlePlayer({
+        id: 'player'
+    });
+    const reviveEfect = new ReviveEffect(player);
+    player.setEffect(reviveEfect.getData());
+
+    const battleData = new Battle({
+        player: player.getData(),
+        monster: new BattleMonster().getData()
+    }).getData();
+    const battleContext = new BattleContext(battleData, true);
+
+    const strike = new StrikeBattleMove(battleContext.player);
+    battleContext.activateBattleMove(strike);
+    battleContext.resolve();
+
+    expect(battleContext.battle.effects.length).toBe(1);
+    expect(battleContext.battle.effects[0].className).toBe(reviveEfect.className);
+    expect(battleContext.battle.effects[0].targetId).toBe('player');
+    expect(battleContext.battle.effects[0].inputData).toStrictEqual(reviveEfect.getInputData());
 });

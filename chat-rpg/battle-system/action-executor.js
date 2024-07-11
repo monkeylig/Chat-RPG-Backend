@@ -53,6 +53,11 @@ function executeAction(action) {
             steps.push(consumeItemStep);
         }
 
+        if(playerAction.defenceAmp) {
+            const defenceAmpStep = BattleSteps.defenseAmp(playerAction.targetPlayer, playerAction.defenceAmp);
+            steps.push(defenceAmpStep);
+        }
+
     }
 
     if(action.infoAction) {

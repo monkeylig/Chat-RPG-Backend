@@ -722,65 +722,6 @@ test('Player being defeated', async () => {
     expect(player.trackers.deaths).toBe(1);
 });
 
-test.skip('Player being revived', async () => {
-    let player = new Player({autoRevive: 0.75});
-    const dataSource = new MemoryBackedDataSource();
-    //Add monsters so that new games can be properly created
-    await dataSource.initializeDataSource({
-        monsters: {
-            eye_sack: {
-                monsterNumber: 0,
-                strengthRating: 0.2,
-                defenseRating: 0.2,
-                healthRating: 20,
-                magicRating: 0.2,
-                expYield: 36,
-                name: "Eye Sack",
-                weapon: new Weapon({
-                    baseDamage: 10,
-                    name: "Cornia",
-                    type: 'physical',
-                    speed: 1,
-                    strikeAbility: {
-                        baseDamage: 20,
-                        name: "X ray"
-                    }
-                }).getData()
-            }
-        },
-        [Schema.Collections.Accounts]: {
-            player1: player.getData()
-        }
-    });
-
-    let chatrpg = new ChatRPG(dataSource);
-
-    let gameState = await chatrpg.joinGame('player1', 'new game');
-    let battleState = await chatrpg.startBattle('player1', gameState.id, gameState.monsters[0].id);
-
-    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-
-    expect(battleUpdate.result).not.toBeDefined();
-    expect(battleUpdate.player.autoRevive).toBe(0);
-
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-
-    expect(battleUpdate.result).toBeDefined();
-
-    const playerData = await chatrpg.findPlayerById('player1');
-
-    expect(playerData.autoRevive).toBe(0);
-
-});
-
 test('Unlocking abilities after battle', async () => {
     chatRPGUtility.random = seedrandom('0');
     const testBook = new Book({

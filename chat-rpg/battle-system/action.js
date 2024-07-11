@@ -37,6 +37,7 @@ const TargetEnum = {
  * @property {string} [consumeItem]
  * @property {number} [heal]
  * @property {number} [revive]
+ * @property {number} [defenceAmp]
  */
 
 /**

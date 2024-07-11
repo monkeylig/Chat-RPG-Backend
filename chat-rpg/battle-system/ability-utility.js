@@ -36,7 +36,7 @@ function *generateMoveActions(user, moveData, battleContext, options = {}) {
 
     if (moveData.customActions && customActions[moveData.customActions.name]) {
         const actionData = moveData.customActions;
-        for (const action of customActions[actionData.name](user, moveData, actionData.data, battleContext)) {
+        for (const action of customActions[actionData.name].generateActions(user, moveData, actionData.data, battleContext)) {
             yield action;
         }
     }

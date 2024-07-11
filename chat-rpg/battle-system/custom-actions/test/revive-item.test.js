@@ -37,7 +37,7 @@ test('Item Actions', () => {
 test('Item Not Ready', () => {
     const battleContext = new BattleContext();
     const reviveEffect = new ReviveEffect(battleContext.player);
-    battleContext.player.setEffect(reviveEffect.persistentId, reviveEffect.name, reviveEffect.getInputData());
+    battleContext.player.setEffect(reviveEffect.getData());
     const reviveItem = new Item({
         count: 1,
         name: 'testItem',
