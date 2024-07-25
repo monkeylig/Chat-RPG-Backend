@@ -9,6 +9,17 @@ function calcHitDamge(srclevel, baseDamage, attack, defense) {
     return ((2 * srclevel / 5 + 2) * baseDamage * attack / defense) / 50 + 2;
 }
 
+/**
+ * 
+ * @param {number} trueDamage 
+ * @param {number} targetLevel
+ * @returns {number} 
+ */
+function calcTrueDamage(trueDamage, targetLevel) {
+    const minExpectedHealth = targetLevel * 2;
+    return minExpectedHealth * (trueDamage/100);
+}
+
 function expFunc(level) {
     if (level == 1) {
         return 0;
@@ -133,7 +144,8 @@ const chatRPGUtility = {
     },
     findInObjectArray,
     findAndRemoveFromArray,
-    calcHitDamge
+    calcHitDamge,
+    calcTrueDamage
 };
 
 module.exports = chatRPGUtility;

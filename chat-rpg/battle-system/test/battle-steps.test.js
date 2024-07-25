@@ -1,5 +1,8 @@
 /**
- * @import {BattleData} from '../battle-system'
+ * @import {Action} from '../action'
+ * @import {StrikeBattleMoveData} from '../strike-battle-move'
+ * @import {AddEffectStep, DamageStep} from '../battle-steps'
+ * @import {ActionDataModStep} from '../battle-steps'
  */
 
 const seedrandom = require('seedrandom');
@@ -11,6 +14,10 @@ const Ability = require('../../datastore-objects/ability');
 const Item = require('../../datastore-objects/item');
 const { Effect } = require('../effect');
 const { BattleContext } = require('../battle-context');
+const { StrikeAbilityBattleMove } = require('../strike-ability-battle-move');
+const { StrikeBattleMove } = require('../strike-battle-move');
+const { Battle } = require('../../datastore-objects/battle');
+const { findBattleStep } = require('../utility');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -65,8 +72,7 @@ test('Info Step', ()=>{
 });
 
 test('Battle End', ()=>{
-    /** @type {BattleData} */
-    const battle = {
+    const battle = new Battle({
         player: new BattlePlayer().getData(),
         monster: new BattleMonster().getData(),
         gameId: '',
@@ -74,8 +80,7 @@ test('Battle End', ()=>{
         environment: undefined,
         round: 0,
         active: false,
-        id: ''
-    };
+    }).getData();
     const battleEndStep = BattleSteps.battleEnd(battle, 'victory', 'player', "Game Over");
 
     expect(battleEndStep).toBeDefined();
@@ -130,13 +135,12 @@ test('Revive step', () => {
     const player1 = new BattlePlayer();
 
     player1.getData().health = 0;
-    player1.getData().autoRevive = 0.5;
-    const reviveStep = BattleSteps.revive(player1);
+    const reviveStep = BattleSteps.revive(player1, 0.5);
 
     expect(reviveStep).toBeDefined();
     expect(reviveStep.type).toMatch('revive');
-    expect(reviveStep.healAmount).toBeGreaterThan(0);
-    expect(player1.getData().health).toBeGreaterThan(0);
+    expect(reviveStep.healAmount).toBe(Math.floor(player1.getData().maxHealth*0.5));
+    expect(player1.getData().health).toBe(reviveStep.healAmount);
 });
 
 test('Ap Change step', () => {
@@ -177,99 +181,62 @@ test('ReadyRevive Step', () => {
     expect(player1.getData().autoRevive).toBe(0.5); 
 });
 
-test('Gain and Remove Status Effect Step', () => {
-    const player1 = new BattlePlayer();
-    const statusEffectStep = BattleSteps.gainStatusEffect(gameplayObjects.statusEffects.ablazed, player1);
-    
-    expect(player1.getStatusEffect(statusEffectStep.statusEffect.name)).toStrictEqual(gameplayObjects.statusEffects.ablazed);
-
-    const removeStatusEffectStep = BattleSteps.removeStatusEffect(gameplayObjects.statusEffects.ablazed, player1);
-
-    expect(player1.removeStatusEffect(removeStatusEffectStep.statusEffect.name)).not.toBeDefined();
-    expect(player1.removeStatusEffect(gameplayObjects.statusEffects.ablazed.name)).not.toBeDefined();
-});
-
 test('Generate Hit Steps: damage', ()=>{
-    const player1 = new BattlePlayer();
+    const battleContext = new BattleContext();
+    const player1 = battleContext.player;
     player1.setStatsAtLevel(10);
-    const player2 = new BattlePlayer();
+    const player2 = battleContext.monster;
     player2.setStatsAtLevel(10);
 
     const baseDamage = 50;
-    const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', null, hitResult);
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', [], battleContext);
+    const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
     const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
-    expect(battleSteps[0].damage).toBe(damage);
-    expect(battleSteps[0].damage).toBe(hitResult.damage);
-    expect(player2.getData().maxHealth - player2.getData().health).toBe(hitResult.damage);
-});
-
-test('Generate Hit Steps: empowerment', () => {
-    const player1 = new BattlePlayer();
-    player1.setStatsAtLevel(10);
-    player1.addEmpowerment('physical', 50);
-    const player2 = new BattlePlayer();
-    player2.setStatsAtLevel(10);
-
-    const baseDamage = 50;
-    const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', null, hitResult);
-
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
-
-    expect(battleSteps).toBeDefined();
-    expect(battleSteps[0].type).toMatch('damage');
-    expect(battleSteps[0].damage).toBe(hitResult.damage);
-    expect(player2.getData().maxHealth - player2.getData().health).toBe(hitResult.damage);
-    expect(player1.getEmpowermentValue('physical')).toBe(0);
-    expect(hitResult.damage).toBeGreaterThan(damage);
+    expect(damageStep.damage).toBe(damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBe(damageStep.damage);
 });
 
 test('Generate Hit Steps: weapon synergy', () => {
-    const player1 = new BattlePlayer();
-    player1.setStatsAtLevel(10);
-    const player2 = new BattlePlayer();
-    player2.setStatsAtLevel(10);
+    const battleContext = new BattleContext();
+    battleContext.player.setStatsAtLevel(10);
+    battleContext.monster.setStatsAtLevel(10);
+    const player1 = battleContext.player;
+    const player2 = battleContext.player;
 
     const baseDamage = 50;
-    const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', null, hitResult);
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [], battleContext);
+    const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
     const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
-    expect(battleSteps[0].damage).toBe(hitResult.damage);
-    expect(player2.getData().maxHealth - player2.getData().health).toBe(hitResult.damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBe(damageStep.damage);
     expect(player1.getEmpowermentValue('physical')).toBe(0);
-    expect(hitResult.damage).toBeGreaterThan(damage);
+    expect(damageStep.damage).toBeGreaterThan(damage);
 });
 
 describe.each([
-    ['Ablaze', 'fire', gameplayObjects.statusEffects.ablazed, '5'],
+    ['Ablazed', 'fire', gameplayObjects.statusEffects.ablazed, '5'],
     ['Surged', 'lightning', gameplayObjects.statusEffects.surged, '5'],
-    ['Drenched', 'water', gameplayObjects.statusEffects.drenched, '5'],
 ])('Generate Hit Steps: %s', (statusName, element, statusEffect, randomSeed) => {
     test('Basic test', () => {
         chatRPGUtility.random = seedrandom(randomSeed);
-        const player1 = new BattlePlayer({id: 'player1'});
-        player1.setStatsAtLevel(10);
-        const player2 = new BattlePlayer({id: 'player2'});
-        player2.setStatsAtLevel(10);
+        const battleContext = new BattleContext();
 
         const baseDamage = 50;
-        const hitResult = {};
-        const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [element], hitResult);
+        const battleSteps = BattleSteps.genHitSteps(battleContext.player, battleContext.monster, baseDamage, 'physical', 'melee', [element], battleContext);
 
-        expect(battleSteps).toBeDefined();
-        expect(battleSteps.length).toBe(2);
-        expect(battleSteps[1].type).toMatch('gainStatusEffect');
-        expect(battleSteps[1].statusEffect).toStrictEqual(statusEffect);
-        expect(battleSteps[1].targetId).toBe(player2.getData().id);
+        const step = /**@type {AddEffectStep}*/(findBattleStep('addEffect', battleSteps));
+
+        expect(step.type).toMatch('addEffect');
+        expect(step.successful).toBeTruthy();
+        expect(step.effect.className).toMatch(`${statusName}Effect`);
+        expect(step.effect.targetId).toMatch(battleContext.monster.getData().id);
     });
     test('Infliction rate test', async () => {
         if(!statusEffect.inflictChance) {
@@ -282,13 +249,12 @@ describe.each([
         const hitResult = {};
     
         const inflictRate = await testSuccessRate(() => {
-            const player1 = new BattlePlayer({id: 'player1'});
-            player1.setStatsAtLevel(10);
-            const player2 = new BattlePlayer({id: 'player2'});
-            player2.setStatsAtLevel(10);
+        const battleContext = new BattleContext();
 
-            const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [element], hitResult);
-            if (battleSteps.length === 2 && battleSteps[1].type === 'gainStatusEffect')
+            const battleSteps = BattleSteps.genHitSteps(battleContext.player, battleContext.monster, baseDamage, 'physical', 'melee', [element], battleContext);
+            const step = /**@type {AddEffectStep}*/(findBattleStep('addEffect', battleSteps));
+
+            if (step)
             {
                 return true;
             }
@@ -300,53 +266,6 @@ describe.each([
         expect(inflictRate).toBeGreaterThanOrEqual(expectedRate - marginOfError);
         expect(inflictRate).toBeLessThanOrEqual(expectedRate + marginOfError);
     });
-});
-
-test("Generate Hit Steps: Drench and freeze", () => {
-    chatRPGUtility.random = seedrandom('1');
-    const player1 = new BattlePlayer({id: 'player1'});
-    player1.setStatsAtLevel(10);
-    const player2 = new BattlePlayer({id: 'player2'});
-    player2.setStatsAtLevel(10);
-
-    const baseDamage = 50;
-    const hitResult = {};
-    let battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['water'], hitResult);
-
-    expect(battleSteps).toBeDefined();
-    expect(battleSteps.length).toBe(2);
-    expect(battleSteps[1].type).toMatch('gainStatusEffect');
-    expect(battleSteps[1].statusEffect).toStrictEqual(gameplayObjects.statusEffects.drenched);
-    expect(battleSteps[1].targetId).toBe(player2.getData().id);
-
-    battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['ice'], hitResult);
-
-    expect(battleSteps).toBeDefined();
-    expect(battleSteps.length).toBe(3);
-    expect(battleSteps[2].type).toMatch('gainStatusEffect');
-    expect(battleSteps[2].statusEffect).toStrictEqual(gameplayObjects.statusEffects.frozen);
-    expect(battleSteps[2].targetId).toBe(player2.getData().id);
-    expect(player2.getStatusEffect('drenched')).not.toBeDefined();
-});
-
-test("Generate Hit Steps: lightning on water amp", () => {
-    chatRPGUtility.random = seedrandom('1');
-    const player1 = new BattlePlayer({id: 'player1'});
-    player1.setStatsAtLevel(10);
-    const player2 = new BattlePlayer({id: 'player2'});
-    player2.setStatsAtLevel(10);
-    player2.addStatusEffect(gameplayObjects.statusEffects.drenched.name, gameplayObjects.statusEffects.drenched);
-
-    const baseDamage = 50;
-    const hitResult = {};
-    let battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [], hitResult);
-    const oldDamage = hitResult.damage;
-
-    battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['lightning'], hitResult);
-
-    const newDamage = Math.floor(oldDamage * (1+gameplayObjects.statusEffects.drenched.lightningAmp));
-    expect(hitResult.damage).toBeLessThanOrEqual(newDamage + 1);
-    expect(hitResult.damage).toBeGreaterThan(newDamage);
 });
 
 test('Generate Hit Steps: override damage modifier', () => {
@@ -381,31 +300,6 @@ test('Generate Hit Steps: defense pen', () => {
     expect(battleSteps[0].damage).toBeGreaterThan(2);
 });
 
-test('Freeze Rate', async () => {
-    const expectedRate = gameplayObjects.statusEffects.frozen.drenchedInflict;
-    const marginOfError = 0.05;
-    const baseDamage = 50;
-    const hitResult = {};
-
-    const inflictRate = await testSuccessRate(() => {
-        const player1 = new BattlePlayer();
-        player1.setStatsAtLevel(10);
-        const player2 = new BattlePlayer();
-        player2.setStatsAtLevel(10);
-
-        BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['water'], hitResult);
-        const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', ['ice'], hitResult);
-        if (battleSteps.length === 3 && battleSteps[2].type === 'gainStatusEffect')
-        {
-            return true;
-        }
-
-        return false;
-    }, 1000);
-
-    expect(inflictRate).toBeGreaterThanOrEqual(expectedRate - marginOfError);
-    expect(inflictRate).toBeLessThanOrEqual(expectedRate + marginOfError);
-});
 
 describe.each([
     ['physical'],
@@ -560,9 +454,9 @@ test("Add Effect", () => {
 
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('addEffect');
-    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.className).toMatch(testEffect.className);
     expect(effectStep.effect.persistentId).toMatch('');
-    expect(effectStep.effect.data).toStrictEqual(testEffect.getInputData());
+    expect(effectStep.effect.inputData).toStrictEqual(testEffect.getInputData());
     expect(battleContext.isEffectActive(testEffect)).toBeTruthy();
     expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeUndefined();
 
@@ -575,9 +469,9 @@ test("Add Effect", () => {
 
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('addEffect');
-    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.className).toMatch(testEffect.className);
     expect(effectStep.effect.persistentId).toMatch('');
-    expect(effectStep.effect.data).toStrictEqual(testEffect2.getInputData());
+    expect(effectStep.effect.inputData).toStrictEqual(testEffect2.getInputData());
     expect(battleContext.isEffectActive(testEffect2)).toBeTruthy();
     expect(battleContext.player.getData().effectsMap[testEffect2.persistentId]).toBeUndefined();
 
@@ -649,9 +543,9 @@ test('Remove Effect', () => {
     
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('removeEffect');
-    expect(effectStep.effect.name).toMatch('test1');
+    expect(effectStep.effect.className).toMatch(testEffect.className);
     expect(effectStep.effect.persistentId).toMatch('');
-    expect(effectStep.effect.data).toStrictEqual(testEffect.getInputData());
+    expect(effectStep.effect.inputData).toStrictEqual(testEffect.getInputData());
     expect(battleContext.isEffectActive(testEffect)).toBeFalsy();
 
     effectStep = BattleSteps.removeEffect(battleContext, testEffect);
@@ -679,4 +573,50 @@ test('Remove Effect Persisent', () => {
     BattleSteps.removeEffect(battleContext, testEffect);
 
     expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeUndefined();
+});
+
+test('Action Generator Data Mod', () => {
+    const battleContext = new BattleContext();
+    const strikeMove = new StrikeBattleMove(battleContext.player);
+    const actionGenerator = strikeMove.onActivate(battleContext);
+
+    /**@type {(data: StrikeBattleMoveData) => void} */
+    const modFunction = (data) => {
+            data.strikeData.apChange += 2;
+    }
+
+    const step = BattleSteps.actionGeneratorDataMod(actionGenerator, modFunction, 'player', 'buff', 'Buffing ap');
+
+    expect(step.type).toMatch('actionGenMod');
+    expect(step.action).toMatch('buff');
+    expect(step.targetId).toMatch('player');
+    expect(step.description).toMatch('Buffing ap');
+    expect(actionGenerator.inputData.strikeData.apChange).toBe(3);
+});
+
+test('Action Data Mod', () => {
+    const battleContext = new BattleContext();
+
+    /**@type {Action} */
+    const action = {
+        playerAction: {
+            targetPlayer: battleContext.player,
+            baseDamage: 10
+        }
+    };
+
+    /**@type {(data: Action) => void} */
+    const modFunction = (data) => {
+        if (data.playerAction && data.playerAction.baseDamage) {
+            data.playerAction.baseDamage += 10;
+        }
+    }
+
+    const step = /**@type {ActionDataModStep}*/(BattleSteps.actionMod(action, modFunction, 'player', 'buff', 'Buffing damage'));
+
+    expect(step.type).toMatch('actionMod');
+    expect(step.action).toMatch('buff');
+    expect(step.targetId).toMatch('player');
+    expect(step.description).toMatch('Buffing damage');
+    expect(action.playerAction?.baseDamage).toBe(20);
 });

@@ -298,6 +298,12 @@ function BattleAgentMixin(Base) {
             return protection[type] / this.datastoreObject.maxHealth * 100;
         }
 
+        /**
+         * 
+         * @param {number} initialDamage 
+         * @param {string} [type] 
+         * @returns {{totalDamage: number, protectedDamage: number}}
+         */
         dealDamage(initialDamage, type) {
             let damage = Math.floor(initialDamage);
             const protection = this.datastoreObject.protection;

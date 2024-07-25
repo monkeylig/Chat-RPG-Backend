@@ -43,8 +43,6 @@ test("Basic strike action creator", () => {
 
     expect(action.playerAction).toBeDefined();
     expect(action.playerAction?.targetPlayer).toBe(battleContext.player);
-    expect(action.playerAction?.type).toBe(battleContext.player.getData().weapon.type);
-    expect(action.playerAction?.style).toBe(battleContext.player.getData().weapon.style);
     expect(action.playerAction?.apChange).toBe(1);
     expect(action.playerAction?.strikeLevelChange).toBe(1);
 

@@ -21,7 +21,9 @@ test('Revive Effect', () => {
 
     expect(action.playerAction?.targetPlayer).toBe(battleContext.player);
     expect(action.playerAction?.revive).toBe(0.2);
-    expect(action.battleContextAction?.battleContext).toBe(battleContext);
+
+    action = /**@type {Action}*/(actionGenerator.next().value);
+
     expect(action.battleContextAction?.removeEffect).toBe(reviveEffect);
 
     const lastYield = actionGenerator.next();

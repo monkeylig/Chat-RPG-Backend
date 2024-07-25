@@ -57,7 +57,7 @@ class ItemBattleMove extends BattleMove{
 
         let itemUsed = true;
         for(const action of generateAbilityActions(this.owner, inputData, battleContext, {skipAnimation: true})) {
-            if (action.infoAction && action.infoAction.action === 'itemNotReady') {
+            if (action.infoAction && action.infoAction.action === 'unsuccessful') {
                 itemUsed = false;
             }
             yield action;
@@ -68,8 +68,6 @@ class ItemBattleMove extends BattleMove{
                 playerAction: {
                     targetPlayer: this.owner,
                     srcPlayer: this.owner,
-                    type: '',
-                    style: '',
                     consumeItem: inputData.name
                 }
             };

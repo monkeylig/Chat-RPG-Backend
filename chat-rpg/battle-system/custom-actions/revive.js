@@ -1,5 +1,5 @@
 /**
- * @import {ItemData} from "../../datastore-objects/item"
+ * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {Action} from "../action"
  */
 
@@ -11,19 +11,19 @@ const { getTarget } = require("../utility");
 /**
  * 
  * @param {BattleAgent} user 
- * @param {ItemData} itemData 
- * @param {any} inputData 
+ * @param {AbilityActionData} abilityActionData 
+ * @param {Object} inputData 
  * @param {BattleContext} battleContext 
  * @returns {Generator<Action, void, any>}
  */
-function *generateActions(user, itemData, inputData, battleContext) {
-    const targetPlayer = getTarget(user, itemData.target, battleContext);
+function *generateActions(user, abilityActionData, inputData, battleContext) {
+    const targetPlayer = getTarget(user, abilityActionData.target, battleContext);
 
     if(targetPlayer.getData().effectsMap['revive']) {
         yield {
             infoAction: {
                 description: `${targetPlayer.getData().name} is already prepared to revive.`,
-                action: 'itemNotReady',
+                action: 'unsuccessful',
                 targetAgentId: targetPlayer.getData().id,
                 srcAgentId: targetPlayer.getData().id
             }
@@ -33,7 +33,6 @@ function *generateActions(user, itemData, inputData, battleContext) {
         const reviveEffect = new ReviveEffect(targetPlayer, inputData);
         yield {
             battleContextAction: {
-                battleContext,
                 addEffect: reviveEffect
             }
         };

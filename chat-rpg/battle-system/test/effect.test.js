@@ -11,6 +11,35 @@ const { Effect } = require("../effect");
 
 test("Effect action generation", () => {
     class EffectTester extends Effect {
+
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @returns {ActionGeneratorObject}
+         */
+        *battleRoundBeginEvent(battleContext) {
+            yield {
+                infoAction: {
+                    description: "Round Begin",
+                    action: "Begin"
+                }
+            };
+        }
+
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @returns {ActionGeneratorObject}
+         */
+        *battleRoundEndEvent(battleContext) {
+            yield {
+                infoAction: {
+                    description: "Round End",
+                    action: "End"
+                }
+            };
+        }
+
         /**
          * @override
          * @param {BattleContext} battleContext
@@ -75,8 +104,22 @@ test("Effect action generation", () => {
 
     const effectTester = new EffectTester(new BattleAgent());
 
+    let action = /** @type {Action} */ (effectTester.onBattleRoundBegin(new BattleContext()).next().value);
+
+    if(!action.infoAction) {fail();}
+
+    expect(action.infoAction.description).toMatch("Round Begin");
+    expect(action.infoAction.action).toMatch("Begin");
+
+    action = /** @type {Action} */ (effectTester.onBattleRoundEnd(new BattleContext()).next().value);
+
+    if(!action.infoAction) {fail();}
+
+    expect(action.infoAction.description).toMatch("Round End");
+    expect(action.infoAction.action).toMatch("End");
+
     // @ts-ignore
-    let action = /** @type {Action} */ (effectTester.onActionGeneratorBegin(new BattleContext(), {}).next().value);
+    action = /** @type {Action} */ (effectTester.onActionGeneratorBegin(new BattleContext(), {}).next().value);
 
     expect(action.infoAction).toBeDefined();
     if(!action.infoAction) {return;}
@@ -84,7 +127,7 @@ test("Effect action generation", () => {
     expect(action.infoAction.action).toMatch("Begin");
 
     // @ts-ignore
-    action = /** @type {Action} */ (effectTester.actionGeneratorEndEvent(new BattleContext(), {}).next().value);
+    action = /** @type {Action} */ (effectTester.onActionGeneratorEnd(new BattleContext(), {}).next().value);
 
     expect(action.infoAction).toBeDefined();
     if(!action.infoAction) {return;}
@@ -92,7 +135,7 @@ test("Effect action generation", () => {
     expect(action.infoAction.action).toMatch("End");
 
     // @ts-ignore
-    action = /** @type {Action} */ (effectTester.actionBeginEvent(new BattleContext(), {}).next().value);
+    action = /** @type {Action} */ (effectTester.onActionBegin(new BattleContext(), {}).next().value);
 
     expect(action.infoAction).toBeDefined();
     if(!action.infoAction) {return;}
@@ -100,7 +143,7 @@ test("Effect action generation", () => {
     expect(action.infoAction.action).toMatch("Begin");
 
     // @ts-ignore
-    action = /** @type {Action} */ (effectTester.actionEndEvent(new BattleContext(), {}).next().value);
+    action = /** @type {Action} */ (effectTester.onActionEnd(new BattleContext(), {}).next().value);
 
     expect(action.infoAction).toBeDefined();
     if(!action.infoAction) {return;}

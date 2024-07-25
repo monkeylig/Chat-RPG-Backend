@@ -1,11 +1,15 @@
+/**
+ * @import {AbilityData} from "../datastore-objects/ability"
+ * @import {ActionGeneratorObject} from "./action-generator"
+ */
+
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { BattleMove } = require("./battle-move");
 const { GeneratorCreatorType } = require("./battle-system-types");
-const Ability = require("../datastore-objects/ability");
-const ActionGeneratorTypes = require("./action-generator");
 const { BattleContext } = require("./battle-context");
 const { generateAbilityActions } = require("./ability-utility");
 const { PlayerActionType } = require("./action");
+const Ability = require("../datastore-objects/ability");
 
 class AbilityBattleMove extends BattleMove {
     #ability;
@@ -25,7 +29,7 @@ class AbilityBattleMove extends BattleMove {
 
     /**
      * @override
-     * @returns {Ability.AbilityData}
+     * @returns {AbilityData}
      */
     getInputData() {
         return this.#ability.getData();
@@ -34,10 +38,10 @@ class AbilityBattleMove extends BattleMove {
     /**
      * @override
      * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorTypes.ActionGeneratorObject}
+     * @returns {ActionGeneratorObject}
      */
     *activate(battleContext) {
-        const inputData = /** @type {Ability.AbilityData} */ (yield true);
+        const inputData = /** @type {AbilityData} */ (yield true);
 
         const target = inputData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
 

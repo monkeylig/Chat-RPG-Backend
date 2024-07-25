@@ -1,0 +1,96 @@
+/**
+ * @import {ActiveAction} from "../battle-system-types"
+ * @import {ActionGeneratorObject} from "../action-generator"
+ * @import {BattleStep} from "../battle-steps"
+ * @import {BattleContext} from "../battle-context"
+ */
+
+const { BattleAgent } = require("../../datastore-objects/battle-agent");
+const { PlayerActionType } = require("../action");
+const { Effect } = require("../effect");
+
+class AblazedEffect extends Effect {
+
+    /**
+     * @typedef {Object} AblazedEffectData
+     * @property {number} trueDamage
+     * @property {number} roundsLeft
+     * 
+     * @param {BattleAgent} targetAgent 
+     * @param {AblazedEffectData} inputData 
+     */
+    constructor(targetAgent, inputData) {
+        super(targetAgent, inputData);
+
+        this.name = "Ablazed";
+        this.unique = true;
+
+        if (!this._inputData.trueDamage) {
+            this._inputData.trueDamage = 10;
+        }
+
+        if (!this._inputData.roundsLeft) {
+            this._inputData.roundsLeft = 3;
+        }
+    }
+
+    getInputData() {
+        return /**@type {AblazedEffectData}*/(this._inputData);
+    }
+    /**
+     * Called at the end of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGeneratorObject}
+     */
+    *battleRoundEndEvent(battleContext) {
+        const inputData = /**@type {AblazedEffectData}*/(yield true);
+
+        if (inputData.roundsLeft <= 0) {
+            yield {
+                battleContextAction: {
+                    removeEffect: this
+                }
+            };
+            return;
+        }
+
+        yield {
+            playerAction: {
+                targetPlayer: this.targetPlayer,
+                trueDamage: inputData.trueDamage,
+                type: PlayerActionType.Natural
+            },
+            infoAction: {
+                description: `${this.targetPlayer.getData().name} was burned by the flames.`,
+                action: 'ablazeDamage'
+            }
+        }
+
+        this.getInputData().roundsLeft -= 1;
+    }
+
+    /**
+     * Called when an Action has was removed from the battle system in This function generates the
+     * actions that respond the event
+     * @param {BattleContext} battleContext 
+     * @param {ActiveAction} activeAction 
+     * @param {BattleStep[]} battleSteps 
+     * @returns {ActionGeneratorObject}
+     */
+    *actionEndEvent(battleContext, activeAction, battleSteps) {
+        if (!this.isEffectStartEvent(activeAction, battleSteps)) {
+            return;
+        }
+
+        yield true;
+
+        yield {
+            infoAction: {
+                description: `${this.targetPlayer.getData().name} is now ${this.name}!`,
+                action: 'ablazed'
+            }
+        };
+    }
+}
+
+module.exports = {AblazedEffect, effect: AblazedEffect};

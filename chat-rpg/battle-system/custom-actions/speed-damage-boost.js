@@ -1,0 +1,29 @@
+/**
+ * @import {AbilityActionData} from "../../datastore-objects/ability"
+ */
+
+const { BattleAgent, BattleWeapon } = require("../../datastore-objects/battle-agent");
+const { BattleContext } = require("../battle-context");
+const { generateActionsFromActionData } = require("../ability-utility");
+
+/**
+ * 
+ * @param {BattleAgent} user 
+ * @param {AbilityActionData} abilityData 
+ * @param {{damageMultiplier?: number}} inputData 
+ * @param {BattleContext} battleContext 
+ */
+function *generateActions(user, abilityData, inputData, battleContext) {
+    if (!inputData.damageMultiplier) {
+        inputData.damageMultiplier = 1;
+    }
+
+    const weapon = new BattleWeapon(user.getData().weapon);
+    if(abilityData.baseDamage) {
+        abilityData.baseDamage += (weapon.getModifiedSpeed() - weapon.getData().speed) * inputData.damageMultiplier;
+    }
+
+    yield* generateActionsFromActionData(user, abilityData, battleContext, {disableCustomActions: true});
+}
+
+module.exports = {generateActions};

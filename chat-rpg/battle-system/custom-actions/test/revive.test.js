@@ -1,7 +1,7 @@
 const Item = require("../../../datastore-objects/item");
 const { BattleContext } = require("../../battle-context");
 const { ReviveEffect } = require("../../effects/revive-effect");
-const { generateActions } = require("../revive-item");
+const { generateActions } = require("../revive");
 
 test('Item Actions', () => {
     const battleContext = new BattleContext();
@@ -57,7 +57,7 @@ test('Item Not Ready', () => {
         fail();
     }
 
-    expect(action.infoAction.action).toMatch('itemNotReady');
+    expect(action.infoAction.action).toMatch('unsuccessful');
     expect(action.infoAction.targetAgentId).toMatch('player');
     expect(action.infoAction.srcAgentId).toMatch('player');
 

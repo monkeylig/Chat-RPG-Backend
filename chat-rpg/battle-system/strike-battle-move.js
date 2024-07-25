@@ -1,5 +1,7 @@
-/** @import {ActionGeneratorObject} from "./action-generator"*/
-/** @import {AbilityData} from "../datastore-objects/ability"*/
+/**
+ * @import {ActionGeneratorObject} from "./action-generator"
+ * @import {AbilityData} from "../datastore-objects/ability"
+ */
 const animations = require("../content/animations");
 const Ability = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
@@ -12,10 +14,9 @@ const { BattleMove } = require("./battle-move");
 const { GeneratorCreatorType } = require("./battle-system-types");
 
 /**
- * @typedef {Object} StrikeBattleMoveData
- * @property {AbilityData} strikeData
- * @property {number} apChange
- * @property {number} strikeLevelChange
+ * @typedef {AbilityData & {
+ * strikeData: {apChange: number, strikeLevelChange: number}
+ * }} StrikeBattleMoveData
  */
 
 class StrikeBattleMove extends BattleMove {
@@ -47,9 +48,11 @@ class StrikeBattleMove extends BattleMove {
             animation: animations.yellowHit
         });
         return {
-            strikeData: strike.getData(),
-            apChange: 1,
-            strikeLevelChange: 1
+            ...strike.getData(),
+            strikeData: {
+                apChange: 1,
+                strikeLevelChange: 1
+            }
         };
     }
     
@@ -60,7 +63,7 @@ class StrikeBattleMove extends BattleMove {
      */
     *activate(battleContext){
         const inputData = /** @type {StrikeBattleMoveData} */ (yield true);
-        const target = inputData.strikeData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
+        const target = inputData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
         
         if(!target) {
             return;
@@ -76,7 +79,7 @@ class StrikeBattleMove extends BattleMove {
             }
         };
 
-        for(const action of generateAbilityActions(this.owner, inputData.strikeData, battleContext)) {
+        for(const action of generateAbilityActions(this.owner, inputData, battleContext)) {
             yield action;
         }
 
@@ -84,10 +87,8 @@ class StrikeBattleMove extends BattleMove {
             playerAction: {
                 srcPlayer: this.owner,
                 targetPlayer: this.owner,
-                type: inputData.strikeData.type,
-                style: inputData.strikeData.style,
-                apChange: inputData.apChange,
-                strikeLevelChange: inputData.strikeLevelChange
+                apChange: inputData.strikeData.apChange,
+                strikeLevelChange: inputData.strikeData.strikeLevelChange
             }
         };
     }

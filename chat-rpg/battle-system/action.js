@@ -1,18 +1,23 @@
-const { BattleAgent } = require("../datastore-objects/battle-agent");
-const { BattleContext } = require("./battle-context");
-const { Effect } = require("./effect");
+/**
+ * @import {ActionGenerator} from "./action-generator"
+ * @import {BattleAgent} from "../datastore-objects/battle-agent"
+ * @import {Effect} from "./effect"
+ */
 
 /**
  * @typedef {Object} Action
  * @property {PlayerAction} [playerAction]
  * @property {InfoAction} [infoAction]
  * @property {BattleContextAction} [battleContextAction]
+ * @property {ActionGeneratorAction} [actionGeneratorAction]
+ * @property {ActionModAction} [actionModAction]
  */
 
 /** @enum {string} */
 const PlayerActionType = {
     Physical: 'physical',
-    Magical: 'magical'
+    Magical: 'magical',
+    Natural: 'natural'
 };
 
 /** @enum {string} */
@@ -27,17 +32,36 @@ const TargetEnum = {
     Opponent: 'opponent'
 };
 
+/** @enum {string} */
+const ElementsEnum = {
+    Fire: 'fire',
+    Lightning: 'lightning',
+    Water: 'water',
+    Ice: 'ice'
+};
+
 /**
+ * @typedef {Object} ProtectionData
+ * @property {number} physical
+ * @property {number} magical
+ * 
  * @typedef {Object} AgentActionData
  * @property {PlayerActionType} [type] - The action's type
  * @property {PlayerActionStyle} [style] - The action's style
  * @property {number} [baseDamage] - The Base damage for attacks from one agent to another
+ * @property {number} [trueDamage]
+ * @property {ElementsEnum[]} [elements]
  * @property {number} [strikeLevelChange]
  * @property {number} [apChange]
  * @property {string} [consumeItem]
  * @property {number} [heal]
+ * @property {number} [absorb]
  * @property {number} [revive]
- * @property {number} [defenceAmp]
+ * @property {ProtectionData} [protection]
+ * @property {number} [defenseAmp]
+ * @property {number} [strengthAmp]
+ * @property {number} [weaponSpeedAmp]
+ * @property {number} [lightningResistAmp]
  */
 
 /**
@@ -58,9 +82,32 @@ const TargetEnum = {
 
 /**
  * @typedef {Object} BattleContextAction
- * @property {BattleContext} battleContext
  * @property {Effect} [removeEffect]
  * @property {Effect} [addEffect]
  */
 
-module.exports = {PlayerActionStyle, PlayerActionType, TargetEnum};
+/**
+ * @callback ActionGeneratorModFunction
+ * @param {Object} inputData
+ */
+
+/**
+ * @typedef {Object} ActionGeneratorAction
+ * @property {ActionGenerator} targetActionGenerator
+ * @property {ActionGeneratorModFunction} modFunction 
+ * @property {string} action
+ * @property {string} targetId
+ * @property {string} [description]
+ */
+
+/**
+ * @typedef {Object} ActionModAction
+ * @property {Action} targetAction
+ * @property {ActionGeneratorModFunction} modFunction 
+ * @property {string} action
+ * @property {string} targetId
+ * @property {string} [description]
+ * 
+ */
+
+module.exports = {PlayerActionStyle, PlayerActionType, TargetEnum, ElementsEnum};

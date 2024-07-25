@@ -6,7 +6,7 @@ const gameplayObjects = {
         ablazed: {
             name: 'ablazed',
             inflictChance: 0.30,
-            damagePercentage: 1/16,
+            trueDamage: 10,
             roundsLeft: 3
         },
         surged: {

@@ -1,6 +1,9 @@
+/**
+ * @import {BattleContext} from "./battle-context"
+ */
+
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { ActionGenerator } = require("./action-generator");
-const { BattleContext } = require("./battle-context");
 const { GeneratorCreatorType, ActionGeneratorCreator } = require("./battle-system-types");
 
 class BattleMove extends ActionGeneratorCreator{    

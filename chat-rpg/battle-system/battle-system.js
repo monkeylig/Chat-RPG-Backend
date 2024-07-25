@@ -49,6 +49,10 @@ class BattleSystem {
         return this.#battleContext.battle;
     }
 
+    get battleContext() {
+        return this.#battleContext;
+    }
+
     /**
      * Executes a move that a player has chosen to make
      * @param {PlayerActionRequest} playerActionRequest 

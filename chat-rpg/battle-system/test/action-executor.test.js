@@ -1,21 +1,29 @@
-/** @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep} from "../battle-steps" */
-/** @import {Action} from "../action" */
+/** 
+ * @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep, ActionGeneratorDataModStep, ActionDataModStep} from "../battle-steps"
+ * @import {Action} from "../action"
+ * @import {StrikeBattleMoveData} from "../strike-battle-move"
+ */
 
+const seedrandom = require("seedrandom");
 const { BattlePlayer, BattleAgent } = require("../../datastore-objects/battle-agent");
 const Item = require("../../datastore-objects/item");
+const chatRPGUtility = require("../../utility");
 const { PlayerActionType, PlayerActionStyle } = require("../action");
 const {ActionExecutor} = require("../action-executor");
 const { BattleContext } = require("../battle-context");
 const { Effect } = require("../effect");
+const { StrikeBattleMove } = require("../strike-battle-move");
+const { findBattleStep } = require("../utility");
 
 test('Empty action', () => {
-    let battleSteps = ActionExecutor.execute();
+    const battleContext = new BattleContext();
+    let battleSteps = ActionExecutor.execute({}, battleContext);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps instanceof Array).toBeTruthy();
     expect(battleSteps.length).toBe(0);
 
-    battleSteps = ActionExecutor.execute({});
+    battleSteps = ActionExecutor.execute({}, battleContext);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps instanceof Array).toBeTruthy();
@@ -23,6 +31,7 @@ test('Empty action', () => {
 });
 
 test('Agent hit action', () => {
+    const battleContext = new BattleContext();
     /** @type {Action} */
     const hitAction = {
         playerAction: {
@@ -34,13 +43,55 @@ test('Agent hit action', () => {
         }
     };
 
-    let battleSteps = ActionExecutor.execute(hitAction);
+    let battleSteps = ActionExecutor.execute(hitAction, battleContext);
 
     expect(battleSteps.length).toBeGreaterThan(0);
     expect(battleSteps[0].type).toMatch('damage');
 });
 
+test('Elements', () => {
+    chatRPGUtility.random = seedrandom('1');
+    
+    const battleContext = new BattleContext();
+    /** @type {Action} */
+    const hitAction = {
+        playerAction: {
+            srcPlayer: new BattlePlayer(),
+            targetPlayer: new BattlePlayer(),
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Sword,
+            baseDamage: 10,
+            elements: ['fire']
+        }
+    };
+
+    let battleSteps = ActionExecutor.execute(hitAction, battleContext);
+    const ablazeStep = /**@type {AddEffectStep}*/(findBattleStep('addEffect', battleSteps));
+
+    expect(ablazeStep.effect.className).toMatch('AblazedEffect');
+});
+
+test('True Damage', () => {
+    const battleContext = new BattleContext();
+    /** @type {Action} */
+    const hitAction = {
+        playerAction: {
+            srcPlayer: new BattlePlayer(),
+            targetPlayer: new BattlePlayer(),
+            type: PlayerActionType.Physical,
+            trueDamage:20
+        }
+    };
+
+    let battleSteps = ActionExecutor.execute(hitAction, battleContext);
+
+    expect(battleSteps.length).toBeGreaterThan(0);
+    expect(battleSteps[0].type).toMatch('damage');
+});
+
+
 test('Info action', () => {
+    const battleContext = new BattleContext();
     /** @type {Action} */
     const infoAction = {
         infoAction: {
@@ -48,7 +99,7 @@ test('Info action', () => {
         }
     };
 
-    let battleSteps = ActionExecutor.execute(infoAction);
+    let battleSteps = ActionExecutor.execute(infoAction, battleContext);
 
     expect(battleSteps.length).toBe(1);
     expect(battleSteps[0].type).toMatch('info');
@@ -57,6 +108,7 @@ test('Info action', () => {
 });
 
 test('Strike Level change', () => {
+    const battleContext = new BattleContext();
     const player = new BattleAgent({id: 'player'});
     /** @type {Action} */
     const strikeLevelAction = {
@@ -68,7 +120,7 @@ test('Strike Level change', () => {
         }
     }
 
-    let battleSteps = ActionExecutor.execute(strikeLevelAction);
+    let battleSteps = ActionExecutor.execute(strikeLevelAction, battleContext);
 
     expect(battleSteps.length).toBe(1);
 
@@ -80,6 +132,7 @@ test('Strike Level change', () => {
 });
 
 test('AP change', () => {
+    const battleContext = new BattleContext();
     const player = new BattleAgent({id: 'player'});
     /** @type {Action} */
     const apChangeAction = {
@@ -91,7 +144,7 @@ test('AP change', () => {
         }
     }
 
-    let battleSteps = ActionExecutor.execute(apChangeAction);
+    let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
 
     expect(battleSteps.length).toBe(1);
 
@@ -103,11 +156,7 @@ test('AP change', () => {
 });
 
 test("Consume Item", () => {
-    const item = new Item({
-        name: 'testItem',
-        count: 2
-    });
-
+    const battleContext = new BattleContext();
     const player = new BattlePlayer({id: "player"});
 
     /** @type {Action} */
@@ -120,7 +169,7 @@ test("Consume Item", () => {
         }
     };
 
-    let battleSteps = ActionExecutor.execute(action);
+    let battleSteps = ActionExecutor.execute(action, battleContext);
 
     expect(battleSteps.length).toBe(1);
 
@@ -132,6 +181,7 @@ test("Consume Item", () => {
 });
 
 test("Heal", () => {
+    const battleContext = new BattleContext();
     const player = new BattleAgent({id: 'player', health: 1});
     /** @type {Action} */
     const apChangeAction = {
@@ -143,7 +193,7 @@ test("Heal", () => {
         }
     }
 
-    let battleSteps = ActionExecutor.execute(apChangeAction);
+    let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
 
     const apStep = /** @type {HealStep} */(battleSteps[0]);
 
@@ -152,26 +202,37 @@ test("Heal", () => {
     expect(apStep.targetId).toBe('player');
 });
 
-test("Revive", () => {
-    const player = new BattleAgent({id: 'player', health: 0});
-    /** @type {Action} */
-    const apChangeAction = {
-        playerAction: {
-            targetPlayer: player,
-            type: PlayerActionType.Physical,
-            style: PlayerActionStyle.Staff,
-            revive: 0.5
+describe.each([
+    ['revive', 'revive'],
+    ['heal', 'heal'],
+    ['absorb', 'heal', 1, {baseDamage: 10}],
+    ['trueDamage', 'damage'],
+    ['protection', 'protection', 0, {}, {physical: 5}]
+// @ts-ignore
+])('%s test', (field, stepType, index=0, data={}, value=0.5) => {
+    test('Basic', () => {
+        const battleContext = new BattleContext();
+        const player = new BattleAgent({id: 'player'});
+        /** @type {Action} */
+        const apChangeAction = {
+            playerAction: {
+                targetPlayer: player,
+                srcPlayer: player,
+                type: PlayerActionType.Physical,
+                style: PlayerActionStyle.Staff,
+                [field]: value,
+                ...data
+            }
         }
-    }
 
-    let battleSteps = ActionExecutor.execute(apChangeAction);
+        let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
 
-    const reviveStep = /** @type {ReviveStep} */(battleSteps[0]);
+        const reviveStep = /** @type {ReviveStep} */(battleSteps[index]);
 
-    expect(reviveStep.type).toMatch('revive');
-    expect(reviveStep.healAmount).toBe(Math.floor(player.getData().maxHealth * 0.5));
-    expect(reviveStep.targetId).toBe('player');
-});
+        expect(reviveStep.type).toMatch(stepType);
+        expect(reviveStep.targetId).toBe('player');
+    });
+})
 
 test('Add Effect', () => {
     const battleContext = new BattleContext();
@@ -181,16 +242,16 @@ test('Add Effect', () => {
     const effectAction = {
         battleContextAction: {
             addEffect: testEffect,
-            battleContext: battleContext
+            
         }
     };
 
-    const battleSteps = ActionExecutor.execute(effectAction);
+    const battleSteps = ActionExecutor.execute(effectAction, battleContext);
     const effectStep = /**@type {AddEffectStep} */(battleSteps[0]);
 
     expect(effectStep.type).toMatch('addEffect');
     expect(effectStep.successful).toBeTruthy();
-    expect(effectStep.effect.name).toMatch(testEffect.name);
+    expect(effectStep.effect.className).toMatch(testEffect.className);
 });
 
 test('Remove Effect', () => {
@@ -202,22 +263,26 @@ test('Remove Effect', () => {
     const effectAction = {
         battleContextAction: {
             removeEffect: testEffect,
-            battleContext: battleContext
+            
         }
     };
 
-    const battleSteps = ActionExecutor.execute(effectAction);
+    const battleSteps = ActionExecutor.execute(effectAction, battleContext);
     const effectStep = /**@type {AddEffectStep} */(battleSteps[0]);
 
     expect(effectStep.type).toMatch('removeEffect');
     expect(effectStep.successful).toBeTruthy();
-    expect(effectStep.effect.name).toMatch(testEffect.name);
+    expect(effectStep.effect.className).toMatch(testEffect.className);
 });
 
 describe.each([
-    ['defenceAmp', 'defenseAmp']
+    ['defenseAmp', 'defenseAmp'],
+    ['strengthAmp', 'strengthAmp'],
+    ['weaponSpeedAmp', 'speedAmp'],
+    ['lightningResistAmp', 'lightningResistAmp']
 ])('%s test', (statAmp, stepType) => {
-    test.only('Stat increase action', () => {
+    test('Stat increase action', () => {
+        const battleContext = new BattleContext();
         
         /** @type {Action} */
         let statAction = {
@@ -227,7 +292,7 @@ describe.each([
             }
         };
 
-        const battleSteps = ActionExecutor.execute(statAction);
+        const battleSteps = ActionExecutor.execute(statAction, battleContext);
 
         expect(battleSteps.length).toBe(1);
         expect(battleSteps[0].type).toMatch(stepType);
@@ -237,17 +302,18 @@ describe.each([
         expect(statModStep.ampAmount).toBe(2);
         
     });
-    test.only('Stat decrease action', () => {
+    test('Stat decrease action', () => {
         
+        const battleContext = new BattleContext();
         /** @type {Action} */
         let statAction = {
-            playerAction: {
+            playerAction: { 
                 targetPlayer: new BattlePlayer(),
                 [statAmp]: -2
             }
         };
 
-        const battleSteps = ActionExecutor.execute(statAction);
+        const battleSteps = ActionExecutor.execute(statAction, battleContext);
 
         expect(battleSteps.length).toBe(1);
         expect(battleSteps[0].type).toMatch(stepType);
@@ -259,3 +325,73 @@ describe.each([
     });
 });
 
+test('Action Generator Mod', () => {
+    const battleContext = new BattleContext();
+    const strikeMove = new StrikeBattleMove(battleContext.player);
+    const actionGenerator = strikeMove.onActivate(battleContext);
+
+    /**@type {(data: StrikeBattleMoveData) => void} */
+    const modFunction = (data) => {
+        data.strikeData.apChange += 2;
+    }
+
+    /** @type {Action} */
+    const modAction = {
+        actionGeneratorAction: {
+            targetActionGenerator: actionGenerator,
+            modFunction,
+            action: 'buff',
+            targetId: battleContext.player.getData().id,
+            description: 'Buffing player'
+        }
+    };
+
+    const steps = ActionExecutor.execute(modAction, battleContext);
+
+    expect(steps.length).toBe(1);
+    expect(steps[0].type).toBe('actionGenMod');
+
+    const actionGenModStep = /**@type {ActionGeneratorDataModStep} */(steps[0]);
+
+    expect(actionGenModStep.action).toBe('buff');
+    expect(actionGenModStep.targetId).toBe('player');
+});
+
+test('Action Data Mod', () => {
+    const battleContext = new BattleContext();
+
+    /**@type {(data: Action) => void} */
+    const modFunction = (data) => {
+        if (data.playerAction && data.playerAction.baseDamage) {
+            data.playerAction.baseDamage += 10;
+        }
+    }
+
+    /**@type {Action} */
+    const action = {
+        playerAction: {
+            targetPlayer: battleContext.player,
+            baseDamage: 10
+        }
+    };
+
+    /** @type {Action} */
+    const modAction = {
+        actionModAction: {
+            targetAction: action,
+            modFunction,
+            action: 'buff',
+            targetId: 'player',
+            description: 'Buffing player'
+        }
+    }
+
+    const steps = ActionExecutor.execute(modAction, battleContext);
+
+    expect(steps[0].type).toBe('actionMod');
+
+    const actionGenModStep = /**@type {ActionDataModStep} */(steps[0]);
+
+    expect(actionGenModStep.action).toBe('buff');
+    expect(actionGenModStep.targetId).toBe('player');
+});

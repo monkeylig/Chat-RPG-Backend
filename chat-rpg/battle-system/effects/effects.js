@@ -3,7 +3,10 @@
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
+const { AblazedEffect } = require("./ablazed-effect");
+const { EmpowermentEffect } = require("./empowerment-effect");
 const { ReviveEffect } = require("./revive-effect");
+const { AbilityStrikeEffect } = require('./ability-strike-effect')
 
 /**
  * 
@@ -20,7 +23,7 @@ function effectExists(className) {
  * @param {BattleAgent} targetAgent
  * @returns {Effect|undefined}
  */
-function createEffect(effectData, targetAgent) {
+function restoreEffect(effectData, targetAgent) {
     if (!effectExists(effectData.className)) {
         return;
     }
@@ -30,12 +33,32 @@ function createEffect(effectData, targetAgent) {
     return newEffect;
 }
 
+/**
+ * 
+ * @param {string} className 
+ * @param {Object} inputData 
+ * @param {BattleAgent} targetAgent 
+ * @returns {Effect|undefined}
+ */
+function createEffect(className, inputData, targetAgent) {
+    if (!effectExists(className)) {
+        return;
+    }
+
+    const newEffect = /**@type {Effect}*/(new EffectsLibrary[className](targetAgent, inputData));
+    return newEffect;
+}
+
 const EffectsLibrary = {
-    ReviveEffect
+    ReviveEffect,
+    EmpowermentEffect,
+    AblazedEffect,
+    AbilityStrikeEffect
 };
 
 module.exports = {
     effectExists,
+    restoreEffect,
     createEffect,
     EffectsLibrary
 };

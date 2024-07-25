@@ -1,5 +1,5 @@
 /**
- * @import {BattleStep} from "./battle-steps"
+ * @import {AddEffectStep, BattleStep} from "./battle-steps"
  * @import {ActionGeneratorObject} from "./action-generator"
  * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
  * @import {BattleContext} from "./battle-context"
@@ -16,6 +16,7 @@
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { ActionGenerator } = require("./action-generator");
 const { ActionGeneratorCreator, GeneratorCreatorType } = require("./battle-system-types");
+const { findBattleStep } = require("./utility");
 
 class Effect extends ActionGeneratorCreator {
     /**
@@ -65,10 +66,32 @@ class Effect extends ActionGeneratorCreator {
     }
 
     /**
+     * Called at the begining of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGenerator}
+     */
+    onBattleRoundBegin(battleContext) {
+        const newGenerator = new ActionGenerator(this.battleRoundBeginEvent(battleContext));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
+    }
+
+    /**
+     * Called at the end of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGenerator}
+     */
+    onBattleRoundEnd(battleContext) {
+        const newGenerator = new ActionGenerator(this.battleRoundEndEvent(battleContext));
+        newGenerator.inputData = this.getInputData();
+        return newGenerator;
+    }
+
+    /**
      * 
      * @param {BattleContext} battleContext 
      * @param {ActiveActionGenerator} actionGenerator 
-     * @returns 
+     * @returns {ActionGenerator}
      */
     onActionGeneratorBegin(battleContext, actionGenerator) {
         const newGenerator = new ActionGenerator(this.actionGeneratorBeginEvent(battleContext, actionGenerator));
@@ -111,6 +134,25 @@ class Effect extends ActionGeneratorCreator {
         const newGenerator = new ActionGenerator(this.actionEndEvent(battleContext, activeAction, battleSteps));
         newGenerator.inputData = this.getInputData();
         return newGenerator;
+    }
+
+
+    /**
+     * Called at the begining of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGeneratorObject}
+     */
+    *battleRoundBeginEvent(battleContext) {
+
+    }
+
+    /**
+     * Called at the end of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGeneratorObject}
+     */
+    *battleRoundEndEvent(battleContext) {
+
     }
 
     /**
@@ -158,6 +200,20 @@ class Effect extends ActionGeneratorCreator {
 
     }
   
+    /**
+     * 
+     * @param {ActiveAction} activeAction 
+     * @param {BattleStep[]} battleSteps 
+     * @returns {boolean}
+     */
+    isEffectStartEvent(activeAction, battleSteps) {
+        const effectStep = /**@type {AddEffectStep|undefined}*/(findBattleStep('addEffect', battleSteps));
+        if (effectStep && effectStep.successful && activeAction.action.battleContextAction?.addEffect === this) {
+            return true;
+        }
+
+        return false;
+    }
 };
 
 module.exports = {Effect};

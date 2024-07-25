@@ -175,3 +175,9 @@ test('Calculating exp gain from monsters', () => {
     expect(exp).toBe(getMonsterExpGain(monster));
 
 });
+
+test('True Damage', () => {
+    const damage = chatRPGUtility.calcTrueDamage(50, 50);
+
+    expect(damage).toBe(50);
+});

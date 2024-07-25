@@ -13,7 +13,7 @@ const {ActionExecutor} = require("./action-executor");
 const { BattlePlayer, BattleMonster, BattleAgent } = require("../datastore-objects/battle-agent");
 const { BattleMove } = require("./battle-move");
 const {Battle} = require("../datastore-objects/battle");
-const { effectExists, createEffect } = require("./effects/effects");
+const { restoreEffect } = require("./effects/effects");
 
 class BattleContext {
     /** @type {BattleData} */
@@ -50,7 +50,7 @@ class BattleContext {
             const playerEffectsMap = this.player.getData().effectsMap;
             for(const effectId in playerEffectsMap) {
                 const effectData = playerEffectsMap[effectId];
-                const newEffect = createEffect(effectData, this.player);
+                const newEffect = restoreEffect(effectData, this.player);
                 if (newEffect) {
                     this.addEffect(newEffect);
                 }
@@ -61,7 +61,7 @@ class BattleContext {
             for (const effectData of this.#battle.effects) {
                 const agent = this.findAgentById(effectData.targetId);
                 if (agent) {
-                    const newEffect = createEffect(effectData, agent);
+                    const newEffect = restoreEffect(effectData, agent);
                     if (newEffect) {
                         this.addEffect(newEffect);
                     }
@@ -99,12 +99,29 @@ class BattleContext {
     }
 
     /**
+     * @returns {BattleStep[]}
+     */
+    beginRound() {
+        this.sendEffectEvent((_effect) => _effect.onBattleRoundBegin(this));
+        return this.resolve();
+    }
+
+    /**
+     * @returns {BattleStep[]}
+     */
+    endRound() {
+        this.sendEffectEvent((_effect) => _effect.onBattleRoundEnd(this));
+        return this.resolve();
+    }
+
+    /**
      * 
      * @param {BattleMove} battleMove 
      */
     activateBattleMove(battleMove) {
         this.addActionGenerator(battleMove.onActivate(this), battleMove);
     }
+
     /**
      * @returns {BattleStep[]}
      */
@@ -131,7 +148,7 @@ class BattleContext {
                 }
             }
             else {
-                const actionBattleSteps = ActionExecutor.execute(topAction.action);
+                const actionBattleSteps = ActionExecutor.execute(topAction.action, this);
                 battleSteps.push(...actionBattleSteps);
                 this.popAction();
                 this.sendEffectEvent((_effect) => _effect.onActionEnd(this, topAction, actionBattleSteps));
@@ -232,12 +249,13 @@ class BattleContext {
     /**
      * 
      * @param {string} effectName
+     * @param {BattleAgent} [target]
      * @returns {number} 
      */
-    getEffectCount(effectName) {
+    getEffectCount(effectName, target) {
         let count = 0;
         for (const effect of this.#effects) {
-            if (effect.name === effectName) {
+            if (effect.name === effectName && (!target || effect.targetPlayer === target)) {
                 count += 1;
             }
         }

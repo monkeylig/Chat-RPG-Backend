@@ -1,8 +1,12 @@
+/**
+ * @import {Action} from "../action"
+ */
+
 const { generateAbilityActions, generateMoveActions } = require("../ability-utility");
 const Ability = require("../../datastore-objects/ability");
 const { BattleContext } = require("../battle-context");
-const ActionTypes = require("../action");
 const Item = require("../../datastore-objects/item");
+const { protection } = require("../battle-steps");
 
 test('Generate root level hit action', () => {
     const battleContext = new BattleContext();
@@ -13,11 +17,11 @@ test('Generate root level hit action', () => {
     });
 
     const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext);
-    let action = /** @type {ActionTypes.Action} */(actions.next().value);
+    let action = /** @type {Action} */(actions.next().value);
 
     expect(action.infoAction).toBeDefined();
 
-    action = /** @type {ActionTypes.Action} */(actions.next().value);
+    action = /** @type {Action} */(actions.next().value);
 
     expect(action.playerAction).toBeDefined();
     expect(action.playerAction?.baseDamage).toBe(10);
@@ -31,13 +35,39 @@ test('Generate root level hit action', () => {
 
 });
 
-test('Revive Effect', () => {
+test('Elements', () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        baseDamage: 10,
+        elements: ['fire', 'water'],
+        target: 'opponent'
+    });
+
+    const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+    let action = /** @type {Action} */(actions.next().value);
+
+    if (!action.playerAction) {fail();}
+    expect(action.playerAction.baseDamage).toBe(10);
+    expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
+    expect(action.playerAction.srcPlayer).toBe(battleContext.player);
+    if (!action.playerAction.elements) {fail();}
+    expect(action.playerAction.elements[0]).toMatch('fire');
+    expect(action.playerAction.elements[1]).toMatch('water');
+
+    const lastYield = actions.next();
+
+    expect(lastYield.done).toBeTruthy();
+    expect(lastYield.value).toBeUndefined();
+
+});
+
+test('Revive Item With custom actions', () => {
     const battleContext = new BattleContext();
     const item = new Item({
         count: 1,
         name: 'testItem',
         customActions: {
-            name: 'ReviveItem',
+            name: 'Revive',
             data: {
                 healthRecoverPercent: 0.75
             }
@@ -46,7 +76,7 @@ test('Revive Effect', () => {
     });
 
     const actions = generateMoveActions(battleContext.player, item.getData(), battleContext, {skipAnimation: true});
-    let action = /** @type {ActionTypes.Action} */(actions.next().value);
+    let action = /** @type {Action} */(actions.next().value);
 
     expect(action.battleContextAction).toBeDefined();
     expect(action.battleContextAction?.addEffect?.name).toMatch('Revive');
@@ -54,9 +84,80 @@ test('Revive Effect', () => {
     expect(action.battleContextAction?.addEffect?.targetPlayer).toBe(battleContext.player);
 });
 
+test('Absorb', () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        baseDamage: 50,
+        absorb: 0.5,
+        target: 'opponent',
+    });
+
+
+    const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+    let action = /** @type {Action} */(actions.next().value);
+
+    if (!action.playerAction) {
+        fail();
+    }
+
+    expect(action.playerAction.absorb).toBe(0.5);
+});
+
+test('Adding Effects', () => {
+    const battleContext = new BattleContext();
+        const ability = new Ability({
+            addEffect: {
+                class: 'AblazedEffect',
+                inputData: {
+                    trueDamage: 30,
+                    roundsLeft: 2
+                }
+            },
+            target: 'self',
+        });
+
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.battleContextAction || 
+            !action.battleContextAction.addEffect
+        ) {
+            fail();
+        }
+
+        expect(action.battleContextAction.addEffect.className).toMatch('AblazedEffect');
+        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
+        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({trueDamage: 30, roundsLeft: 2});
+});
+
+test('Adding Effects: Default inputData', () => {
+    const battleContext = new BattleContext();
+        const ability = new Ability({
+            addEffect: {
+                class: 'AblazedEffect',
+            },
+            target: 'self',
+        });
+
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.battleContextAction || 
+            !action.battleContextAction.addEffect
+        ) {
+            fail();
+        }
+
+        expect(action.battleContextAction.addEffect.className).toMatch('AblazedEffect');
+        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
+        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({trueDamage: 10, roundsLeft: 3});
+});
+
 describe.each([
-    ['defenceAmp']
-])('test', (stat) => {
+    ['defenseAmp'],
+    ['strengthAmp'],
+    ['lightningResistAmp']
+])('%s test', (stat) => {
     test('basic modding', () => {
         const battleContext = new BattleContext();
         const ability = new Ability({
@@ -64,6 +165,156 @@ describe.each([
             target: 'self',
         });
 
-        const actions = generateAbilityActions();
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.playerAction) {
+            fail();
+        }
+        expect(action.playerAction[stat]).toBe(1);
     });
+});
+
+describe.each([
+    ['physical'],
+    ['magical']
+])('%s protection test', (type) => {
+    test('Adding protection', () => {
+        const battleContext = new BattleContext();
+        const ability = new Ability({
+            protection: {
+                [type]: 60
+            },
+            target: 'self',
+        });
+
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.playerAction || 
+            !action.playerAction.protection
+        ) {
+            fail();
+        }
+
+        expect(action.playerAction.protection[type]).toBe(60);
+    });
+});
+
+describe.each([
+    ['physical'],
+    ['magical']
+])('%s empowerment test', (type) => {
+    test('Empowerment Effect', () => {
+        const battleContext = new BattleContext();
+        const ability = new Ability({
+            addEffect: {
+                class: 'EmpowermentEffect',
+                inputData: {
+                    damageIncrease: 10,
+                    type
+                }
+            },
+            target: 'self',
+        });
+
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.battleContextAction || 
+            !action.battleContextAction.addEffect
+        ) {
+            fail();
+        }
+
+        expect(action.battleContextAction.addEffect.className).toMatch('EmpowermentEffect');
+        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
+        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({damageIncrease: 10, type});
+    });
+
+    test('Empowerment: Short hand syntax', () => {
+        const battleContext = new BattleContext();
+        const ability = new Ability({
+            empowerment: {
+                [type]: 60
+            },
+            target: 'self',
+        });
+
+        const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.battleContextAction || 
+            !action.battleContextAction.addEffect
+        ) {
+            fail();
+        }
+
+        expect(action.battleContextAction.addEffect.className).toMatch('EmpowermentEffect');
+        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
+        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({damageIncrease: 60, type});
+    });
+});
+
+test('Post Actions', () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        baseDamage: 10,
+        postActions: [
+            {
+                baseDamage: 20,
+                target: 'opponent'
+            },
+            {
+                baseDamage: 30,
+                target: 'opponent'
+            },
+        ],
+        target: 'opponent',
+    });
+
+
+    const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+    let action = /**@type {Action} */(actions.next().value);
+
+    if (!action.playerAction || !action.playerAction.baseDamage) {
+        fail();
+    }
+
+    expect(action.playerAction.baseDamage).toBe(10);
+
+    action = /**@type {Action} */(actions.next().value);
+
+    if (!action.playerAction || !action.playerAction.baseDamage) {
+        fail();
+    }
+
+    expect(action.playerAction.baseDamage).toBe(20);
+
+    action = /**@type {Action} */(actions.next().value);
+
+    if (!action.playerAction || !action.playerAction.baseDamage) {
+        fail();
+    }
+
+    expect(action.playerAction.baseDamage).toBe(30);
+});
+
+test('True Damage', () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        trueDamage: 0.3,
+        target: 'opponent',
+    });
+
+
+    const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+    let action = /**@type {Action} */(actions.next().value);
+
+    if (!action.playerAction || !action.playerAction.trueDamage) {
+        fail();
+    }
+
+    expect(action.playerAction.trueDamage).toBe(0.3);
+    expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
 });

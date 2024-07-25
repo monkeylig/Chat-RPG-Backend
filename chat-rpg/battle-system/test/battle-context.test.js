@@ -282,9 +282,58 @@ test('Serializing effects after iteration', () => {
     const strike = new StrikeBattleMove(battleContext.player);
     battleContext.activateBattleMove(strike);
     battleContext.resolve();
-
+    
     expect(battleContext.battle.effects.length).toBe(1);
     expect(battleContext.battle.effects[0].className).toBe(reviveEfect.className);
     expect(battleContext.battle.effects[0].targetId).toBe('player');
     expect(battleContext.battle.effects[0].inputData).toStrictEqual(reviveEfect.getInputData());
+});
+
+test('Begin and End Round', () => {
+    class EffectTester extends Effect {
+
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @returns {ActionGeneratorObject}
+         */
+        *battleRoundBeginEvent(battleContext) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: "Round Begin",
+                    action: "Begin"
+                }
+            };
+        }
+
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @returns {ActionGeneratorObject}
+         */
+        *battleRoundEndEvent(battleContext) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: "Round End",
+                    action: "End"
+                }
+            };
+        }
+    }
+
+    const battleContext = new BattleContext();
+    const effectTester = new EffectTester(battleContext.player, {});
+    battleContext.addEffect(effectTester);
+
+    let steps = battleContext.beginRound();
+
+    expect(steps[0].type).toMatch('info');
+    expect(steps[0].description).toMatch('Round Begin');
+
+    steps = battleContext.endRound();
+
+    expect(steps[0].type).toMatch('info');
+    expect(steps[0].description).toMatch('Round End');
 });

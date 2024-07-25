@@ -22,10 +22,8 @@ class ReviveEffect extends Effect {
         this.name = "Revive";
         this.persistentId = "revive";
         this.unique = true;
-        if(!inputData) {
-            this._inputData = {
-                healthRecoverPercent: 0.5
-            };
+        if (!this._inputData.healthRecoverPercent) {
+            this._inputData.healthRecoverPercent = 0.5;
         }
     }
 
@@ -51,9 +49,11 @@ class ReviveEffect extends Effect {
             playerAction: {
                 targetPlayer: this.targetPlayer,
                 revive: inputData.healthRecoverPercent
-            },
+            }
+        };
+        
+        yield {
             battleContextAction: {
-                battleContext: battleContext,
                 removeEffect: this
             }
         };
