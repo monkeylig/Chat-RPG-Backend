@@ -6,7 +6,6 @@ const { generateAbilityActions, generateMoveActions } = require("../ability-util
 const Ability = require("../../datastore-objects/ability");
 const { BattleContext } = require("../battle-context");
 const Item = require("../../datastore-objects/item");
-const { protection } = require("../battle-steps");
 
 test('Generate root level hit action', () => {
     const battleContext = new BattleContext();
@@ -79,9 +78,9 @@ test('Revive Item With custom actions', () => {
     let action = /** @type {Action} */(actions.next().value);
 
     expect(action.battleContextAction).toBeDefined();
-    expect(action.battleContextAction?.addEffect?.name).toMatch('Revive');
-    expect(action.battleContextAction?.addEffect?.getInputData().healthRecoverPercent).toBe(0.75);
-    expect(action.battleContextAction?.addEffect?.targetPlayer).toBe(battleContext.player);
+    expect(action.battleContextAction?.addEffect?.className).toMatch('ReviveEffect');
+    expect(action.battleContextAction?.addEffect?.inputData.healthRecoverPercent).toBe(0.75);
+    expect(action.battleContextAction?.addEffect?.targetId).toBe(battleContext.player.getData().id);
 });
 
 test('Absorb', () => {
@@ -126,8 +125,8 @@ test('Adding Effects', () => {
         }
 
         expect(action.battleContextAction.addEffect.className).toMatch('AblazedEffect');
-        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
-        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({trueDamage: 30, roundsLeft: 2});
+        expect(action.battleContextAction.addEffect.targetId).toMatch(battleContext.player.getData().id);
+        expect(action.battleContextAction.addEffect.inputData).toStrictEqual({trueDamage: 30, roundsLeft: 2});
 });
 
 test('Adding Effects: Default inputData', () => {
@@ -149,8 +148,7 @@ test('Adding Effects: Default inputData', () => {
         }
 
         expect(action.battleContextAction.addEffect.className).toMatch('AblazedEffect');
-        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
-        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({trueDamage: 10, roundsLeft: 3});
+        expect(action.battleContextAction.addEffect.targetId).toMatch(battleContext.player.getData().id);
 });
 
 describe.each([
@@ -228,8 +226,8 @@ describe.each([
         }
 
         expect(action.battleContextAction.addEffect.className).toMatch('EmpowermentEffect');
-        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
-        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({damageIncrease: 10, type});
+        expect(action.battleContextAction.addEffect.targetId).toMatch(battleContext.player.getData().id);
+        expect(action.battleContextAction.addEffect.inputData).toStrictEqual({damageIncrease: 10, type});
     });
 
     test('Empowerment: Short hand syntax', () => {
@@ -251,8 +249,8 @@ describe.each([
         }
 
         expect(action.battleContextAction.addEffect.className).toMatch('EmpowermentEffect');
-        expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
-        expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual({damageIncrease: 60, type});
+        expect(action.battleContextAction.addEffect.targetId).toMatch(battleContext.player.getData().id);
+        expect(action.battleContextAction.addEffect.inputData).toStrictEqual({damageIncrease: 60, type});
     });
 });
 
@@ -300,21 +298,26 @@ test('Post Actions', () => {
     expect(action.playerAction.baseDamage).toBe(30);
 });
 
-test('True Damage', () => {
-    const battleContext = new BattleContext();
-    const ability = new Ability({
-        trueDamage: 0.3,
-        target: 'opponent',
+describe.each([
+    ['trueDamage', 0.3],
+    ['defensePen', 0.5]
+])('%s player action field test', (field, value) => {
+    test('propagation', () => {
+        const battleContext = new BattleContext();
+        const ability = new Ability({
+            [field]: value,
+            target: 'opponent',
+        });
+
+
+        const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        let action = /**@type {Action} */(actions.next().value);
+
+        if (!action.playerAction || !action.playerAction[field]) {
+            fail();
+        }
+
+        expect(action.playerAction[field]).toBe(value);
+        expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
     });
-
-
-    const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
-    let action = /**@type {Action} */(actions.next().value);
-
-    if (!action.playerAction || !action.playerAction.trueDamage) {
-        fail();
-    }
-
-    expect(action.playerAction.trueDamage).toBe(0.3);
-    expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
 });

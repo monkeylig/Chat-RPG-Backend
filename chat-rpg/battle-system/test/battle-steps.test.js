@@ -276,12 +276,11 @@ test('Generate Hit Steps: override damage modifier', () => {
     player2.setStatsAtLevel(10);
 
     const baseDamage = 50;
-    const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {overrideDamageModifier: 'defense'});
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, new BattleContext(), {overrideDamageModifier: 'defense'});
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
-    expect(battleSteps[0].damage).toBeGreaterThan(2);
+    expect(/**@type {DamageStep}*/(battleSteps[0]).damage).toBeGreaterThan(2);
 });
 
 test('Generate Hit Steps: defense pen', () => {
@@ -292,12 +291,11 @@ test('Generate Hit Steps: defense pen', () => {
     player2.getData().defense = 1000000000;
 
     const baseDamage = 50;
-    const hitResult = {};
-    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, hitResult, {defensePen: 0.999999999});
+    const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'sword', null, new BattleContext(), {defensePen: 0.999999999});
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
-    expect(battleSteps[0].damage).toBeGreaterThan(2);
+    expect(/**@type {DamageStep}*/(battleSteps[0]).damage).toBeGreaterThan(2);
 });
 
 
@@ -455,10 +453,9 @@ test("Add Effect", () => {
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('addEffect');
     expect(effectStep.effect.className).toMatch(testEffect.className);
-    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.persistentId).toBeUndefined();
     expect(effectStep.effect.inputData).toStrictEqual(testEffect.getInputData());
     expect(battleContext.isEffectActive(testEffect)).toBeTruthy();
-    expect(battleContext.player.getData().effectsMap[testEffect.persistentId]).toBeUndefined();
 
     effectStep = BattleSteps.addEffect(battleContext, testEffect);
 
@@ -470,10 +467,9 @@ test("Add Effect", () => {
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('addEffect');
     expect(effectStep.effect.className).toMatch(testEffect.className);
-    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.persistentId).toBeUndefined();
     expect(effectStep.effect.inputData).toStrictEqual(testEffect2.getInputData());
     expect(battleContext.isEffectActive(testEffect2)).toBeTruthy();
-    expect(battleContext.player.getData().effectsMap[testEffect2.persistentId]).toBeUndefined();
 
 });
 
@@ -544,7 +540,7 @@ test('Remove Effect', () => {
     expect(effectStep.successful).toBeTruthy();
     expect(effectStep.type).toMatch('removeEffect');
     expect(effectStep.effect.className).toMatch(testEffect.className);
-    expect(effectStep.effect.persistentId).toMatch('');
+    expect(effectStep.effect.persistentId).toBeUndefined();
     expect(effectStep.effect.inputData).toStrictEqual(testEffect.getInputData());
     expect(battleContext.isEffectActive(testEffect)).toBeFalsy();
 

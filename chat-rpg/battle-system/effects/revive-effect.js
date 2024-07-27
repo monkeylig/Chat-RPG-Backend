@@ -2,10 +2,10 @@
  * @import {ActiveAction} from "../battle-system-types"
  * @import {BattleStep, DamageStep} from "../battle-steps"
  * @import {ActionGeneratorObject} from "../action-generator"
+ * @import {BattleContext} from "../battle-context"
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
-const { BattleContext } = require("../battle-context");
 const { Effect } = require("../effect");
 
 class ReviveEffect extends Effect {

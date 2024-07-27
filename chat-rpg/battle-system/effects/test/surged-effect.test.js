@@ -11,10 +11,6 @@ const { PlayerActionStyle, PlayerActionType, ElementsEnum } = require("../../act
 
 test('Gaining Surged', () => {
     const battleContext = new BattleContext();
-    const surgedEffect = new SurgedEffect(battleContext.player, {
-        trueDamage: 30,
-        roundsLeft: 2
-    });
 
     class TestMove extends BattleMove {
         /**
@@ -25,7 +21,14 @@ test('Gaining Surged', () => {
         *activate(battleContext) {
             yield {
                 battleContextAction: {
-                    addEffect: surgedEffect
+                    addEffect: {
+                        targetId: battleContext.player.getData().id,
+                        className: 'SurgedEffect',
+                        inputData: {
+                            trueDamage: 30,
+                            roundsLeft: 2
+                        }
+                    }
                 }
             };
         }
@@ -35,6 +38,10 @@ test('Gaining Surged', () => {
     const testMoveGenerator = testMove.onActivate(battleContext);
     const addEffectAction = /**@type {Action}*/(testMoveGenerator.next().value);
     const steps = ActionExecutor.execute(addEffectAction, battleContext);
+    const surgedEffect = battleContext.getActiveEffects().find((_effects) => _effects.className === 'SurgedEffect');
+
+    if (!surgedEffect) {fail();}
+
     const surgedGen = surgedEffect.actionEndEvent(battleContext, {
         action: addEffectAction, 
         generator: testMoveGenerator,

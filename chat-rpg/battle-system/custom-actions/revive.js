@@ -30,10 +30,13 @@ function *generateActions(user, abilityActionData, inputData, battleContext) {
         };
     }
     else {
-        const reviveEffect = new ReviveEffect(targetPlayer, inputData);
         yield {
             battleContextAction: {
-                addEffect: reviveEffect
+                addEffect: {
+                    className: 'ReviveEffect',
+                    targetId: targetPlayer.getData().id,
+                    inputData: inputData
+                }
             }
         };
     }

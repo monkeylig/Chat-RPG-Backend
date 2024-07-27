@@ -7,7 +7,7 @@ const animations = require('../content/animations');
  * animation: object,
  * target: TargetEnum,
  * customActions?: {name: string, data: object},
- * addEffect?: {class: string, inputData: object},
+ * addEffect?: {class: string, inputData?: Object},
  * empowerment?: {physical?: number, magical?: number}
  * }} AbilityActionData
  * 

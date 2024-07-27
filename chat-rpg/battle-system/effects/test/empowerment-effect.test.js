@@ -1,15 +1,15 @@
 /**
  * @import {ActiveAction, ActiveActionGenerator} from "../../battle-system-types"
  * @import {Action} from "../../action"
- * @import {ActionGeneratorObject} from "../../action-generator"
  */
 
 const Item = require("../../../datastore-objects/item");
-const { ActionExecutor } = require("../../action-executor");
 const { BattleContext } = require("../../battle-context");
 const { BattleMove } = require("../../battle-move");
+const BattleSteps = require("../../battle-steps");
 const { ItemBattleMove } = require("../../item-battle-move");
 const { StrikeBattleMove } = require("../../strike-battle-move");
+const { createEffect } = require("../effects");
 const { EmpowermentEffect } = require("../empowerment-effect");
 
 describe.each([
@@ -153,26 +153,15 @@ describe.each([
         const battleContext = new BattleContext();
         battleContext.player.getData().weapon.baseDamage = 10;
         battleContext.player.getData().weapon.type = type;
-        const empowermentEffect = new EmpowermentEffect(battleContext.player, {damageIncrease: 10, type});
 
-        class TestBattleMove extends BattleMove {
-            /**
-             * @param {BattleContext} battleContext
-             * @returns {ActionGeneratorObject}
-             */
-            *activate(battleContext) {
-                yield {
-                    battleContextAction: {
-                        addEffect: empowermentEffect
-                    }
-                };
-            }
-        }
-
-        const testbattleMove = new TestBattleMove(battleContext.player);
+        const testbattleMove = new BattleMove(battleContext.player);
         const actionGen = testbattleMove.onActivate(battleContext);
         const action = /**@type {Action}*/(actionGen.next().value);
-        const steps = ActionExecutor.execute(action, battleContext);
+        const empowermentEffect = createEffect('EmpowermentEffect', {damageIncrease: 10, type}, battleContext.player);
+
+        if (!empowermentEffect) {fail();}
+
+        const steps = [BattleSteps.addEffect(battleContext, empowermentEffect)];
 
         /**@type {ActiveAction} */
         const actionAction = {

@@ -1,6 +1,5 @@
 /**
  * @import {AbilityActionData} from "../../datastore-objects/ability"
- * @import {Action} from "../action"
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
@@ -11,20 +10,17 @@ const { generateStandardActions } = require("../utility");
  * 
  * @param {BattleAgent} user 
  * @param {AbilityActionData} abilityData 
- * @param {{damageIncrease?: number}} inputData 
+ * @param {{damageIncrease?: number, effectClass?: string}} inputData 
  * @param {BattleContext} battleContext 
- * @returns {Generator<Action, void, any>}
  */
 function *generateActions(user, abilityData, inputData, battleContext) {
-    if (!inputData.damageIncrease) {
-        inputData.damageIncrease = 0;
+    if (abilityData.baseDamage && inputData.damageIncrease && inputData.effectClass) {    
+        if (battleContext.getEffectCount(inputData.effectClass, user)) {
+            abilityData.baseDamage += inputData.damageIncrease;
+        }
     }
 
-    if (user.getData().ap === 0 && abilityData.baseDamage) {
-        abilityData.baseDamage += inputData.damageIncrease;
-    }
-
-    yield* generateStandardActions(user, abilityData, battleContext);
+    yield* generateStandardActions(user, abilityData, battleContext, {disableCustomActions: true});
 }
 
 module.exports = {generateActions};

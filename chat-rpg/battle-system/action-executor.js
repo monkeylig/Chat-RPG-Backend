@@ -10,6 +10,7 @@ const { calcTrueDamage } = require("../utility");
 const BattleSteps = require("./battle-steps");
 const { findBattleStep } = require("./utility");
 const { PlayerActionType } = require('./action');
+const { createEffect } = require("./effects/effects");
 
 /**
  * Executes an action that will have side effects on game objects.
@@ -30,7 +31,7 @@ function executeAction(action, battleContext) {
             const hitSteps = BattleSteps.genHitSteps(playerAction.srcPlayer,
                 playerAction.targetPlayer,
                 playerAction.baseDamage,
-                playerAction.type, playerAction.style, playerAction.elements, battleContext, {})
+                playerAction.type, playerAction.style, playerAction.elements, battleContext, {defensePen: playerAction.defensePen})
             steps.push(...hitSteps);
             
             const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', hitSteps));
@@ -112,8 +113,15 @@ function executeAction(action, battleContext) {
     if(action.battleContextAction) {
         const battleContextAction = action.battleContextAction;
         if(battleContextAction.addEffect) {
-            const addEffectStep = BattleSteps.addEffect(battleContext, battleContextAction.addEffect);
-            steps.push(addEffectStep);
+            const addEffect = battleContextAction.addEffect;
+            const target = battleContext.findAgentById(addEffect.targetId);
+            if (target) {
+                const newEffect = createEffect(addEffect.className, addEffect.inputData, target);
+                if (newEffect) {
+                    const addEffectStep = BattleSteps.addEffect(battleContext, newEffect);
+                    steps.push(addEffectStep);
+                }
+            }
         }
 
         if(battleContextAction.removeEffect) {

@@ -33,7 +33,10 @@ const ELEMENTAL_BURST_BONUS = 1.5;
  * @param {string} style 
  * @param {Array<string>|undefined|null} elements 
  * @param {BattleContext} battleContext 
- * @param {Object} options 
+ * @param {{
+ * defensePen?: number,
+ * overrideDamageModifier?: string
+ * }} options 
  * @returns {Array<BattleStep>}
  */
 function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements, battleContext, options = {}) {
@@ -727,7 +730,7 @@ function addEffect(battleContext, effect) {
         successful: false,
         effect: effect.getData()
     };
-    if (effect.unique && battleContext.getEffectCount(effect.name, effect.targetPlayer) > 0 || battleContext.isEffectActive(effect)) {
+    if (effect.unique && battleContext.getEffectCount(effect.className, effect.targetPlayer) > 0 || battleContext.isEffectActive(effect)) {
         return step;
     }
 

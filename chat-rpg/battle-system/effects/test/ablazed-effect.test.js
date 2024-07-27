@@ -11,10 +11,6 @@ const { PlayerActionType } = require("../../action");
 
 test('Gaining Ablaze', () => {
     const battleContext = new BattleContext();
-    const ablazedEffect = new AblazedEffect(battleContext.player, {
-        trueDamage: 30,
-        roundsLeft: 2
-    });
 
     class TestMove extends BattleMove {
         /**
@@ -25,7 +21,14 @@ test('Gaining Ablaze', () => {
         *activate(battleContext) {
             yield {
                 battleContextAction: {
-                    addEffect: ablazedEffect
+                    addEffect: {
+                        targetId: battleContext.player.getData().id,
+                        className: 'AblazedEffect',
+                        inputData: {
+                            trueDamage: 30,
+                            roundsLeft: 2
+                        }
+                    }
                 }
             };
         }
@@ -35,6 +38,11 @@ test('Gaining Ablaze', () => {
     const testMoveGenerator = testMove.onActivate(battleContext);
     const addEffectAction = /**@type {Action}*/(testMoveGenerator.next().value);
     const steps = ActionExecutor.execute(addEffectAction, battleContext);
+
+    const ablazedEffect = battleContext.getActiveEffects().find((_effects) => _effects.className === 'AblazedEffect');
+
+    if (!ablazedEffect) {fail();}
+
     const ablazedGen = ablazedEffect.actionEndEvent(battleContext, {
         action: addEffectAction, 
         generator: testMoveGenerator,

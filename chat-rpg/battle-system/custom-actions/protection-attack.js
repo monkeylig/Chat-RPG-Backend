@@ -2,10 +2,10 @@
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  */
 
-const { BattleAgent, BattleWeapon } = require("../../datastore-objects/battle-agent");
+const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { BattleContext } = require("../battle-context");
-const { generateActionsFromActionData } = require("../ability-utility");
 const { PlayerActionType } = require("../action");
+const { generateStandardActions } = require("../utility");
 
 /**
  * 
@@ -23,7 +23,7 @@ function *generateActions(user, abilityData, inputData, battleContext) {
         abilityData.baseDamage += user.getProtectionValue(inputData.protectionType);
     }
 
-    yield* generateActionsFromActionData(user, abilityData, battleContext, {disableCustomActions: true});
+    yield* generateStandardActions(user, abilityData, battleContext, {disableCustomActions: true});
 }
 
 module.exports = {generateActions};

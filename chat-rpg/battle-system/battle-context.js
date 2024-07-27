@@ -248,14 +248,14 @@ class BattleContext {
 
     /**
      * 
-     * @param {string} effectName
+     * @param {string} effectClass
      * @param {BattleAgent} [target]
      * @returns {number} 
      */
-    getEffectCount(effectName, target) {
+    getEffectCount(effectClass, target) {
         let count = 0;
         for (const effect of this.#effects) {
-            if (effect.name === effectName && (!target || effect.targetPlayer === target)) {
+            if (effect.className === effectClass && (!target || effect.targetPlayer === target)) {
                 count += 1;
             }
         }

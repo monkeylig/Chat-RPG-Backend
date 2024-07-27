@@ -6,9 +6,8 @@
 const Ability = require("../../datastore-objects/ability");
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { getRandomIntInclusive } = require("../../utility");
-const { generateAbilityActions, generateActionsFromActionData } = require("../ability-utility");
 const { BattleContext } = require("../battle-context");
-const { getTarget } = require("../utility");
+const { getTarget, generateStandardActions } = require("../utility");
 
 /**
  * 
@@ -23,7 +22,7 @@ function *generateActions(user, abilityActionData, inputData, battleContext) {
 
     const ability = new Ability(abilityActionData);
     for (let i=0; i < hits; i++) {
-        for (const action of generateActionsFromActionData(user, abilityActionData, battleContext, {disableCustimActions: true})) {
+        for (const action of generateStandardActions(user, abilityActionData, battleContext)) {
             yield action;
         }
     }

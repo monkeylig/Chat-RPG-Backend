@@ -1,5 +1,5 @@
 /** 
- * @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep, ActionGeneratorDataModStep, ActionDataModStep} from "../battle-steps"
+ * @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep, ActionGeneratorDataModStep, ActionDataModStep, DamageStep} from "../battle-steps"
  * @import {Action} from "../action"
  * @import {StrikeBattleMoveData} from "../strike-battle-move"
  */
@@ -212,7 +212,7 @@ describe.each([
 ])('%s test', (field, stepType, index=0, data={}, value=0.5) => {
     test('Basic', () => {
         const battleContext = new BattleContext();
-        const player = new BattleAgent({id: 'player'});
+        const player = battleContext.player;
         /** @type {Action} */
         const apChangeAction = {
             playerAction: {
@@ -234,14 +234,42 @@ describe.each([
     });
 })
 
+test('Defence Penetration', () => {
+    const battleContext = new BattleContext();
+    battleContext.player.setStatsAtLevel(100);
+    /** @type {Action} */
+    const damageAction = {
+        playerAction: {
+            targetPlayer: battleContext.player,
+            srcPlayer: battleContext.player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            baseDamage: 10
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(damageAction, battleContext);
+    // @ts-ignore
+    damageAction.playerAction.defensePen = 0.5;
+    let penBattleSteps = ActionExecutor.execute(damageAction, battleContext);
+
+    const damageStep = /** @type {DamageStep} */(findBattleStep('damage', battleSteps));
+    const penDamageStep = /** @type {DamageStep} */(findBattleStep('damage', penBattleSteps));
+
+    expect(penDamageStep.damage).toBeGreaterThan(damageStep.damage);
+});
+
 test('Add Effect', () => {
     const battleContext = new BattleContext();
-    const testEffect = new Effect(battleContext.player, {});
 
     /** @type {Action} */
     const effectAction = {
         battleContextAction: {
-            addEffect: testEffect,
+            addEffect: {
+                targetId: battleContext.player.getData().id,
+                className: 'AblazedEffect',
+                inputData: {}
+            },
             
         }
     };
@@ -251,7 +279,7 @@ test('Add Effect', () => {
 
     expect(effectStep.type).toMatch('addEffect');
     expect(effectStep.successful).toBeTruthy();
-    expect(effectStep.effect.className).toMatch(testEffect.className);
+    expect(effectStep.effect.className).toMatch('AblazedEffect');
 });
 
 test('Remove Effect', () => {

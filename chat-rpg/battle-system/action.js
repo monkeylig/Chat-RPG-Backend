@@ -1,7 +1,7 @@
 /**
  * @import {ActionGenerator} from "./action-generator"
  * @import {BattleAgent} from "../datastore-objects/battle-agent"
- * @import {Effect} from "./effect"
+ * @import {Effect, EffectData} from "./effect"
  */
 
 /**
@@ -50,6 +50,7 @@ const ElementsEnum = {
  * @property {PlayerActionStyle} [style] - The action's style
  * @property {number} [baseDamage] - The Base damage for attacks from one agent to another
  * @property {number} [trueDamage]
+ * @property {number} [defensePen]
  * @property {ElementsEnum[]} [elements]
  * @property {number} [strikeLevelChange]
  * @property {number} [apChange]
@@ -83,7 +84,7 @@ const ElementsEnum = {
 /**
  * @typedef {Object} BattleContextAction
  * @property {Effect} [removeEffect]
- * @property {Effect} [addEffect]
+ * @property {EffectData} [addEffect]
  */
 
 /**

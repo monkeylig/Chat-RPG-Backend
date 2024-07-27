@@ -6,7 +6,8 @@ const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { AblazedEffect } = require("./ablazed-effect");
 const { EmpowermentEffect } = require("./empowerment-effect");
 const { ReviveEffect } = require("./revive-effect");
-const { AbilityStrikeEffect } = require('./ability-strike-effect')
+const { AbilityStrikeEffect } = require('./ability-strike-effect');
+const { SurgedEffect } = require("./surged-effect");
 
 /**
  * 
@@ -29,7 +30,9 @@ function restoreEffect(effectData, targetAgent) {
     }
 
     const newEffect = /**@type {Effect}*/(new EffectsLibrary[effectData.className](targetAgent, effectData.inputData));
-    newEffect.persistentId = effectData.persistentId;
+    if (effectData.persistentId) {
+        newEffect.persistentId = effectData.persistentId;
+    }
     return newEffect;
 }
 
@@ -53,6 +56,7 @@ const EffectsLibrary = {
     ReviveEffect,
     EmpowermentEffect,
     AblazedEffect,
+    SurgedEffect,
     AbilityStrikeEffect
 };
 

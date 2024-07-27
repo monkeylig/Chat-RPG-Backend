@@ -10,7 +10,7 @@
  * @property {string} targetId
  * @property {string} className
  * @property {Object} inputData
- * @property {string} persistentId
+ * @property {string} [persistentId]
  */
 
 const { BattleAgent } = require("../datastore-objects/battle-agent");
@@ -28,8 +28,8 @@ class Effect extends ActionGeneratorCreator {
         super();
         /** @type {BattleAgent} */
         this.targetPlayer = targetPlayer;
-        /** @type {string} */
-        this.persistentId = '';
+        /** @type {string|undefined} */
+        this.persistentId;
         /** @type {boolean} */
         this.unique = false;
         /** @type {string} */
@@ -208,7 +208,7 @@ class Effect extends ActionGeneratorCreator {
      */
     isEffectStartEvent(activeAction, battleSteps) {
         const effectStep = /**@type {AddEffectStep|undefined}*/(findBattleStep('addEffect', battleSteps));
-        if (effectStep && effectStep.successful && activeAction.action.battleContextAction?.addEffect === this) {
+        if (effectStep && effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
             return true;
         }
 

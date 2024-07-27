@@ -3,10 +3,9 @@
  * @import {Action} from "../action"
  */
 
-const Ability = require("../../datastore-objects/ability");
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
-const { generateActionsFromActionData } = require("../ability-utility");
 const { BattleContext } = require("../battle-context");
+const { generateStandardActions } = require("../utility");
 
 /**
  * 
@@ -22,7 +21,7 @@ function *generateActions(user, abilityData, inputData, battleContext) {
         abilityData.baseDamage = abilityData.baseDamage + (inputData.bonusDamage*healthPercent);
     }
 
-    for (const action of generateActionsFromActionData(user, abilityData, battleContext, {disableCustimActions: true})) {
+    for (const action of generateStandardActions(user, abilityData, battleContext, {disableCustimActions: true})) {
         yield action;
     }
 }

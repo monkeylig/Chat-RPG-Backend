@@ -239,7 +239,7 @@ test('Restoring persistent Effects', () => {
     }).getData();
     const battleContext = new BattleContext(battleData, true);
 
-    expect(battleContext.getEffectCount(reviveEfect.name)).toBe(1);
+    expect(battleContext.getEffectCount(reviveEfect.className)).toBe(1);
     expect(battleContext.getActiveEffects()[0].targetPlayer).toBe(battleContext.player);
     expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());
 });
@@ -259,7 +259,7 @@ test('Restoring effects mid battle', () => {
     }).getData();
     const battleContext = new BattleContext(battleData);
 
-    expect(battleContext.getEffectCount(reviveEfect.name)).toBe(1);
+    expect(battleContext.getEffectCount(reviveEfect.className)).toBe(1);
     expect(battleContext.getActiveEffects()[0].targetPlayer).toBe(battleContext.player);
     expect(battleContext.getActiveEffects()[0].persistentId).toBe(reviveEfect.persistentId);
     expect(battleContext.getActiveEffects()[0].getInputData()).toStrictEqual(reviveEfect.getInputData());

@@ -9,9 +9,7 @@ const AbilityTypes = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { BattleContext } = require("./battle-context");
 const customActions = require("./custom-actions/custom-actions");
-const { createEffect } = require("./effects/effects");
-const { EmpowermentEffect } = require("./effects/empowerment-effect");
-const { getTarget } = require("./utility");
+const { getTarget, generateStandardActions } = require("./utility");
 
 /**
  * 
@@ -19,69 +17,16 @@ const { getTarget } = require("./utility");
  * @param {AbilityActionData} actionData 
  * @param {BattleContext} battleContext 
  * @param {{disableCustomActions?: boolean}} [options={}] 
+ * @returns {Generator<Action, void, any>}
  */
 function *generateActionsFromActionData(user, actionData, battleContext, options = {}) {
-    let target = getTarget(user, actionData.target, battleContext);
 
     if (actionData.customActions && customActions[actionData.customActions.name] && !options.disableCustomActions) {
-        const customActionData = actionData.customActions;
-        for (const action of customActions[customActionData.name].generateActions(user, actionData, customActionData.data, battleContext)) {
-            yield action;
-        }
+        const customActionData = actionData.customActions;       
+        yield* customActions[customActionData.name].generateActions(user, actionData, customActionData.data, battleContext);
     }
     else {
-        /**@type {Action} */
-        const action = {
-            playerAction: {
-                baseDamage: actionData.baseDamage,
-                trueDamage: actionData.trueDamage,
-                elements: actionData.elements,
-                targetPlayer: target,
-                srcPlayer: user,
-                style: actionData.style,
-                type: actionData.type,
-                apChange: actionData.apChange,
-                absorb: actionData.absorb,
-                protection: actionData.protection,
-                defenseAmp: actionData.defenseAmp,
-                strengthAmp: actionData.strengthAmp,
-                lightningResistAmp: actionData.lightningResistAmp
-            },
-        };
-
-        if(actionData.empowerment) {
-            let type;
-            let damageIncrease;
-            if (actionData.empowerment.magical) {
-                type = 'magical';
-                damageIncrease = actionData.empowerment.magical;
-            }
-
-            if (actionData.empowerment.physical) {
-                type = 'physical';
-                damageIncrease = actionData.empowerment.physical;
-            }
-
-            if (type && damageIncrease) {
-                const empowermentEffect = new EmpowermentEffect(target, {damageIncrease, type});
-                action.battleContextAction = {
-                    addEffect: empowermentEffect
-                };
-            }
-
-
-        }
-
-        if (actionData.addEffect) {
-            const addEffect = actionData.addEffect;
-            const newEffect = createEffect(addEffect.class, addEffect.inputData, target);
-            if (newEffect) {
-                action.battleContextAction = {
-                    addEffect: newEffect
-                };
-            }
-        }
-        yield action;
+        yield* generateStandardActions(user, actionData, battleContext, options);
     }
 }
 

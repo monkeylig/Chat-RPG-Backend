@@ -4,7 +4,7 @@
 
 const { BattleAgent, BattleWeapon } = require("../../datastore-objects/battle-agent");
 const { BattleContext } = require("../battle-context");
-const { generateActionsFromActionData } = require("../ability-utility");
+const { generateStandardActions } = require("../utility");
 
 /**
  * 
@@ -23,7 +23,7 @@ function *generateActions(user, abilityData, inputData, battleContext) {
         abilityData.baseDamage += (weapon.getModifiedSpeed() - weapon.getData().speed) * inputData.damageMultiplier;
     }
 
-    yield* generateActionsFromActionData(user, abilityData, battleContext, {disableCustomActions: true});
+    yield* generateStandardActions(user, abilityData, battleContext, {disableCustomActions: true});
 }
 
 module.exports = {generateActions};

@@ -24,9 +24,9 @@ test('Item Actions', () => {
         fail();
     }
 
-    expect(action.battleContextAction.addEffect.name).toMatch("Revive");
-    expect(action.battleContextAction.addEffect.targetPlayer).toBe(battleContext.player);
-    expect(action.battleContextAction.addEffect.getInputData()).toStrictEqual(inputData);
+    expect(action.battleContextAction.addEffect.className).toMatch("ReviveEffect");
+    expect(action.battleContextAction.addEffect.targetId).toBe(battleContext.player.getData().id);
+    expect(action.battleContextAction.addEffect.inputData).toStrictEqual(inputData);
 
     const lastYield = actions.next();
 
