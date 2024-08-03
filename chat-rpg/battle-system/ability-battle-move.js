@@ -75,6 +75,21 @@ class AbilityBattleMove extends BattleMove {
                 }
             };
         }
+
+        const mainInputData = this.getInputData();
+        if (mainInputData.charges && mainInputData.charges >= 0) {
+            mainInputData.charges -= 1;
+
+            if (mainInputData.charges <= 0) {
+                yield {
+                    playerAction: {
+                        targetPlayer: this.owner,
+                        srcPlayer: this.owner,
+                        removeAbility: inputData.name
+                    }
+                };
+            }
+        }
     }
 }
 

@@ -11,6 +11,7 @@ const BattleSteps = require("./battle-steps");
 const { findBattleStep } = require("./utility");
 const { PlayerActionType } = require('./action');
 const { createEffect } = require("./effects/effects");
+const Ability = require("../datastore-objects/ability");
 
 /**
  * Executes an action that will have side effects on game objects.
@@ -80,6 +81,16 @@ function executeAction(action, battleContext) {
             }
             const protectionStep = BattleSteps.protection(playerAction.targetPlayer, protectionType, playerAction.protection[protectionType]);
             steps.push(protectionStep);
+        }
+
+        if(playerAction.addAbility) {
+            const addAbilityStep = BattleSteps.addAbility(playerAction.targetPlayer, playerAction.addAbility);
+            steps.push(addAbilityStep);
+        }
+
+        if(playerAction.removeAbility) {
+            const removeAbilityStep = BattleSteps.removeAbility(playerAction.targetPlayer, playerAction.removeAbility);
+            steps.push(removeAbilityStep);
         }
 
         if(playerAction.defenseAmp) {

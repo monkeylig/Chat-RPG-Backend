@@ -6,8 +6,9 @@
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
-const { PlayerActionType } = require("../action");
+const { PlayerActionType, ElementsEnum } = require("../action");
 const { Effect } = require("../effect");
+const { matchPlayerAction } = require("../utility");
 
 class AblazedEffect extends Effect {
 
@@ -78,19 +79,25 @@ class AblazedEffect extends Effect {
      * @returns {ActionGeneratorObject}
      */
     *actionEndEvent(battleContext, activeAction, battleSteps) {
-        if (!this.isEffectStartEvent(activeAction, battleSteps)) {
-            return;
+        if (this.isEffectStartEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is now ${this.name}!`,
+                    action: 'ablazed'
+                }
+            };
         }
 
-        yield true;
-
-        yield {
-            infoAction: {
-                description: `${this.targetPlayer.getData().name} is now ${this.name}!`,
-                action: 'ablazed'
-            }
-        };
+        if (matchPlayerAction(activeAction.action, {elements: [ElementsEnum.Water]}) && battleSteps.length > 0) {
+            yield true;
+            yield {
+                battleContextAction: {
+                    removeEffect: this
+                }                
+            };
+        }
     }
 }
 
-module.exports = {AblazedEffect, effect: AblazedEffect};
+module.exports = {AblazedEffect};

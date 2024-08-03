@@ -4,6 +4,7 @@
  * @import {CollectionContainer} from './utilities'
  * @import {DatastoreConstructor} from './datastore-object'
  * @import {WeaponData} from './weapon'
+ * @import {AbilityData} from './ability'
  */
 
 const DatastoreObject = require('./datastore-object');
@@ -374,6 +375,11 @@ class Agent extends DatastoreObject {
         }
     }
     
+    /**
+     * 
+     * @param {string} abilityName 
+     * @returns {AbilityData | undefined}
+     */
     removeAbility(abilityName) {
         const abilities = this.datastoreObject.abilities;
         const abilityIndex = abilities.findIndex(element => element.name === abilityName);
@@ -420,7 +426,9 @@ class Agent extends DatastoreObject {
      * @param {EffectData} effectData 
      */
     setEffect(effectData) {
-        this.getData().effectsMap[effectData.persistentId] = effectData;
+        if (effectData.persistentId) {
+            this.getData().effectsMap[effectData.persistentId] = effectData;
+        }
     }
 
     /**

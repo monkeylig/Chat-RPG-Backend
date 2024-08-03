@@ -6,6 +6,7 @@ const { generateAbilityActions, generateMoveActions } = require("../ability-util
 const Ability = require("../../datastore-objects/ability");
 const { BattleContext } = require("../battle-context");
 const Item = require("../../datastore-objects/item");
+const animations = require("../../content/animations");
 
 test('Generate root level hit action', () => {
     const battleContext = new BattleContext();
@@ -300,17 +301,23 @@ test('Post Actions', () => {
 
 describe.each([
     ['trueDamage', 0.3],
-    ['defensePen', 0.5]
+    ['defensePen', 0.5],
+    ['addAbility', new Ability()],
+    ['removeAbility', 'coolAbility'],
 ])('%s player action field test', (field, value) => {
     test('propagation', () => {
         const battleContext = new BattleContext();
-        const ability = new Ability({
+        const abilityData = {
             [field]: value,
             target: 'opponent',
-        });
+            animation: undefined,
+            name: '',
+            speed: 0,
+            description: ''
+        };
 
 
-        const actions = generateAbilityActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+        const actions = generateAbilityActions(battleContext.player, abilityData, battleContext, {skipAnimation: true});
         let action = /**@type {Action} */(actions.next().value);
 
         if (!action.playerAction || !action.playerAction[field]) {

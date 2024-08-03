@@ -18,7 +18,7 @@ const gameplayObjects = {
         drenched: {
             name: 'drenched',
             healthThreshold: 0.20,
-            lightningAmp: 0.2,
+            trueDamage: 20,
             roundsLeft: 5,
         },
         frozen: {

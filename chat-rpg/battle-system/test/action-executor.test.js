@@ -14,6 +14,7 @@ const { BattleContext } = require("../battle-context");
 const { Effect } = require("../effect");
 const { StrikeBattleMove } = require("../strike-battle-move");
 const { findBattleStep } = require("../utility");
+const Ability = require("../../datastore-objects/ability");
 
 test('Empty action', () => {
     const battleContext = new BattleContext();
@@ -207,7 +208,9 @@ describe.each([
     ['heal', 'heal'],
     ['absorb', 'heal', 1, {baseDamage: 10}],
     ['trueDamage', 'damage'],
-    ['protection', 'protection', 0, {}, {physical: 5}]
+    ['protection', 'protection', 0, {}, {physical: 5}],
+    ['addAbility', 'addAbility', 0, {}, new Ability().getData()],
+    ['removeAbility', 'removeAbility', 0, {}, 'coolAbility']
 // @ts-ignore
 ])('%s test', (field, stepType, index=0, data={}, value=0.5) => {
     test('Basic', () => {

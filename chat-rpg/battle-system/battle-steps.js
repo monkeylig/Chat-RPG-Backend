@@ -6,6 +6,7 @@
  * @import {Action, ActionGeneratorModFunction, PlayerActionType} from './action'
  * @import {GConstructor} from '../utility'
  * @import {ProtectionData} from './action'
+ * @import {AbilityData} from '../datastore-objects/ability'
  */
 
 const { BattleWeapon, BattleAgent, BattlePlayer } = require('../datastore-objects/battle-agent');
@@ -14,6 +15,7 @@ const chatRPGUtility = require('../utility');
 const { AblazedEffect } = require('./effects/ablazed-effect');
 const {ElementsEnum} = require('./action');
 const { SurgedEffect } = require('./effects/surged-effect');
+const { DrenchedEffect } = require('./effects/drenched-effect');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
 const ELEMENTAL_BURST_BONUS = 1.5;
@@ -108,19 +110,25 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
 
         /**
          * @param {GConstructor<Effect>} InflictEffect
+         * @param {Object} inputData
          */
-        const inflict = (InflictEffect) => {
-            const inflictEffect = new InflictEffect(targetPlayer, {trueDamage: ablazed.trueDamage, roundsLeft: ablazed.roundsLeft});
+        const inflict = (InflictEffect, inputData) => {
+            const inflictEffect = new InflictEffect(targetPlayer, inputData);
             steps.push(addEffect(battleContext, inflictEffect));
         };
-        if(searchElements(ElementsEnum.Fire)) {
+        if(searchElements(ElementsEnum.Fire) && !battleContext.getEffectCount('DrenchedEffect', targetPlayer)) {
             if(chatRPGUtility.chance(ablazed.inflictChance)) {
-                inflict(AblazedEffect);
+                inflict(AblazedEffect, {trueDamage: ablazed.trueDamage, roundsLeft: ablazed.roundsLeft});
             }
         }
         else if(searchElements(ElementsEnum.Lightning)) {
             if(chatRPGUtility.chance(surged.inflictChance)) {
-                inflict(SurgedEffect);
+                inflict(SurgedEffect, {trueDamage: surged.trueDamage, roundsLeft: surged.roundsLeft});
+            }
+        }
+        else if(searchElements(ElementsEnum.Water) && !battleContext.getEffectCount('AblazedEffect', targetPlayer)) {
+            if (damage >= targetPlayer.getData().maxHealth * drenched.healthThreshold) {
+                inflict(DrenchedEffect, {trueDamage: drenched.trueDamage, roundsLeft: drenched.roundsLeft});
             }
         }
     }
@@ -456,21 +464,20 @@ function empowermentStep(battlePlayer, empowerType, empowerValue) {
  * @typedef {BattleStep & {
  * targetId: string,
  * protection: ProtectionData
- * }}
+ * }} ProtectionStep
  * 
  * @param {BattleAgent} battlePlayer 
  * @param {PlayerActionType} type 
  * @param {number} value 
- * @returns 
+ * @returns {ProtectionStep}
  */
-function protectionStep(battlePlayer, type, value) {
+function protection(battlePlayer, type, value) {
     const protectionGained = battlePlayer.addProtection(type, value);
     return {
         type: 'protection',
         targetId: battlePlayer.getData().id,
         protection: {
-            type,
-            value: protectionGained
+            [type]:protectionGained 
         },
         description: `${battlePlayer.getData().name} gained ${value}% ${type} protection!`
     };
@@ -640,21 +647,41 @@ function setCounterStep(targetAgent, counterAbility, counterType) {
     };
 }
 
-function addAbilityStep(targetAgent, ability) {
-    targetAgent.addAbility(ability.getData());
+/**
+ * @typedef {BattleStep & {
+ * ability: AbilityData,
+ * targetId: string
+ * }} AddAbilityStep
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {AbilityData} ability 
+ * @returns {AddAbilityStep}
+ */
+function addAbility(targetAgent, ability) {
+    targetAgent.addAbility(ability);
 
     return {
         type: 'addAbility',
-        ability: ability.getData(),
+        ability: ability,
         targetId: targetAgent.getData().id,
     };
 }
 
-function removeAblityStep(targetAgent, abilityName) {
+/**
+ * @typedef {BattleStep & {
+ * targetId: string,
+ * ability?: AbilityData
+ * }} RemoveAbilityStep
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {string} abilityName 
+ * @returns {RemoveAbilityStep}
+ */
+function removeAbility(targetAgent, abilityName) {
     const abilityData = targetAgent.removeAbility(abilityName);
 
     return {
-        type: 'removeAblity',
+        type: 'removeAbility',
         targetId: targetAgent.getData().id,
         ability: abilityData
     };
@@ -830,7 +857,7 @@ const BattleSteps = {
     iceResistAmp: iceResistAmpStep,
     weaponSpeedAmp: weaponSpeedAmpStep,
     empowerment: empowermentStep,
-    protection: protectionStep,
+    protection,
     revive: reviveStep,
     apCost: apCostStep,
     apGain: apGainStep,
@@ -841,8 +868,8 @@ const BattleSteps = {
     imbue: imbueStep,
     removeImbue: removeImbueStep,
     setCounter: setCounterStep,
-    addAbility: addAbilityStep,
-    removeAbility: removeAblityStep,
+    addAbility,
+    removeAbility,
     addAbilityStrike: addAbilityStrikeStep,
     strikeLevelChange: strikeLevelChangeStep,
     consumeItem,

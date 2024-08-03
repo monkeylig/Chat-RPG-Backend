@@ -3,9 +3,8 @@
  * @import {BattleStep} from "./battle-steps"
  * @import {BattleContext} from "./battle-context"
  * @import {AbilityActionData} from "../datastore-objects/ability"
+ * @import {BattleAgent} from "../datastore-objects/battle-agent"
  */
-
-const { BattleAgent } = require("../datastore-objects/battle-agent");
 
 /**
  * 
@@ -46,6 +45,66 @@ function findElement(element, elements) {
 
 /**
  * 
+ * @param {Action} action 
+ * @param {{
+ * elements?: string[],
+ * targetAgent?: BattleAgent,
+ * isAttack?: boolean
+ * }} [attackFilter]
+ * @returns {boolean} 
+ */
+function matchPlayerAction(action, attackFilter) {
+    const playerAction = action.playerAction;
+    if (!playerAction) {
+        return false;  
+    }
+
+    if(attackFilter) {
+        if (attackFilter.isAttack !== undefined) {
+            if (attackFilter.isAttack && !playerAction.baseDamage) {
+                return false;
+            }
+            else if (!attackFilter.isAttack && playerAction.baseDamage) {
+                return false;
+            }
+        }
+    
+        if (attackFilter.targetAgent && attackFilter.targetAgent !== playerAction.targetPlayer) {
+            return false;
+        } 
+        
+        if (attackFilter.elements) {
+            if (!playerAction.elements) {
+                return false;
+            }
+    
+            for (const element of attackFilter.elements) {
+                if (!playerAction.elements.find((arrItem) => arrItem === element)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+/**
+ * 
+ * @param {Action} action 
+ * @param {{
+* elements?: string[],
+* targetAgent?: BattleAgent,
+* isAttack?: boolean
+* }} [attackFilter]
+* @returns {boolean} 
+*/
+function matchAttackAction(action, attackFilter) {
+    return matchPlayerAction(action, {...attackFilter, isAttack: true})
+}
+
+/**
+ * 
  * @param {BattleAgent} user 
  * @param {AbilityActionData} actionData 
  * @param {BattleContext} battleContext 
@@ -71,7 +130,9 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
             protection: actionData.protection,
             defenseAmp: actionData.defenseAmp,
             strengthAmp: actionData.strengthAmp,
-            lightningResistAmp: actionData.lightningResistAmp
+            lightningResistAmp: actionData.lightningResistAmp,
+            addAbility: actionData.addAbility,
+            removeAbility: actionData.removeAbility
         },
     };
 
@@ -114,4 +175,12 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
     yield action;
 }
 
-module.exports = {getTarget, findBattleStep, findElement, generateStandardActions}
+module.exports = {
+    getTarget,
+    findBattleStep,
+    findElement,
+    generateStandardActions,
+    matchPlayerAction,
+    matchAttackAction,
+
+}

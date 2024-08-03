@@ -16,7 +16,8 @@ const animations = require('../content/animations');
  * speed: number,
  * description: string,
  * apCost?: number,
- * postActions: AbilityActionData[]
+ * postActions?: AbilityActionData[],
+ * charges?: number
  * }} AbilityData
  */
 
@@ -55,27 +56,17 @@ class Ability extends DatastoreObject {
         ability.recoil = 0;
         ability.protection = null;
         ability.description = 'This is an empty default ability.';
-        ability.effectName = '';
         ability.animation = null;
-        ability.specialStats = {};
         ability.ablazeChance = 0;
         ability.fireResistAmp = 0;
         ability.lightningResistAmp = 0;
         ability.waterResistAmp = 0;
         ability.iceResistAmp = 0;
         ability.defensePen = 0;
-        ability.imbue = {
-            fire: null,
-            lightning: null,
-            water: null,
-            ice: null,
-        };
         ability.isCounter = false;
         ability.overrideDamageModifier = null;
-        ability.charges = null;
-        ability.addAbilities = []
-        ability.addAbilityStrikes = [];
-        ability.setCounterAbility = null;
+        ability.charges = -1;
+        ability.addAbility = null;
     }
 
     getSpecialStat(stat, defaultValue = 0) {

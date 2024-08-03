@@ -2,6 +2,7 @@
  * @import {ActionGenerator} from "./action-generator"
  * @import {BattleAgent} from "../datastore-objects/battle-agent"
  * @import {Effect, EffectData} from "./effect"
+ * @import {AbilityData} from "../datastore-objects/ability"
  */
 
 /**
@@ -42,8 +43,8 @@ const ElementsEnum = {
 
 /**
  * @typedef {Object} ProtectionData
- * @property {number} physical
- * @property {number} magical
+ * @property {number} [physical]
+ * @property {number} [magical]
  * 
  * @typedef {Object} AgentActionData
  * @property {PlayerActionType} [type] - The action's type
@@ -59,6 +60,8 @@ const ElementsEnum = {
  * @property {number} [absorb]
  * @property {number} [revive]
  * @property {ProtectionData} [protection]
+ * @property {AbilityData} [addAbility]
+ * @property {string} [removeAbility]
  * @property {number} [defenseAmp]
  * @property {number} [strengthAmp]
  * @property {number} [weaponSpeedAmp]

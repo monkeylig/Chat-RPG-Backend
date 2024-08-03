@@ -223,6 +223,7 @@ test('Generate Hit Steps: weapon synergy', () => {
 describe.each([
     ['Ablazed', 'fire', gameplayObjects.statusEffects.ablazed, '5'],
     ['Surged', 'lightning', gameplayObjects.statusEffects.surged, '5'],
+    ['Drenched', 'water', gameplayObjects.statusEffects.drenched, '5'],
 ])('Generate Hit Steps: %s', (statusName, element, statusEffect, randomSeed) => {
     test('Basic test', () => {
         chatRPGUtility.random = seedrandom(randomSeed);
@@ -319,7 +320,7 @@ test('Adding and removing abilities', () => {
     const player1 = new BattlePlayer({id: 'player'});
     const ability = new Ability({name: 'test'});
 
-    const addAbilityStep = BattleSteps.addAbility(player1, ability);
+    const addAbilityStep = BattleSteps.addAbility(player1, ability.getData());
 
     expect(addAbilityStep.type).toBe('addAbility');
     expect(addAbilityStep.ability).toStrictEqual(ability.getData());
@@ -327,7 +328,7 @@ test('Adding and removing abilities', () => {
 
     const removeAblityStep = BattleSteps.removeAbility(player1, ability.getData().name);
 
-    expect(removeAblityStep.type).toBe('removeAblity');
+    expect(removeAblityStep.type).toBe('removeAbility');
     expect(removeAblityStep.ability).toStrictEqual(ability.getData());
     expect(removeAblityStep.targetId).toBe(player1.getData().id);
 });

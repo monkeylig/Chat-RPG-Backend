@@ -7,7 +7,8 @@ const { ActionExecutor } = require("../../action-executor");
 const { BattleContext } = require("../../battle-context");
 const { BattleMove } = require("../../battle-move");
 const { AblazedEffect } = require("../ablazed-effect");
-const { PlayerActionType } = require("../../action");
+const { PlayerActionType, PlayerActionStyle, ElementsEnum } = require("../../action");
+const BattleSteps = require("../../battle-steps");
 
 test('Gaining Ablaze', () => {
     const battleContext = new BattleContext();
@@ -120,6 +121,43 @@ test('Triggering damage', () => {
     expect(action.battleContextAction.removeEffect).toBe(ablazedEffect);
 
     lastYield = actionGen.next();
+
+    expect(lastYield.done).toBeTruthy();
+});
+
+test('Interaction with water', () => {
+    const battleContext = new BattleContext();
+    const ablazedEffect = new AblazedEffect(battleContext.player, {trueDamage: 20, roundsLeft: 2});
+
+    const battleMove = new BattleMove(battleContext.player);
+
+    /**@type {Action} */
+    const testAction = {
+        playerAction: {
+            targetPlayer: battleContext.player,
+            baseDamage: 10,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            elements: [ElementsEnum.Water]
+        }
+    };
+    const testGen = battleMove.onActivate(battleContext);
+    const actionGen = ablazedEffect.onActionEnd(battleContext, {
+        creator: battleMove,
+        generator: testGen,
+        action: testAction
+    }, [BattleSteps.damage(battleContext.player, 1, PlayerActionType.Magical)]);
+
+    const firstYield = actionGen.next();
+
+    expect(firstYield.value).toBe(true);
+
+    let action = /**@type {Action}*/(actionGen.next().value);
+
+    if (!action.battleContextAction) {fail();}
+    expect(action.battleContextAction.removeEffect).toBe(ablazedEffect);
+
+    let lastYield = actionGen.next();
 
     expect(lastYield.done).toBeTruthy();
 });

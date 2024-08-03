@@ -8,6 +8,7 @@ const { EmpowermentEffect } = require("./empowerment-effect");
 const { ReviveEffect } = require("./revive-effect");
 const { AbilityStrikeEffect } = require('./ability-strike-effect');
 const { SurgedEffect } = require("./surged-effect");
+const { DrenchedEffect } = require("./drenched-effect");
 
 /**
  * 
@@ -57,7 +58,8 @@ const EffectsLibrary = {
     EmpowermentEffect,
     AblazedEffect,
     SurgedEffect,
-    AbilityStrikeEffect
+    DrenchedEffect,
+    AbilityStrikeEffect,
 };
 
 module.exports = {
