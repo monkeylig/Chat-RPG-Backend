@@ -1,10 +1,10 @@
 /**
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {Action} from "../action"
+ * @import {BattleContext} from "../battle-context"s
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
-const { BattleContext } = require("../battle-context");
 const { generateStandardActions } = require("../utility");
 
 /**

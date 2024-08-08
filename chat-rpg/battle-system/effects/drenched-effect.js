@@ -23,7 +23,7 @@ class DrenchedEffect extends Effect {
     constructor(targetAgent, inputData) {
         super(targetAgent, inputData);
 
-        this.name = "DrenchedEffect";
+        this.name = "Drenched";
         this.unique = true;
 
         if (!this._inputData.trueDamage) {

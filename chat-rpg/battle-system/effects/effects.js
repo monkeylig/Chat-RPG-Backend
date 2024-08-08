@@ -9,6 +9,7 @@ const { ReviveEffect } = require("./revive-effect");
 const { AbilityStrikeEffect } = require('./ability-strike-effect');
 const { SurgedEffect } = require("./surged-effect");
 const { DrenchedEffect } = require("./drenched-effect");
+const { ImbueEffect } = require("./imbue-effect");
 
 /**
  * 
@@ -60,6 +61,7 @@ const EffectsLibrary = {
     SurgedEffect,
     DrenchedEffect,
     AbilityStrikeEffect,
+    ImbueEffect
 };
 
 module.exports = {

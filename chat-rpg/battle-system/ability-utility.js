@@ -3,11 +3,11 @@
  * @import {AbilityData} from "../datastore-objects/ability"
  * @import {ItemData} from "../datastore-objects/item"
  * @import {AbilityActionData} from "../datastore-objects/ability"
+ * @import {BattleContext} from "./battle-context"
  */
 
 const AbilityTypes = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
-const { BattleContext } = require("./battle-context");
 const customActions = require("./custom-actions/custom-actions");
 const { getTarget, generateStandardActions } = require("./utility");
 

@@ -1,12 +1,12 @@
 /**
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {Action} from "../action"
+ * @import {BattleContext} from "../battle-context"s
  */
 
 const Ability = require("../../datastore-objects/ability");
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { getRandomIntInclusive } = require("../../utility");
-const { BattleContext } = require("../battle-context");
 const { getTarget, generateStandardActions } = require("../utility");
 
 /**

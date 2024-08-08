@@ -8,6 +8,7 @@ const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const endpoints = require('./endpoints/endpoints');
 const utility = require('./utility');
+const { type } = require('os');
 let twitchExtentionSecret;
 
 function twitchJWTValidation(req, res, next) {
@@ -28,7 +29,7 @@ function twitchJWTValidation(req, res, next) {
         return;
     }
 
-    auth = authHeader.split(' ');
+    const auth = authHeader.split(' ');
 
     if(auth[0] !== 'bearer') {
         rejectRequest('Unauthorized');
@@ -39,7 +40,7 @@ function twitchJWTValidation(req, res, next) {
         const payload = utility.verifyJWT(auth[1], twitchExtentionSecret);
         req.twitchUser = payload;
     }
-    catch (error) {
+    catch (/**@type {any}*/error) {
         res.status(401);
         res.set('Access-Control-Allow-Origin', '*');
         res.send(error.message);

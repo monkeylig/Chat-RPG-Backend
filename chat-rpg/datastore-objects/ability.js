@@ -4,21 +4,27 @@ const animations = require('../content/animations');
 
 /** 
  * @typedef {AgentActionData & {
- * animation: object,
  * target: TargetEnum,
+ * animation?: object,
  * customActions?: {name: string, data: object},
  * addEffect?: {class: string, inputData?: Object},
  * empowerment?: {physical?: number, magical?: number}
  * }} AbilityActionData
  * 
  * @typedef {AbilityActionData & {
- * name: string,
- * speed: number,
- * description: string,
+ * name?: string,
+ * description?: string,
+ * speed?: number,
  * apCost?: number,
  * postActions?: AbilityActionData[],
  * charges?: number
  * }} AbilityData
+ * 
+ * @typedef {AbilityData & {
+ * name: string,
+ * description: string,
+ * speed: number,
+ * }} TopLevelAbilityData
  */
 
 class Ability extends DatastoreObject {
