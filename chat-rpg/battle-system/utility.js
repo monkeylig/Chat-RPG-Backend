@@ -4,7 +4,10 @@
  * @import {BattleContext} from "./battle-context"
  * @import {AbilityActionData} from "../datastore-objects/ability"
  * @import {BattleAgent} from "../datastore-objects/battle-agent"
+ * @import {ActionGeneratorCreator} from "./battle-system-types"
  */
+
+const { GeneratorCreatorType } = require("./battle-system-types");
 
 /**
  * 
@@ -44,45 +47,55 @@ function findElement(element, elements) {
 }
 
 /**
+ * @typedef {Object} ActionFilter
+ * @property {string[]} [elements]
+ * @property {BattleAgent} [targetAgent]
+ * @property {BattleAgent} [srcAgent]
+ * @property {boolean} [isAttack]
+ * @property {string} [style]
  * 
  * @param {Action} action 
- * @param {{
- * elements?: string[],
- * targetAgent?: BattleAgent,
- * isAttack?: boolean
- * }} [attackFilter]
+ * @param {ActionFilter} [actionFilter]
  * @returns {boolean} 
  */
-function matchPlayerAction(action, attackFilter) {
+function matchPlayerAction(action, actionFilter) {
     const playerAction = action.playerAction;
     if (!playerAction) {
         return false;  
     }
 
-    if(attackFilter) {
-        if (attackFilter.isAttack !== undefined) {
-            if (attackFilter.isAttack && !playerAction.baseDamage) {
+    if(actionFilter) {
+        if (actionFilter.isAttack !== undefined) {
+            if (actionFilter.isAttack && !playerAction.baseDamage) {
                 return false;
             }
-            else if (!attackFilter.isAttack && playerAction.baseDamage) {
+            else if (!actionFilter.isAttack && playerAction.baseDamage) {
                 return false;
             }
         }
     
-        if (attackFilter.targetAgent && attackFilter.targetAgent !== playerAction.targetPlayer) {
+        if (actionFilter.targetAgent && actionFilter.targetAgent !== playerAction.targetPlayer) {
+            return false;
+        }
+
+        if (actionFilter.srcAgent && actionFilter.srcAgent !== playerAction.srcPlayer) {
             return false;
         } 
         
-        if (attackFilter.elements) {
+        if (actionFilter.elements) {
             if (!playerAction.elements) {
                 return false;
             }
     
-            for (const element of attackFilter.elements) {
+            for (const element of actionFilter.elements) {
                 if (!playerAction.elements.find((arrItem) => arrItem === element)) {
                     return false;
                 }
             }
+        }
+
+        if (actionFilter.style && actionFilter.style != playerAction.style) {
+            return false;
         }
     }
 
@@ -92,15 +105,23 @@ function matchPlayerAction(action, attackFilter) {
 /**
  * 
  * @param {Action} action 
- * @param {{
-* elements?: string[],
-* targetAgent?: BattleAgent,
-* isAttack?: boolean
-* }} [attackFilter]
+ * @param {ActionFilter} [attackFilter]
 * @returns {boolean} 
 */
 function matchAttackAction(action, attackFilter) {
     return matchPlayerAction(action, {...attackFilter, isAttack: true})
+}
+
+/**
+ * 
+ * @param {ActionGeneratorCreator} creator 
+ * @returns {boolean}
+ */
+function isBattleMove(creator) {
+    return creator.creatorType === GeneratorCreatorType.Ability || 
+        creator.creatorType === GeneratorCreatorType.Strike ||
+        creator.creatorType === GeneratorCreatorType.StrikeAbility ||
+        creator.creatorType === GeneratorCreatorType.Item;
 }
 
 /**
@@ -120,6 +141,7 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
             baseDamage: actionData.baseDamage,
             trueDamage: actionData.trueDamage,
             defensePen: actionData.defensePen,
+            overrideDamageModifier: actionData.overrideDamageModifier,
             elements: actionData.elements,
             targetPlayer: target,
             srcPlayer: user,
@@ -182,5 +204,6 @@ module.exports = {
     generateStandardActions,
     matchPlayerAction,
     matchAttackAction,
+    isBattleMove,
 
 }

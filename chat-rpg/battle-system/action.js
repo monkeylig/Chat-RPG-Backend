@@ -66,6 +66,7 @@ const ElementsEnum = {
  * @property {number} [strengthAmp]
  * @property {number} [weaponSpeedAmp]
  * @property {number} [lightningResistAmp]
+ * @property {string} [overrideDamageModifier]
  */
 
 /**
@@ -88,6 +89,9 @@ const ElementsEnum = {
  * @typedef {Object} BattleContextAction
  * @property {Effect} [removeEffect]
  * @property {EffectData} [addEffect]
+ * @property {ActionGenerator} [removeActionGenerator]
+ * @property {string} [targetId]
+ * @property {string} [action]
  */
 
 /**

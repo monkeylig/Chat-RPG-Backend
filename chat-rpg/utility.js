@@ -50,13 +50,14 @@ function findInObjectArray(arr, matcher, matchValue) {
 }
 
 /**
+ * @template {any} T
  * 
- * @param {any[]} arr 
- * @param {any} value 
- * @returns {any | undefined}
+ * @param {T[]} arr 
+ * @param {T} value 
+ * @returns {T | undefined}
  */
 function findAndRemoveFromArray(arr, value) {
-    const objectIndex = arr.find(element => element === value);
+    const objectIndex = arr.findIndex(element => element === value);
 
     if(objectIndex === -1) {
         return;

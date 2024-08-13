@@ -18,6 +18,7 @@ const { StrikeAbilityBattleMove } = require('../strike-ability-battle-move');
 const { StrikeBattleMove } = require('../strike-battle-move');
 const { Battle } = require('../../datastore-objects/battle');
 const { findBattleStep } = require('../utility');
+const { ActionGeneratorCreator } = require('../battle-system-types');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -616,4 +617,27 @@ test('Action Data Mod', () => {
     expect(step.targetId).toMatch('player');
     expect(step.description).toMatch('Buffing damage');
     expect(action.playerAction?.baseDamage).toBe(20);
+});
+
+test('Removing Action Generators', () => {
+    const battleContext = new BattleContext();
+    const strike = new StrikeBattleMove(battleContext.player);
+    const strikeActionGen = strike.onActivate(battleContext);
+    let step = BattleSteps.removeActionGenerator(battleContext, strikeActionGen, battleContext.player.getData().id, "counter");
+
+    expect(step.type).toMatch('removeActionGenerator');
+    expect(step.successful).toBeFalsy();
+    expect(step.action).toMatch('counter');
+
+    battleContext.addActionGenerator(strikeActionGen, new ActionGeneratorCreator());
+    step = BattleSteps.removeActionGenerator(battleContext, strikeActionGen, battleContext.player.getData().id, "counter");
+
+    expect(step.type).toMatch('removeActionGenerator');
+    expect(step.successful).toBeTruthy();
+    expect(step.targetId).toMatch('player');
+    expect(step.action).toMatch('counter');
+
+    const ag = battleContext.getTopActionGenerator();
+
+    expect(ag).toBeUndefined();
 });

@@ -304,6 +304,7 @@ describe.each([
     ['defensePen', 0.5],
     ['addAbility', new Ability()],
     ['removeAbility', 'coolAbility'],
+    ['overrideDamageModifier', 'defense'],
 ])('%s player action field test', (field, value) => {
     test('propagation', () => {
         const battleContext = new BattleContext();

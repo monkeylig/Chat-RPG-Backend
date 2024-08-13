@@ -210,9 +210,9 @@ describe.each([
     ['trueDamage', 'damage'],
     ['protection', 'protection', 0, {}, {physical: 5}],
     ['addAbility', 'addAbility', 0, {}, new Ability().getData()],
-    ['removeAbility', 'removeAbility', 0, {}, 'coolAbility']
+    ['removeAbility', 'removeAbility', 0, {}, 'coolAbility'],
 // @ts-ignore
-])('%s test', (field, stepType, index=0, data={}, value=0.5) => {
+])('playerAction.%s test', (field, stepType, index=0, data={}, value=0.5) => {
     test('Basic', () => {
         const battleContext = new BattleContext();
         const player = battleContext.player;
@@ -235,7 +235,30 @@ describe.each([
         expect(reviveStep.type).toMatch(stepType);
         expect(reviveStep.targetId).toBe('player');
     });
-})
+});
+
+describe.each([
+    ['removeActionGenerator', 'removeActionGenerator', 0, {targetId: 'player'}, {}],
+// @ts-ignore
+])('battleContextAction.%s test', (field, stepType, index=0, data={action: 'action'}, value=0.5) => {
+    test('Basic', () => {
+        const battleContext = new BattleContext();
+        const player = battleContext.player;
+        /** @type {Action} */
+        const apChangeAction = {
+            battleContextAction: {
+                [field]: value,
+                ...data
+            }
+        }
+
+        let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
+
+        const step = battleSteps[index];
+
+        expect(step.type).toMatch(stepType);
+    });
+});
 
 test('Defence Penetration', () => {
     const battleContext = new BattleContext();
@@ -254,6 +277,32 @@ test('Defence Penetration', () => {
     let battleSteps = ActionExecutor.execute(damageAction, battleContext);
     // @ts-ignore
     damageAction.playerAction.defensePen = 0.5;
+    let penBattleSteps = ActionExecutor.execute(damageAction, battleContext);
+
+    const damageStep = /** @type {DamageStep} */(findBattleStep('damage', battleSteps));
+    const penDamageStep = /** @type {DamageStep} */(findBattleStep('damage', penBattleSteps));
+
+    expect(penDamageStep.damage).toBeGreaterThan(damageStep.damage);
+});
+
+test('Override Damage Modifier', () => {
+    const battleContext = new BattleContext();
+    battleContext.player.setStatsAtLevel(100);
+    battleContext.player.getData().defense *= 2;
+    /** @type {Action} */
+    const damageAction = {
+        playerAction: {
+            targetPlayer: battleContext.player,
+            srcPlayer: battleContext.player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            baseDamage: 10
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(damageAction, battleContext);
+    // @ts-ignore
+    damageAction.playerAction.overrideDamageModifier = 'defense';
     let penBattleSteps = ActionExecutor.execute(damageAction, battleContext);
 
     const damageStep = /** @type {DamageStep} */(findBattleStep('damage', battleSteps));

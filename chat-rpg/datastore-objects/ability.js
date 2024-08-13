@@ -14,10 +14,11 @@ const animations = require('../content/animations');
  * @typedef {AbilityActionData & {
  * name?: string,
  * description?: string,
+ * baseDamageTextModifier?: string
  * speed?: number,
  * apCost?: number,
  * postActions?: AbilityActionData[],
- * charges?: number
+ * charges?: number,
  * }} AbilityData
  * 
  * @typedef {AbilityData & {

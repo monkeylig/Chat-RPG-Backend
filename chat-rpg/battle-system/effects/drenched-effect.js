@@ -94,15 +94,32 @@ class DrenchedEffect extends Effect {
                     action: 'drenched'
                 }
             };
+            return;
         }
 
-        if (matchPlayerAction(activeAction.action, {elements: [ElementsEnum.Fire]}) && battleSteps.length > 0) {
+        if (matchPlayerAction(activeAction.action, {elements: [ElementsEnum.Fire], targetAgent: this.targetPlayer})) {
             yield true;
             yield {
                 battleContextAction: {
                     removeEffect: this
                 }                
             };
+            return;
+        }
+
+        if (matchAttackAction(activeAction.action, {elements: [ElementsEnum.Ice], targetAgent: this.targetPlayer})) {
+            yield true;
+            yield {
+                battleContextAction: {
+                    removeEffect: this,
+                    addEffect: {
+                        className: 'FrozenEffect',
+                        targetId: this.targetPlayer.getData().id,
+                        inputData: {}
+                    }
+                }
+            };
+            return;
         }
     }
 

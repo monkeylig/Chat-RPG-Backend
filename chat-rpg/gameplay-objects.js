@@ -24,8 +24,8 @@ const gameplayObjects = {
         frozen: {
             name: 'frozen',
             drenchedInflict: 0.5,
-            attackChance: 0.5,
-            roundsLeft: 3,
+            attackChance: 1,
+            roundsLeft: 1,
         }
     },
     startingWeapons: {

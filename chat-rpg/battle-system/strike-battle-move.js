@@ -7,8 +7,7 @@ const Ability = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const chatRPGUtility = require("../utility");
 const { generateAbilityActions } = require("./ability-utility");
-const { PlayerActionType, PlayerActionStyle, TargetEnum } = require("./action");
-const { ActionGenerator } = require("./action-generator");
+const { TargetEnum } = require("./action");
 const { BattleContext } = require("./battle-context");
 const { BattleMove } = require("./battle-move");
 const { GeneratorCreatorType } = require("./battle-system-types");
@@ -75,7 +74,6 @@ class StrikeBattleMove extends BattleMove {
                 action: 'strike',
                 targetAgentId: target.getData().id,
                 srcAgentId: this.owner.getData().id,
-                animation: chatRPGUtility.strikeAnim
             }
         };
 

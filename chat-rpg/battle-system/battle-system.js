@@ -67,6 +67,7 @@ class BattleSystem {
             return steps;
         }
 
+        steps.push(...this.#battleContext.beginRound());
         const monsterActionRequest = monsterAi.genericAi(this.#battleContext.monster, this.#battleContext.player, this.#battleContext.battle);
 
         const playerMove = this.createBattleAction(playerActionRequest, this.#battleContext.player);
@@ -74,6 +75,7 @@ class BattleSystem {
 
         steps.push(...this.executeBattleIteration(this.#battleContext.player, playerMove, this.#battleContext.monster, monsterMove));
 
+        steps.push(...this.#battleContext.endRound());
         steps.push(...this.checkEndOfGame());
 
         return steps;
@@ -220,10 +222,11 @@ class BattleSystem {
                 throw new Error(ChatRPGErrors.notEnoughAp);
             }
 
+            const abilitySpeed = ability.getData().speed;
             battleMove = {
                 type: 'ability',
                 ability: ability,
-                speed: ability.getData().speed
+                speed: abilitySpeed ? abilitySpeed : 3
             }
         }
         else if(actionRequest.type === 'item' && actionRequest.itemId) {

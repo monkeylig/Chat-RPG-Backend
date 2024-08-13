@@ -7,7 +7,8 @@ describe.each([
     ['SurgedEffect'],
     ['DrenchedEffect'],
     ['AbilityStrikeEffect'],
-    ['ImbueEffect']
+    ['ImbueEffect'],
+    ['FrozenEffect'],
 ])('%s test', (effectClass) => {
     test('Discovery', () => {
         expect(EffectsLibrary[effectClass]).toBeDefined();

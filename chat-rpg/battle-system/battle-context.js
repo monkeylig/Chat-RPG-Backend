@@ -239,6 +239,22 @@ class BattleContext {
 
     /**
      * 
+     * @param {ActionGenerator} actionGenerator
+     * @returns {ActiveActionGenerator | undefined} 
+     */
+    removeActionGenerator(actionGenerator) {
+        const objectIndex = this.#actionGeneratorStack.findIndex(activeActionGenerator => activeActionGenerator.generator === actionGenerator);
+
+        if(objectIndex === -1) {
+            return;
+        }
+
+        const objectData = this.#actionGeneratorStack.splice(objectIndex, 1);
+        return objectData[0];
+    }
+
+    /**
+     * 
      * @param {Effect} effect 
      * @returns {boolean}
      */

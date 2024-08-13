@@ -32,7 +32,11 @@ function executeAction(action, battleContext) {
             const hitSteps = BattleSteps.genHitSteps(playerAction.srcPlayer,
                 playerAction.targetPlayer,
                 playerAction.baseDamage,
-                playerAction.type, playerAction.style, playerAction.elements, battleContext, {defensePen: playerAction.defensePen})
+                playerAction.type, playerAction.style, playerAction.elements, battleContext, {
+                    defensePen: playerAction.defensePen,
+                    overrideDamageModifier: playerAction.overrideDamageModifier
+                });
+                
             steps.push(...hitSteps);
             
             const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', hitSteps));
@@ -138,6 +142,11 @@ function executeAction(action, battleContext) {
         if(battleContextAction.removeEffect) {
             const removeEffectStep = BattleSteps.removeEffect(battleContext, battleContextAction.removeEffect);
             steps.push(removeEffectStep);
+        }
+
+        if(battleContextAction.removeActionGenerator && battleContextAction.targetId) {
+            const removeActionGeneratorStep = BattleSteps.removeActionGenerator(battleContext, battleContextAction.removeActionGenerator, battleContextAction.targetId, battleContextAction.action);
+            steps.push(removeActionGeneratorStep);
         }
     }
 

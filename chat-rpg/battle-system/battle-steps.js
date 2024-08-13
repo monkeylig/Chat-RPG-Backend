@@ -843,6 +843,30 @@ function actionMod(targetAction, modFunction, targetId, action, description) {
     };
 }
 
+/**
+ * @typedef {BattleStep & {
+ * successful: boolean,
+ * action: string,
+ * targetId: string
+ * }} RemoveActionGeneratorStep
+ * 
+ * @param {BattleContext} battleContext 
+ * @param {ActionGenerator} actionGenerator 
+ * @param {string} targetId
+ * @param {string} [action] 
+ * @returns {RemoveActionGeneratorStep}
+ */
+function removeActionGenerator(battleContext, actionGenerator, targetId, action) {
+    const actionGen = battleContext.removeActionGenerator(actionGenerator);
+    
+    return {
+        type: 'removeActionGenerator',
+        successful: actionGen ? true : false,
+        action: action ? action : 'negate',
+        targetId
+    };
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -877,7 +901,8 @@ const BattleSteps = {
     removeEffect,
     actionGeneratorDataMod,
     actionMod,
-    genHitSteps
+    genHitSteps,
+    removeActionGenerator
 };
 
 module.exports = BattleSteps;

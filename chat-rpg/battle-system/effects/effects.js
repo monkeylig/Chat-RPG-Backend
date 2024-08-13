@@ -10,6 +10,7 @@ const { AbilityStrikeEffect } = require('./ability-strike-effect');
 const { SurgedEffect } = require("./surged-effect");
 const { DrenchedEffect } = require("./drenched-effect");
 const { ImbueEffect } = require("./imbue-effect");
+const { FrozenEffect } = require("./frozen-effect");
 
 /**
  * 
@@ -60,6 +61,7 @@ const EffectsLibrary = {
     AblazedEffect,
     SurgedEffect,
     DrenchedEffect,
+    FrozenEffect,
     AbilityStrikeEffect,
     ImbueEffect
 };

@@ -20,6 +20,7 @@ const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
 const { BattleSystem } = require("./battle-system/battle-system");
 const { Battle } = require("./datastore-objects/battle");
+const { BattleContext } = require("./battle-system/battle-context");
 
 class ChatRPG {
     /** @member {IBackendDataSource} */
@@ -196,9 +197,11 @@ class ChatRPG {
             active: true
         });
 
-        await battleRef.set(battle.getData());
+        const battleContext = new BattleContext(battle.getData(), true);
+
+        await battleRef.set(battleContext.battle);
         return {
-            ...battle.getData(),
+            ...battleContext.battle,
             id: battleRef.id
         };
     }
