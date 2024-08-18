@@ -58,14 +58,17 @@ const ElementsEnum = {
  * @property {string} [consumeItem]
  * @property {number} [heal]
  * @property {number} [absorb]
+ * @property {number} [recoil]
  * @property {number} [revive]
  * @property {ProtectionData} [protection]
  * @property {AbilityData} [addAbility]
  * @property {string} [removeAbility]
  * @property {number} [defenseAmp]
  * @property {number} [strengthAmp]
+ * @property {number} [magicAmp]
  * @property {number} [weaponSpeedAmp]
  * @property {number} [lightningResistAmp]
+ * @property {number} [fireResistAmp]
  * @property {string} [overrideDamageModifier]
  */
 
@@ -90,6 +93,10 @@ const ElementsEnum = {
  * @property {Effect} [removeEffect]
  * @property {EffectData} [addEffect]
  * @property {ActionGenerator} [removeActionGenerator]
+ * @property {{
+ * ability: AbilityData,
+ * user: BattleAgent
+ * }} [triggerAbility]
  * @property {string} [targetId]
  * @property {string} [action]
  */

@@ -18,7 +18,8 @@ const { StrikeAbilityBattleMove } = require('../strike-ability-battle-move');
 const { StrikeBattleMove } = require('../strike-battle-move');
 const { Battle } = require('../../datastore-objects/battle');
 const { findBattleStep } = require('../utility');
-const { ActionGeneratorCreator } = require('../battle-system-types');
+const { ActionGeneratorCreator, GeneratorCreatorType } = require('../battle-system-types');
+const { BattleMove } = require('../battle-move');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -327,7 +328,10 @@ test('Adding and removing abilities', () => {
     expect(addAbilityStep.ability).toStrictEqual(ability.getData());
     expect(addAbilityStep.targetId).toBe(player1.getData().id);
 
-    const removeAblityStep = BattleSteps.removeAbility(player1, ability.getData().name);
+    const abilityData = ability.getData();
+    
+    if (!abilityData.name) {fail();}
+    const removeAblityStep = BattleSteps.removeAbility(player1, abilityData.name);
 
     expect(removeAblityStep.type).toBe('removeAbility');
     expect(removeAblityStep.ability).toStrictEqual(ability.getData());
@@ -640,4 +644,22 @@ test('Removing Action Generators', () => {
     const ag = battleContext.getTopActionGenerator();
 
     expect(ag).toBeUndefined();
+});
+
+test('Trigger Abilities', () => {
+    const battleContext = new BattleContext();
+    const abilityData = new Ability({name: 'Ability'}).getData();
+    const triggerStep = BattleSteps.triggerAbility(battleContext, abilityData, battleContext.player);
+
+    expect(triggerStep.type).toMatch('triggerAbility');
+    expect(triggerStep.ability).toStrictEqual(abilityData);
+
+    const actionGen = battleContext.getTopActionGenerator();
+
+    if (!actionGen) {fail();}
+    expect(actionGen.creator.creatorType).toBe(GeneratorCreatorType.Ability)
+
+    const abilityMove = /**@type {BattleMove}*/(actionGen.creator);
+
+    expect(abilityMove.getInputData()).toStrictEqual(abilityData);
 });

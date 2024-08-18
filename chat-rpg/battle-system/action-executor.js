@@ -6,12 +6,11 @@
  */
 
 const { BattlePlayer } = require("../datastore-objects/battle-agent");
-const { calcTrueDamage } = require("../utility");
+const { calcTrueDamage, chance } = require("../utility");
 const BattleSteps = require("./battle-steps");
 const { findBattleStep } = require("./utility");
 const { PlayerActionType } = require('./action');
 const { createEffect } = require("./effects/effects");
-const Ability = require("../datastore-objects/ability");
 
 /**
  * Executes an action that will have side effects on game objects.
@@ -29,6 +28,11 @@ function executeAction(action, battleContext) {
     if(action.playerAction) {
         const playerAction = action.playerAction;
         if(playerAction.baseDamage && playerAction.srcPlayer && playerAction.type && playerAction.style) {
+            const targetAgentData = playerAction.targetPlayer.getData();
+            if (chance(targetAgentData.evasion) && process.env.NODE_ENV !== 'test') {
+                return [BattleSteps.info(`${targetAgentData.name} dodged an attack.`, 'dodge', targetAgentData.id, targetAgentData.id)];
+            }
+
             const hitSteps = BattleSteps.genHitSteps(playerAction.srcPlayer,
                 playerAction.targetPlayer,
                 playerAction.baseDamage,
@@ -40,10 +44,20 @@ function executeAction(action, battleContext) {
             steps.push(...hitSteps);
             
             const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', hitSteps));
-            if(playerAction.absorb && playerAction.absorb > 0 && damageStep.damage > 0) {
-                const absorbStep = BattleSteps.heal(playerAction.srcPlayer, damageStep.damage * playerAction.absorb);
-                steps.push(absorbStep);
-                steps.push(BattleSteps.info(`${playerAction.srcPlayer.getData().name} absorbed ${playerAction.targetPlayer.getData().name}'s health.`, 'absorb', playerAction.srcPlayer.getData().id, playerAction.targetPlayer.getData().id))
+
+            if(damageStep.damage > 0) {
+                if(playerAction.absorb && playerAction.absorb > 0) {
+                    const absorbStep = BattleSteps.heal(playerAction.srcPlayer, damageStep.damage * playerAction.absorb);
+                    steps.push(absorbStep);
+                    steps.push(BattleSteps.info(`${playerAction.srcPlayer.getData().name} absorbed ${playerAction.targetPlayer.getData().name}'s health.`, 'absorb', playerAction.srcPlayer.getData().id, playerAction.targetPlayer.getData().id));
+                }
+    
+                if(playerAction.recoil && playerAction.recoil > 0) {
+                    const recoilStep = BattleSteps.damage(playerAction.srcPlayer, damageStep.damage * playerAction.recoil, playerAction.type);
+                    steps.push(recoilStep);
+                    const id = playerAction.srcPlayer.getData().id;
+                    steps.push(BattleSteps.info(`${playerAction.srcPlayer.getData().name} was hurt by the recoil.`, 'recoil', id, id));
+                }
             }
         }
 
@@ -103,8 +117,13 @@ function executeAction(action, battleContext) {
         }
 
         if(playerAction.strengthAmp) {
-            const defenceAmpStep = BattleSteps.strengthAmp(playerAction.targetPlayer, playerAction.strengthAmp);
-            steps.push(defenceAmpStep);
+            const strengthAmpStep = BattleSteps.strengthAmp(playerAction.targetPlayer, playerAction.strengthAmp);
+            steps.push(strengthAmpStep);
+        }
+
+        if(playerAction.magicAmp) {
+            const magicAmpStep = BattleSteps.magicAmp(playerAction.targetPlayer, playerAction.magicAmp);
+            steps.push(magicAmpStep);
         }
 
         if(playerAction.weaponSpeedAmp) {
@@ -117,6 +136,10 @@ function executeAction(action, battleContext) {
             steps.push(lightningResistAmpStep);
         }
 
+        if(playerAction.fireResistAmp) {
+            const fireResistAmpStep = BattleSteps.fireResistAmp(playerAction.targetPlayer, playerAction.fireResistAmp);
+            steps.push(fireResistAmpStep);
+        }
     }
 
     if(action.infoAction) {
@@ -147,6 +170,12 @@ function executeAction(action, battleContext) {
         if(battleContextAction.removeActionGenerator && battleContextAction.targetId) {
             const removeActionGeneratorStep = BattleSteps.removeActionGenerator(battleContext, battleContextAction.removeActionGenerator, battleContextAction.targetId, battleContextAction.action);
             steps.push(removeActionGeneratorStep);
+        }
+
+        if(battleContextAction.triggerAbility) {
+            const triggerAbility = battleContextAction.triggerAbility;
+            const triggerAbilityStep = BattleSteps.triggerAbility(battleContext, triggerAbility.ability, triggerAbility.user);
+            steps.push(triggerAbilityStep);
         }
     }
 

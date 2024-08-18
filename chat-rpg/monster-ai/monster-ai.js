@@ -15,7 +15,7 @@ const chatRPGUtility = require("../utility");
  * @returns {PlayerActionRequest}
  */
 function genericAi(monster, opponent, battle) {
-    let choice = 0;//chatRPGUtility.getRandomIntInclusive(0, 1);
+    let choice = chatRPGUtility.getRandomIntInclusive(0, 1);
 
     const monsterData = monster.getData();
     if(choice === 1 && monsterData.abilities.length > 0) {

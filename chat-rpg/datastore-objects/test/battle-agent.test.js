@@ -177,23 +177,26 @@ test("Counters", () => {
     expect(player.getCounter('strike')).not.toBeDefined();
 });
 
-test('Imbue Weapon', () => {
-    const weapon = new BattleWeapon();
+test('Evasive Speed', () => {
+    const player = new BattlePlayer();
+    
+    player.setEvasiveSpeed(-1);
 
-    weapon.imbue('fire');
-    weapon.imbue('lightning', 'strikeAbility');
-    let elements = weapon.getImbuedElements();
+    expect(player.getData().evasion).toBe(0);
 
-    expect(elements.length).toBe(2);
-    expect(elements[0]).toBe('fire');
-    expect(elements[1]).toBe('lightning');
-    expect(weapon.getData().imbuements['fire'].durationCondition).toBeNull();
-    expect(weapon.getData().imbuements['lightning'].durationCondition).toBe('strikeAbility');
+    player.setEvasiveSpeed(0);
 
-    weapon.removeImbue('fire');
-    elements = weapon.getImbuedElements();
+    expect(player.getData().evasion).toBe(0);
 
-    expect(weapon.getData().imbuements['fire']).toBeNull();
-    expect(elements.length).toBe(1);
-    expect(elements[0]).toBe('lightning');
+    player.setEvasiveSpeed(5);
+
+    expect(player.getData().evasion).toBe(0.15);
+
+    player.setEvasiveSpeed(10);
+
+    expect(player.getData().evasion).toBe(0.3);
+
+    player.setEvasiveSpeed(20);
+
+    expect(player.getData().evasion).toBe(0.3);
 });

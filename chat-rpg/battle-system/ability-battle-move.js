@@ -16,7 +16,7 @@ class AbilityBattleMove extends BattleMove {
     /**
      * 
      * @param {BattleAgent} srcplayer 
-     * @param {Ability} ability
+     * @param {AbilityData} ability
      */
     constructor(srcplayer, ability) {
         super(srcplayer);
@@ -32,7 +32,7 @@ class AbilityBattleMove extends BattleMove {
      * @returns {AbilityData}
      */
     getInputData() {
-        return this.#ability.getData();
+        return this.#ability;
     }
 
     /**

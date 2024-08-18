@@ -16,6 +16,7 @@ const { AblazedEffect } = require('./effects/ablazed-effect');
 const {ElementsEnum} = require('./action');
 const { SurgedEffect } = require('./effects/surged-effect');
 const { DrenchedEffect } = require('./effects/drenched-effect');
+const { AbilityBattleMove } = require('./ability-battle-move');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
 const ELEMENTAL_BURST_BONUS = 1.5;
@@ -867,6 +868,21 @@ function removeActionGenerator(battleContext, actionGenerator, targetId, action)
     };
 }
 
+/**
+ * 
+ * @param {BattleContext} battleContext 
+ * @param {AbilityData} ability 
+ * @param {BattleAgent} srcPlayer 
+ */
+function triggerAbility(battleContext, ability, srcPlayer) {
+    const abilityMove = new AbilityBattleMove(srcPlayer, ability);
+    battleContext.activateBattleMove(abilityMove);
+    return {
+        type: 'triggerAbility',
+        ability
+    }
+}
+
 const BattleSteps = {
     damage: damageStep,
     heal: healStep,
@@ -902,7 +918,8 @@ const BattleSteps = {
     actionGeneratorDataMod,
     actionMod,
     genHitSteps,
-    removeActionGenerator
+    removeActionGenerator,
+    triggerAbility
 };
 
 module.exports = BattleSteps;

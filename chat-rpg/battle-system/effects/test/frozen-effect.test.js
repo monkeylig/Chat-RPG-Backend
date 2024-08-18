@@ -1,6 +1,5 @@
 /**
  * @import {Action} from "../../action"
- * @import {ActiveActionGenerator} from "../../battle-system-types"
  * @import {ActiveAction} from "../../battle-system-types"
  */
 
@@ -10,7 +9,6 @@ const { ElementsEnum } = require("../../action");
 const { ActionExecutor } = require("../../action-executor");
 const { FrozenEffect } = require("../frozen-effect");
 const { StrikeBattleMove } = require("../../strike-battle-move");
-const { ActionGeneratorCreator } = require("../../battle-system-types");
 
 test('Gaining Frozen', () => {
     const battleContext = new BattleContext();

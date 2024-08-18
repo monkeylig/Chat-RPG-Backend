@@ -22,10 +22,9 @@ function testSuccessRate(testFunc, totalAttempts = 100) {
     return passes / totalAttempts;
 }
 
-test("Basic strikes", () => {
-    chatRPGUtility.random = seedrandom('0');
-    
+test("Basic strikes", () => {    
     const battleSystem = new BattleSystem();
+    battleSystem.battleContext.player.getData().weapon.speed = 1;
 
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
 
@@ -48,6 +47,8 @@ test("Basic strikes", () => {
     expect(/** @type {InfoBattleStep} */(steps[8]).targetId).toMatch('player');
     expect(steps[9].type).toMatch('apChange');
     expect(/** @type {InfoBattleStep} */(steps[9]).targetId).toMatch('player');
+
+    expect(battleSystem.battleContext.player.getData().evasion).not.toBe(0);
 });
 
 test("Strike abilities", () => {
@@ -88,7 +89,33 @@ test("Abilities", () => {
     expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('ability');
     expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
     expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
-    
+
+    expect(battleSystem.battleContext.player.getData().evasion).not.toBe(0);  
+});
+
+test("Move Priority", () => {
+    const ability = new Ability({
+        name: 'testAbility',
+        target: 'opponent',
+        baseDamage: 20,
+        apCost: 1,
+        speed: -1,
+        priority: 1,
+        animation: {}
+    });
+
+    const player = new BattlePlayer({id: 'player'});
+    player.addAbility(ability.getData());
+
+    const battleSystem = new BattleSystem(new Battle({
+        player: player.getData(),
+        monster: new BattleMonster({id: 'monster'}).getData()
+    }).getData());
+    const steps = battleSystem.singlePlayerBattleIteration({type: 'ability', abilityName: 'testAbility', battleId: ""});
+
+    expect(steps[0].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
 });
 
 test("Items", () => {
@@ -139,10 +166,10 @@ test("Losing Battles", () => {
     }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
 
-    expect(battleSystem.battle.active).toBeFalsy();
-    expect(battleSystem.battle.result?.winner).toMatch("monster");
-    expect(battleSystem.battle.player.health).toBe(0);
-    expect(battleSystem.battle.monster.health).toBeGreaterThan(0);
+    expect(battleSystem.battleContext.battle.active).toBeFalsy();
+    expect(battleSystem.battleContext.battle.result?.winner).toMatch("monster");
+    expect(battleSystem.battleContext.battle.player.health).toBe(0);
+    expect(battleSystem.battleContext.battle.monster.health).toBeGreaterThan(0);
 
     const battleEnd = /** @type {BattleEndStep} */(steps[steps.length - 1]);
 
@@ -168,17 +195,17 @@ test("Winning Battles", () => {
     }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
 
-    expect(battleSystem.battle.active).toBeFalsy();
-    expect(battleSystem.battle.monster.health).toBe(0);
-    expect(battleSystem.battle.player.health).toBeGreaterThan(0);
+    expect(battleSystem.battleContext.battle.active).toBeFalsy();
+    expect(battleSystem.battleContext.battle.monster.health).toBe(0);
+    expect(battleSystem.battleContext.battle.player.health).toBeGreaterThan(0);
 
-    if(!battleSystem.battle.result) {
+    if(!battleSystem.battleContext.battle.result) {
         fail();
     }
-    expect(battleSystem.battle.result.winner).toMatch("player");
-    expect(battleSystem.battle.result.expAward).toBeGreaterThan(0);
-    expect(battleSystem.battle.result.levelGain).toBeGreaterThan(0);
-    expect(battleSystem.battle.player.level).toBeGreaterThan(1);
+    expect(battleSystem.battleContext.battle.result.winner).toMatch("player");
+    expect(battleSystem.battleContext.battle.result.expAward).toBeGreaterThan(0);
+    expect(battleSystem.battleContext.battle.result.levelGain).toBeGreaterThan(0);
+    expect(battleSystem.battleContext.battle.player.level).toBeGreaterThan(1);
 
 
     const battleEnd = /** @type {BattleEndStep} */(steps[steps.length - 1]);
@@ -208,11 +235,11 @@ test('Monster Weapon Drop rate', () => {
             monster: monster.getData()
         }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
-        if(!battleSystem.battle.result) {
+        if(!battleSystem.battleContext.battle.result) {
             fail();
         }
 
-        for(const drop of battleSystem.battle.result.drops) {
+        for(const drop of battleSystem.battleContext.battle.result.drops) {
             if(drop.type === 'weapon') {
                 expect(drop.content.name).toMatch('monster weapon');
                 return true;
@@ -243,11 +270,11 @@ test('Monster Coin Drop rate', () => {
             monster: monster.getData()
         }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
-        if(!battleSystem.battle.result) {
+        if(!battleSystem.battleContext.battle.result) {
             fail();
         }
 
-        for(const drop of battleSystem.battle.result.drops) {
+        for(const drop of battleSystem.battleContext.battle.result.drops) {
             if(drop.type === 'coin') {
                 return true;
             }
@@ -279,17 +306,17 @@ test('Low level Monster Coin Drop rate', () => {
             player: player.getData()
         }).getData());
         const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
-        if(!battleSystem.battle.result) {
+        if(!battleSystem.battleContext.battle.result) {
             fail();
         }
 
-        for(const drop of battleSystem.battle.result.drops) {
+        for(const drop of battleSystem.battleContext.battle.result.drops) {
             if(drop.type === 'coin') {
                 return true;
             }
         }
         return false;
-    }, 100);
+    }, 1000);
 
     expect(dropRate).toBeGreaterThan(coinDropRate - 0.05);
     expect(dropRate).toBeLessThan(coinDropRate + 0.05);

@@ -23,7 +23,7 @@ function *generateActions(user, abilityData, inputData, battleContext) {
         abilityData.baseDamage += (weapon.getModifiedSpeed() - weapon.getData().speed) * inputData.damageMultiplier;
     }
 
-    yield* generateStandardActions(user, abilityData, battleContext, {disableCustomActions: true});
+    yield* generateStandardActions(user, abilityData, battleContext);
 }
 
 module.exports = {generateActions};

@@ -45,10 +45,6 @@ class BattleSystem {
         this.#battleContext = new BattleContext(battle);
     }
 
-    get battle() {
-        return this.#battleContext.battle;
-    }
-
     get battleContext() {
         return this.#battleContext;
     }
@@ -194,6 +190,7 @@ class BattleSystem {
      * @typedef {Object} BattleMoveRequest
      * @property {string} type
      * @property {number} speed
+     * @property {number} priority
      * @property {Ability} [ability]
      * @property {Item} [item]
      * 
@@ -202,13 +199,16 @@ class BattleSystem {
      * @returns {BattleMoveRequest}
      */
     createBattleAction(actionRequest, battlePlayer) {
+        battlePlayer.getData().evasion = 0;
         /** @type {BattleMoveRequest} */
         let battleMove = {
             type: actionRequest.type,
-            speed: 0
+            speed: 0,
+            priority: 0            
         };
         if(actionRequest.type === 'strike') {
             battleMove.speed = new BattleWeapon(battlePlayer.getData().weapon).getModifiedSpeed();
+            battlePlayer.setEvasiveSpeed(battleMove.speed);
         }
         else if(actionRequest.type === 'ability') {
             const abilityData = battlePlayer.findAbilityByName(actionRequest.abilityName);
@@ -223,11 +223,11 @@ class BattleSystem {
             }
 
             const abilitySpeed = ability.getData().speed;
-            battleMove = {
-                type: 'ability',
-                ability: ability,
-                speed: abilitySpeed ? abilitySpeed : 3
-            }
+            const abilityPriority = ability.getData().priority;
+            battleMove.ability = ability;
+            battleMove.speed = abilitySpeed ? abilitySpeed : 3;
+            battleMove.priority = abilityPriority ? abilityPriority : 3;
+            battlePlayer.setEvasiveSpeed(battleMove.speed);
         }
         else if(actionRequest.type === 'item' && actionRequest.itemId) {
             const humanPlayer = /** @type {BattlePlayer} */(battlePlayer);
@@ -236,18 +236,11 @@ class BattleSystem {
                 throw new Error(ChatRPGErrors.itemNotEquipped);
             }
             const item = new Item(itemObject.content);
-
-            battleMove = {
-                type: 'item',
-                item: item,
-                speed: ITEM_PRIORITY
-            }
+            battleMove.item = item;
+            battleMove.priority = ITEM_PRIORITY;
         }
         else if(actionRequest.type === 'escape') {
-            battleMove = {
-                type: 'escape',
-                speed: ESCAPE_PRIORITY
-            }
+            battleMove.priority = ESCAPE_PRIORITY;
         }
         return battleMove;
     }
@@ -266,13 +259,15 @@ class BattleSystem {
         let firstAgent = randumInt ? agent1 : agent2;
         let secondAgent = !randumInt ? agent1 : agent2;
 
-        if (agent1Move.speed > agent2Move.speed) {
+        if (agent1Move.priority > agent2Move.priority ||
+            agent1Move.priority === agent2Move.priority && agent1Move.speed > agent2Move.speed) {
             firstMove = agent1Move;
             firstAgent = agent1;
             secondMove = agent2Move;
             secondAgent = agent2;
         }
-        else if(agent1Move.speed < agent2Move.speed) {
+        else if(agent1Move.priority < agent2Move.priority || 
+            agent1Move.priority === agent2Move.priority && agent1Move.speed < agent2Move.speed) {
             firstMove = agent2Move;
             firstAgent = agent2;
             secondMove = agent1Move;
@@ -305,7 +300,7 @@ class BattleSystem {
             this.#battleContext.activateBattleMove(strikeMove);
         }
         else if(agentMove.type === 'ability' && agentMove.ability) {
-            const abilityMove = new AbilityBattleMove(agent, agentMove.ability);
+            const abilityMove = new AbilityBattleMove(agent, agentMove.ability.getData());
             this.#battleContext.activateBattleMove(abilityMove);
         }
         else if(agentMove.type === 'item' && agentMove.item) {

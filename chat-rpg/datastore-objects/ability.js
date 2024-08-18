@@ -16,16 +16,11 @@ const animations = require('../content/animations');
  * description?: string,
  * baseDamageTextModifier?: string
  * speed?: number,
+ * priority?: number,
  * apCost?: number,
  * postActions?: AbilityActionData[],
  * charges?: number,
  * }} AbilityData
- * 
- * @typedef {AbilityData & {
- * name: string,
- * description: string,
- * speed: number,
- * }} TopLevelAbilityData
  */
 
 class Ability extends DatastoreObject {
@@ -46,6 +41,7 @@ class Ability extends DatastoreObject {
         ability.empowerment = null;
         ability.baseDamageText = null;
         ability.speed = 0;
+        ability.priority = 0;
         ability.apChange = 0;
         ability.strikeLevelChange = 0;
         ability.apCost = 0;
@@ -64,7 +60,6 @@ class Ability extends DatastoreObject {
         ability.protection = null;
         ability.description = 'This is an empty default ability.';
         ability.animation = null;
-        ability.ablazeChance = 0;
         ability.fireResistAmp = 0;
         ability.lightningResistAmp = 0;
         ability.waterResistAmp = 0;

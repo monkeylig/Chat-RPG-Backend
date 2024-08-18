@@ -87,7 +87,8 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
  * waterResistAmp: number,
  * iceResistAmp: number,
  * counter: object,
- * abilityStrikes: object[]
+ * abilityStrikes: object[],
+ * evasion: number
  * }} BattleAgentData
  */
 
@@ -136,6 +137,7 @@ function BattleAgentMixin(Base) {
             agent.iceResistAmp = 0;
             agent.counter = null;
             agent.abilityStrikes = [];
+            agent.evasion = 0;
         }
 
         statAmp(stat, stages) {
@@ -378,6 +380,15 @@ function BattleAgentMixin(Base) {
 
         getAbilityStrikes() {
             return this.datastoreObject.abilityStrikes;
+        }
+
+        /**
+         * 
+         * @param {number} speed 
+         */
+        setEvasiveSpeed(speed) {
+            const maxEvasion = 0.3;
+            this.getData().evasion = Math.min(Math.max(0, speed/10 * maxEvasion), maxEvasion);
         }
 
         /**

@@ -11,6 +11,7 @@ const { SurgedEffect } = require("./surged-effect");
 const { DrenchedEffect } = require("./drenched-effect");
 const { ImbueEffect } = require("./imbue-effect");
 const { FrozenEffect } = require("./frozen-effect");
+const { CounterEffect } = require("./counter-effect");
 
 /**
  * 
@@ -63,7 +64,8 @@ const EffectsLibrary = {
     DrenchedEffect,
     FrozenEffect,
     AbilityStrikeEffect,
-    ImbueEffect
+    ImbueEffect,
+    CounterEffect,
 };
 
 module.exports = {

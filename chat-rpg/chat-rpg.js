@@ -216,7 +216,7 @@ class ChatRPG {
         //const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
         const battleSystem = new BattleSystem(battleSnap.data());
         const steps = battleSystem.singlePlayerBattleIteration(actionRequest);
-        const battle = battleSystem.battle;
+        const battle = battleSystem.battleContext.battle;
 
         const battlePlayer = new BattlePlayer(battle.player);
         const battlePlayerData = battlePlayer.getData();

@@ -50,6 +50,35 @@ test('Agent hit action', () => {
     expect(battleSteps[0].type).toMatch('damage');
 });
 
+test('Dodging attacks', () => {
+    const oldVal = process.env.NODE_ENV;
+    process.env.NODE_ENV = '';
+    
+    const battleContext = new BattleContext();
+    battleContext.player.getData().evasion = 1;
+    /** @type {Action} */
+    const hitAction = {
+        playerAction: {
+            srcPlayer: battleContext.monster,
+            targetPlayer: battleContext.player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Sword,
+            baseDamage: 10
+        }
+    };
+
+    let battleSteps = ActionExecutor.execute(hitAction, battleContext);
+
+    expect(battleSteps[0].type).toMatch('info');
+
+    const infoStep = /**@type {InfoBattleStep}*/(battleSteps[0]);
+
+    expect(infoStep.action).toMatch('dodge');
+    expect(infoStep.targetId).toMatch('player');
+
+    process.env.NODE_ENV = oldVal;
+});
+
 test('Elements', () => {
     chatRPGUtility.random = seedrandom('1');
     
@@ -185,7 +214,7 @@ test("Heal", () => {
     const battleContext = new BattleContext();
     const player = new BattleAgent({id: 'player', health: 1});
     /** @type {Action} */
-    const apChangeAction = {
+    const healAction = {
         playerAction: {
             targetPlayer: player,
             type: PlayerActionType.Physical,
@@ -194,13 +223,37 @@ test("Heal", () => {
         }
     }
 
-    let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
+    let battleSteps = ActionExecutor.execute(healAction, battleContext);
 
     const apStep = /** @type {HealStep} */(battleSteps[0]);
 
     expect(apStep.type).toMatch('heal');
     expect(apStep.healAmount).toBe(5);
     expect(apStep.targetId).toBe('player');
+});
+
+test("recoil", () => {
+    const battleContext = new BattleContext();
+    /** @type {Action} */
+    const recoilAction = {
+        playerAction: {
+            targetPlayer: battleContext.monster,
+            srcPlayer: battleContext.player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            baseDamage: 50,
+            recoil: 0.5
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(recoilAction, battleContext);
+
+    const damageStep = /** @type {DamageStep} */(battleSteps[0]);
+    const recoilStep = /** @type {DamageStep} */(battleSteps[1]);
+
+    expect(recoilStep.type).toMatch('damage');
+    expect(recoilStep.damage).toBe(Math.floor(damageStep.damage/2));
+    expect(recoilStep.targetId).toBe('player');
 });
 
 describe.each([
@@ -239,6 +292,7 @@ describe.each([
 
 describe.each([
     ['removeActionGenerator', 'removeActionGenerator', 0, {targetId: 'player'}, {}],
+    ['triggerAbility', 'triggerAbility', 0, {}, {ability: new Ability().getData(), user: new BattleAgent()}],
 // @ts-ignore
 ])('battleContextAction.%s test', (field, stepType, index=0, data={action: 'action'}, value=0.5) => {
     test('Basic', () => {
@@ -358,8 +412,10 @@ test('Remove Effect', () => {
 describe.each([
     ['defenseAmp', 'defenseAmp'],
     ['strengthAmp', 'strengthAmp'],
+    ['magicAmp', 'magicAmp'],
     ['weaponSpeedAmp', 'speedAmp'],
-    ['lightningResistAmp', 'lightningResistAmp']
+    ['lightningResistAmp', 'lightningResistAmp'],
+    ['fireResistAmp', 'fireResistAmp']
 ])('%s test', (statAmp, stepType) => {
     test('Stat increase action', () => {
         const battleContext = new BattleContext();

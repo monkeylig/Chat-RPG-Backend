@@ -111,7 +111,9 @@ class BattleContext {
      */
     endRound() {
         this.sendEffectEvent((_effect) => _effect.onBattleRoundEnd(this));
-        return this.resolve();
+        const steps = this.resolve();
+        this.#battle.round += 1;
+        return steps;
     }
 
     /**

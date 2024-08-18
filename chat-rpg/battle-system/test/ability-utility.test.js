@@ -155,7 +155,8 @@ test('Adding Effects: Default inputData', () => {
 describe.each([
     ['defenseAmp'],
     ['strengthAmp'],
-    ['lightningResistAmp']
+    ['lightningResistAmp'],
+    ['fireResistAmp'],
 ])('%s test', (stat) => {
     test('basic modding', () => {
         const battleContext = new BattleContext();
@@ -305,6 +306,7 @@ describe.each([
     ['addAbility', new Ability()],
     ['removeAbility', 'coolAbility'],
     ['overrideDamageModifier', 'defense'],
+    ['recoil', 0.5],
 ])('%s player action field test', (field, value) => {
     test('propagation', () => {
         const battleContext = new BattleContext();

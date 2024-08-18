@@ -1,6 +1,6 @@
 /**
  * @import {BattleContext} from "../battle-context"
- * @import {ActiveActionGenerator, ActiveAction} from "../battle-system-types"
+ * @import {ActiveAction} from "../battle-system-types"
  * @import {BattleStep} from "../battle-steps"
  * @import {ActionGeneratorObject} from "../action-generator"
  * @import {BattleAgent} from "../../datastore-objects/battle-agent"
@@ -8,9 +8,7 @@
  */
 
 const { chance } = require("../../utility");
-const { ElementsEnum } = require("../action");
 const { Effect } = require("../effect");
-const { matchPlayerAction, matchAttackAction, isBattleMove } = require("../utility");
 
 class FrozenEffect extends Effect {
     /**
@@ -63,21 +61,21 @@ class FrozenEffect extends Effect {
             infoAction.action === 'item') &&
             /**@type {BattleMove}*/(activeAction.creator).owner === this.targetPlayer
         ) {
-        const inputData = /**@type {FrozenEffectData}*/(yield true);
-        if (!chance(inputData.attackChance)) {
-            return;
-        }
-
-        yield {
-            battleContextAction: {
-                removeActionGenerator: activeAction.generator,
-                targetId: this.targetPlayer.getData().id,
-            },
-            infoAction: {
-                description: `${this.targetPlayer.getData().id} is frozen and can't move.`,
-                action: 'freeze'
+            const inputData = /**@type {FrozenEffectData}*/(yield true);
+            if (!chance(inputData.attackChance)) {
+                return;
             }
-        };
+
+            yield {
+                battleContextAction: {
+                    removeActionGenerator: activeAction.generator,
+                    targetId: this.targetPlayer.getData().id,
+                },
+                infoAction: {
+                    description: `${this.targetPlayer.getData().id} is frozen and can't move.`,
+                    action: 'freeze'
+                }
+            };
         }
     }
 

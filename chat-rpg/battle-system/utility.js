@@ -149,10 +149,12 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
             type: actionData.type,
             apChange: actionData.apChange,
             absorb: actionData.absorb,
+            recoil: actionData.recoil,
             protection: actionData.protection,
             defenseAmp: actionData.defenseAmp,
             strengthAmp: actionData.strengthAmp,
             lightningResistAmp: actionData.lightningResistAmp,
+            fireResistAmp: actionData.fireResistAmp,
             addAbility: actionData.addAbility,
             removeAbility: actionData.removeAbility
         },
