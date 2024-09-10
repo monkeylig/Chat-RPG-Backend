@@ -5,7 +5,8 @@ const DatastoreObject = require('./datastore-object');
 /**
  * @typedef {AbilityData & {
  * count: number,
- * icon: string
+ * icon: string,
+ * outOfBattle?: boolean
  * }} ItemData
  */
 

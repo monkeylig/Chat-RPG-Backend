@@ -3,6 +3,7 @@
  * @import {ActionGeneratorObject} from "./action-generator"
  * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
  * @import {BattleContext} from "./battle-context"
+ * @import {Action} from "./action"
  */
 
 /**
@@ -30,7 +31,7 @@ class Effect extends ActionGeneratorCreator {
         this.targetPlayer = targetPlayer;
         /** @type {string|undefined} */
         this.persistentId;
-        /** @type {boolean} */
+        /** @type {boolean} */ 
         this.unique = false;
         /** @type {string} */
         this.name = 'Battle Effect';
@@ -84,6 +85,12 @@ class Effect extends ActionGeneratorCreator {
     onBattleRoundEnd(battleContext) {
         const newGenerator = new ActionGenerator(this.battleRoundEndEvent(battleContext));
         newGenerator.inputData = this.getInputData();
+
+        const inputData = this.getInputData();
+        if (inputData.roundsLeft) {
+            inputData.roundsLeft -= 1;
+        }
+
         return newGenerator;
     }
 
@@ -152,7 +159,10 @@ class Effect extends ActionGeneratorCreator {
      * @returns {ActionGeneratorObject}
      */
     *battleRoundEndEvent(battleContext) {
-
+        if (this.getInputData().roundsLeft !== undefined) {
+            const inputData = yield true;
+            yield* this.effectLifetimeActions(inputData);
+        }
     }
 
     /**
@@ -213,6 +223,35 @@ class Effect extends ActionGeneratorCreator {
         }
 
         return false;
+    }
+
+    /**
+     * @param {{roundsLeft?: number}} inputData 
+     * @returns {boolean}
+     */
+    isEffectExpired(inputData) {
+        return inputData.roundsLeft !== undefined && inputData.roundsLeft <= 0;
+    }
+
+    /**
+     * @returns {Action}
+     */
+    endEffectAction() {
+        return {
+            battleContextAction: {
+                removeEffect: this
+            }                
+        };
+    }
+
+    /**
+     * @param {{roundsLeft: number}} inputData 
+     * @returns {ActionGeneratorObject}
+     */
+    *effectLifetimeActions(inputData) {
+        if (this.isEffectExpired(inputData)) {
+            yield this.endEffectAction();
+        }
     }
 };
 

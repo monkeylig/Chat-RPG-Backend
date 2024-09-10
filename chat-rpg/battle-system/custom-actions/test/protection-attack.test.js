@@ -3,10 +3,10 @@
  */
 
 const Ability = require("../../../datastore-objects/ability");
-const { BattleWeapon } = require("../../../datastore-objects/battle-agent");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../protection-attack");
 const { PlayerActionType } = require('../../action');
+const utilities = require("../../ability-utility");
 
 describe.each([
     [PlayerActionType.Physical],
@@ -20,7 +20,7 @@ describe.each([
         });
 
 
-        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext);
+        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext, utilities);
 
         const action = /**@type {Action}*/(actions.next().value);
         if (!action.playerAction || !action.playerAction.baseDamage) {
@@ -41,7 +41,7 @@ describe.each([
         });
         
     
-        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext);
+        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext, utilities);
     
         const action = /**@type {Action}*/(actions.next().value);
         if (!action.playerAction || !action.playerAction.baseDamage) {
@@ -60,8 +60,7 @@ describe.each([
             target: 'opponent'
         });
         
-    
-        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext);
+        const actions = generateActions(battleContext.player, ability.getData(), {protectionType: type}, battleContext, utilities);
     
         const action = /**@type {Action}*/(actions.next().value);
         if (!action.playerAction || !action.playerAction.baseDamage) {

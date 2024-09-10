@@ -3,9 +3,9 @@
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {BattleContext} from "../battle-context"
  * @import {Action} from "../action"
+ * @import {AbilityGenUtility} from "../ability-utility"
  */
 
-const { generateStandardActions } = require("../utility");
 
 /**
  * 
@@ -13,9 +13,10 @@ const { generateStandardActions } = require("../utility");
  * @param {AbilityActionData} abilityData 
  * @param {{damagePerRound?: number}} inputData 
  * @param {BattleContext} battleContext 
+ * @param {AbilityGenUtility} utilities 
  * @returns {Generator<Action, void, any>}
  */
-function *generateActions(user, abilityData, inputData, battleContext) {
+function *generateActions(user, abilityData, inputData, battleContext, utilities) {
     if (!inputData.damagePerRound) {
         inputData.damagePerRound = 0;
     }
@@ -24,7 +25,7 @@ function *generateActions(user, abilityData, inputData, battleContext) {
         abilityData.baseDamage += inputData.damagePerRound * battleContext.battle.round;
     }
 
-    yield* generateStandardActions(user, abilityData, battleContext);
+    yield* utilities.generateActionsFromActionData(user, abilityData, battleContext);
 }
 
 module.exports = {generateActions};

@@ -9,6 +9,8 @@ describe.each([
     ['RoundDamageBoost'],
     ['ProtectionAttack'],
     ['EffectBoost'],
+    ['IsHealthFull'],
+    ['RestoreAP'],
 ])('%s registry', (name) => {
     test('Discoverable', () => {
         expect(CustomActions[name]).toBeDefined();

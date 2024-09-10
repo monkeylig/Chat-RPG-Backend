@@ -30,7 +30,7 @@ class AblazedEffect extends Effect {
             this._inputData.trueDamage = 10;
         }
 
-        if (!this._inputData.roundsLeft) {
+        if (this._inputData.roundsLeft === undefined) {
             this._inputData.roundsLeft = 3;
         }
     }
@@ -46,12 +46,13 @@ class AblazedEffect extends Effect {
     *battleRoundEndEvent(battleContext) {
         const inputData = /**@type {AblazedEffectData}*/(yield true);
 
-        if (inputData.roundsLeft <= 0) {
-            yield {
-                battleContextAction: {
-                    removeEffect: this
-                }
-            };
+        yield* super.effectLifetimeActions(inputData);
+
+        if (this.isEffectExpired(inputData)) {
+            return;
+        }
+
+        if (this.targetPlayer.isDefeated()) {
             return;
         }
 
@@ -66,8 +67,6 @@ class AblazedEffect extends Effect {
                 action: 'ablazeDamage'
             }
         }
-
-        this.getInputData().roundsLeft -= 1;
     }
 
     /**
@@ -79,6 +78,9 @@ class AblazedEffect extends Effect {
      * @returns {ActionGeneratorObject}
      */
     *actionEndEvent(battleContext, activeAction, battleSteps) {
+        if (this.targetPlayer.isDefeated()) {
+            return;
+        }
         if (this.isEffectStartEvent(activeAction, battleSteps)) {
             yield true;
             yield {

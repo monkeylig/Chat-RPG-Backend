@@ -6,10 +6,13 @@ describe.each([
     ['AblazedEffect'],
     ['SurgedEffect'],
     ['DrenchedEffect'],
+    ['FrozenEffect'],
     ['AbilityStrikeEffect'],
     ['ImbueEffect'],
-    ['FrozenEffect'],
     ['CounterEffect'],
+    ['ElementalBoost'],
+    ['StrikeAbilitySurgeEffect'],
+    ['MultiTriggerEffect'],
 ])('%s test', (effectClass) => {
     test('Discovery', () => {
         expect(EffectsLibrary[effectClass]).toBeDefined();

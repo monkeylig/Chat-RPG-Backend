@@ -69,6 +69,12 @@ class StrikeBattleMove extends BattleMove {
         }
 
         yield {
+            playerAction: {
+                srcPlayer: this.owner,
+                targetPlayer: this.owner,
+                apChange: inputData.strikeData.apChange,
+                strikeLevelChange: inputData.strikeData.strikeLevelChange
+            },
             infoAction: {
                 description: `${this.owner.getData().name} strikes ${target.getData().name}!`,
                 action: 'strike',
@@ -81,14 +87,6 @@ class StrikeBattleMove extends BattleMove {
             yield action;
         }
 
-        yield {
-            playerAction: {
-                srcPlayer: this.owner,
-                targetPlayer: this.owner,
-                apChange: inputData.strikeData.apChange,
-                strikeLevelChange: inputData.strikeData.strikeLevelChange
-            }
-        };
     }
 }
 

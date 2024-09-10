@@ -1,5 +1,5 @@
 /** 
- * @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep, ActionGeneratorDataModStep, ActionDataModStep, DamageStep} from "../battle-steps"
+ * @import {ConsumeItemStep, InfoBattleStep, HealStep, ReviveStep, AddEffectStep, StatAmpStep, ActionGeneratorDataModStep, ActionDataModStep, DamageStep, BattleStep} from "../battle-steps"
  * @import {Action} from "../action"
  * @import {StrikeBattleMoveData} from "../strike-battle-move"
  */
@@ -232,6 +232,31 @@ test("Heal", () => {
     expect(apStep.targetId).toBe('player');
 });
 
+test("Heal Percent", () => {
+    const battleContext = new BattleContext();
+    const player = new BattleAgent({
+        id: 'player',
+        health: 1,
+        maxHealth: 10});
+    /** @type {Action} */
+    const healAction = {
+        playerAction: {
+            targetPlayer: player,
+            type: PlayerActionType.Physical,
+            style: PlayerActionStyle.Staff,
+            healPercent: 0.5
+        }
+    }
+
+    let battleSteps = ActionExecutor.execute(healAction, battleContext);
+
+    const apStep = /** @type {HealStep} */(battleSteps[0]);
+
+    expect(apStep.type).toMatch('heal');
+    expect(apStep.healAmount).toBe(5);
+    expect(apStep.targetId).toBe('player');
+});
+
 test("recoil", () => {
     const battleContext = new BattleContext();
     /** @type {Action} */
@@ -264,13 +289,14 @@ describe.each([
     ['protection', 'protection', 0, {}, {physical: 5}],
     ['addAbility', 'addAbility', 0, {}, new Ability().getData()],
     ['removeAbility', 'removeAbility', 0, {}, 'coolAbility'],
+    ['maxApChange', 'maxApChange', 0, {}, 1],
 // @ts-ignore
 ])('playerAction.%s test', (field, stepType, index=0, data={}, value=0.5) => {
     test('Basic', () => {
         const battleContext = new BattleContext();
         const player = battleContext.player;
         /** @type {Action} */
-        const apChangeAction = {
+        const action = {
             playerAction: {
                 targetPlayer: player,
                 srcPlayer: player,
@@ -281,12 +307,12 @@ describe.each([
             }
         }
 
-        let battleSteps = ActionExecutor.execute(apChangeAction, battleContext);
+        let battleSteps = ActionExecutor.execute(action, battleContext);
 
-        const reviveStep = /** @type {ReviveStep} */(battleSteps[index]);
+        const step = /** @type {BattleStep & {targetId: string}} */(battleSteps[index]);
 
-        expect(reviveStep.type).toMatch(stepType);
-        expect(reviveStep.targetId).toBe('player');
+        expect(step.type).toMatch(stepType);
+        expect(step.targetId).toBe('player');
     });
 });
 
@@ -415,7 +441,8 @@ describe.each([
     ['magicAmp', 'magicAmp'],
     ['weaponSpeedAmp', 'speedAmp'],
     ['lightningResistAmp', 'lightningResistAmp'],
-    ['fireResistAmp', 'fireResistAmp']
+    ['fireResistAmp', 'fireResistAmp'],
+    ['waterResistAmp', 'waterResistAmp'],
 ])('%s test', (statAmp, stepType) => {
     test('Stat increase action', () => {
         const battleContext = new BattleContext();
@@ -530,4 +557,37 @@ test('Action Data Mod', () => {
 
     expect(actionGenModStep.action).toBe('buff');
     expect(actionGenModStep.targetId).toBe('player');
+});
+
+test('Base Damage Modifier', () => {
+    const battleContext = new BattleContext();
+    /**@type {Action} */
+    const buffedAction = {
+        playerAction: {
+            targetPlayer: battleContext.monster,
+            srcPlayer: battleContext.player,
+            type: 'physical',
+            style: 'sword',
+            baseDamage: 10,
+            baseDamageChange: 1
+        }
+    };
+    /**@type {Action} */
+    const action = {
+        playerAction: {
+            targetPlayer: battleContext.monster,
+            srcPlayer: battleContext.player,
+            type: 'physical',
+            style: 'sword',
+            baseDamage: 10,
+        }
+    };
+
+    const steps = ActionExecutor.execute(action, battleContext);
+    const buffedSteps = ActionExecutor.execute(buffedAction, battleContext);
+
+    const damage = /**@type {DamageStep}*/(steps[0]).damage;
+    const buffedDamage = /**@type {DamageStep}*/(buffedSteps[0]).damage;
+
+    expect(buffedDamage).toBe(damage * 2);
 });

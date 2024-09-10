@@ -66,13 +66,15 @@ test('Revive Item With custom actions', () => {
     const item = new Item({
         count: 1,
         name: 'testItem',
-        customActions: {
+        target: 'self',
+        customActions: [
+            {
             name: 'Revive',
             data: {
                 healthRecoverPercent: 0.75
             }
-        },
-        target: 'self'
+            },
+        ]
     });
 
     const actions = generateMoveActions(battleContext.player, item.getData(), battleContext, {skipAnimation: true});
@@ -157,6 +159,8 @@ describe.each([
     ['strengthAmp'],
     ['lightningResistAmp'],
     ['fireResistAmp'],
+    ['waterResistAmp'],
+    ['weaponSpeedAmp'],
 ])('%s test', (stat) => {
     test('basic modding', () => {
         const battleContext = new BattleContext();
@@ -307,6 +311,9 @@ describe.each([
     ['removeAbility', 'coolAbility'],
     ['overrideDamageModifier', 'defense'],
     ['recoil', 0.5],
+    ['healPercent', 0.5],
+    ['heal', 50],
+    ['maxApChange', 50],
 ])('%s player action field test', (field, value) => {
     test('propagation', () => {
         const battleContext = new BattleContext();
@@ -330,4 +337,38 @@ describe.each([
         expect(action.playerAction[field]).toBe(value);
         expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
     });
+});
+
+test('Chaining Custom Actions', () => {
+    const battleContext = new BattleContext();
+    const ability = new Ability({
+        target: 'opponent',
+        baseDamage: 10,
+        customActions: [
+            {
+                name: 'HealthBasedDamage',
+                data: {
+                    bonusDamage: 10
+                }
+            },
+            {
+                name: 'MultiHitAttack',
+                data: {
+                    minHits: 2, 
+                    maxHits: 2
+                }
+            }
+        ],
+    });
+
+    const actions = generateMoveActions(battleContext.player, ability.getData(), battleContext, {skipAnimation: true});
+    let action = /** @type {Action} */(actions.next().value);
+
+    if (!action.playerAction) {fail();}
+    expect(action.playerAction.baseDamage).toBe(20);
+
+    action = /** @type {Action} */(actions.next().value);
+
+    if (!action.playerAction) {fail();}
+    expect(action.playerAction.baseDamage).toBe(20);
 });

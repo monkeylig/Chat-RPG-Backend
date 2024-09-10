@@ -4,8 +4,10 @@
 
 const Ability = require("../../../datastore-objects/ability");
 const { BattleWeapon } = require("../../../datastore-objects/battle-agent");
+const { generateActionsFromActionData } = require("../../ability-utility");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../round-damage-boost");
+const utilities = require("../../ability-utility");
 
 test('No Boost', () => {
     const battleContext = new BattleContext();
@@ -14,7 +16,7 @@ test('No Boost', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {damagePerRound: 10}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {damagePerRound: 10}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
     if (!action.playerAction || !action.playerAction.baseDamage) {
@@ -35,7 +37,7 @@ test('Boost', () => {
 
     battleContext.endRound();
     battleContext.endRound();
-    const actions = generateActions(battleContext.player, ability.getData(), {damagePerRound: 10}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {damagePerRound: 10}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
     if (!action.playerAction || !action.playerAction.baseDamage) {

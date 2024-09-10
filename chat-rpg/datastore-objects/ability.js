@@ -6,7 +6,7 @@ const animations = require('../content/animations');
  * @typedef {AgentActionData & {
  * target: TargetEnum,
  * animation?: object,
- * customActions?: {name: string, data: object},
+ * customActions?: {name: string, data: object}[],
  * addEffect?: {class: string, inputData?: Object},
  * empowerment?: {physical?: number, magical?: number}
  * }} AbilityActionData

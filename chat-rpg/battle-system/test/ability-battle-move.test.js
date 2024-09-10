@@ -14,7 +14,7 @@ test("Simple damage ability", () => {
         apCost: 1,
         animation: {}
     });
-    const abilityMove = new AbilityBattleMove(battleContext.player, ability);
+    const abilityMove = new AbilityBattleMove(battleContext.player, ability.getData());
     const actionGenerator = abilityMove.onActivate(battleContext);
     const firstYield = /**@type {boolean}*/(actionGenerator.next().value);
 
@@ -61,7 +61,7 @@ test('Ability uses last charge', () => {
         charges: 2,
         animation: {}
     });
-    const abilityMove = new AbilityBattleMove(battleContext.player, ability);
+    const abilityMove = new AbilityBattleMove(battleContext.player, ability.getData());
 
     // First Charge
     let actionGenerator = abilityMove.onActivate(battleContext);

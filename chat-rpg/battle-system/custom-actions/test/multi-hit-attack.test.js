@@ -3,8 +3,10 @@
  */
 
 const Ability = require("../../../datastore-objects/ability");
+const { generateActionsFromActionData } = require("../../ability-utility");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../multi-hit-attack");
+const utilities = require("../../ability-utility");
 
 test('Multi Attack', () => {
     const battleContext = new BattleContext();
@@ -14,7 +16,7 @@ test('Multi Attack', () => {
     });
 
     for (let i = 0; i < 100; i++) {
-        const actions = generateActions(battleContext.player, ability.getData(), {minHits: 5, maxHits: 10}, battleContext);
+        const actions = generateActions(battleContext.player, ability.getData(), {minHits: 5, maxHits: 10}, battleContext, utilities);
 
         let hitCount = 0;
         let infoFound = false;

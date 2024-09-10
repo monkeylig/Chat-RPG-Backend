@@ -2,6 +2,7 @@ const Item = require("../../../datastore-objects/item");
 const { BattleContext } = require("../../battle-context");
 const { ReviveEffect } = require("../../effects/revive-effect");
 const { generateActions } = require("../revive");
+const utilities = require("../../ability-utility");
 
 test('Item Actions', () => {
     const battleContext = new BattleContext();
@@ -15,7 +16,7 @@ test('Item Actions', () => {
         healthRecoverPercent: 0.75
     };
 
-    const actions = generateActions(battleContext.player, reviveItem.getData(), inputData, battleContext);
+    const actions = generateActions(battleContext.player, reviveItem.getData(), inputData, battleContext, utilities);
     let action = actions.next().value;
 
     if (!action ||
@@ -48,7 +49,7 @@ test('Item Not Ready', () => {
         healthRecoverPercent: 0.75
     };
 
-    const actions = generateActions(battleContext.player, reviveItem.getData(), inputData, battleContext);
+    const actions = generateActions(battleContext.player, reviveItem.getData(), inputData, battleContext, utilities);
     let action = actions.next().value;
 
     if (!action ||

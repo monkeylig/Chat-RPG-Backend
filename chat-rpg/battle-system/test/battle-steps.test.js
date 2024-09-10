@@ -172,6 +172,35 @@ test('Ap Change step', () => {
 
 });
 
+test('Max Ap Change step', () => {
+    const player1 = new BattlePlayer();
+
+    let apChangeStep = BattleSteps.maxApChange(player1, 3);
+
+    expect(apChangeStep.netChange).toBe(3);
+    expect(player1.getData().maxAp).toBe(6);
+    expect(apChangeStep.type).toMatch('maxApChange');
+
+    apChangeStep = BattleSteps.maxApChange(player1, -2);
+
+    expect(apChangeStep).toBeDefined();
+    expect(apChangeStep.netChange).toBe(-2);
+    expect(player1.getData().maxAp).toBe(4);
+
+    apChangeStep = BattleSteps.maxApChange(player1, -2);
+
+    expect(apChangeStep.netChange).toBe(-2);
+    expect(player1.getData().maxAp).toBe(2);
+
+    apChangeStep = BattleSteps.maxApChange(player1, -4);
+
+    expect(apChangeStep.netChange).toBe(-2);
+    expect(player1.getData().maxAp).toBe(0);
+
+    
+
+});
+
 test('ReadyRevive Step', () => {
     const player1 = new BattlePlayer();
 

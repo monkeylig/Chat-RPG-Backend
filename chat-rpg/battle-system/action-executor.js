@@ -25,6 +25,13 @@ function executeAction(action, battleContext) {
     }
 
     const steps = [];
+    //Animations come first
+    if(action.infoAction && action.infoAction.animation) {
+        const infoActionData = action.infoAction;
+        const infoAction = BattleSteps.info('', action.infoAction.action, infoActionData.srcAgentId, infoActionData.targetAgentId, infoActionData.animation);
+        steps.push(infoAction);
+    }
+
     if(action.playerAction) {
         const playerAction = action.playerAction;
         if(playerAction.baseDamage && playerAction.srcPlayer && playerAction.type && playerAction.style) {
@@ -38,6 +45,7 @@ function executeAction(action, battleContext) {
                 playerAction.baseDamage,
                 playerAction.type, playerAction.style, playerAction.elements, battleContext, {
                     defensePen: playerAction.defensePen,
+                    baseDamageChange: playerAction.baseDamageChange,
                     overrideDamageModifier: playerAction.overrideDamageModifier
                 });
                 
@@ -72,6 +80,11 @@ function executeAction(action, battleContext) {
             steps.push(healStep);
         }
 
+        if(playerAction.healPercent) {
+            const healStep = BattleSteps.heal(playerAction.targetPlayer, playerAction.targetPlayer.getData().maxHealth * playerAction.healPercent);
+            steps.push(healStep);
+        }
+
         if(playerAction.revive) {
             const reviveStep = BattleSteps.revive(playerAction.targetPlayer, playerAction.revive);
             steps.push(reviveStep);
@@ -80,6 +93,11 @@ function executeAction(action, battleContext) {
         if(playerAction.strikeLevelChange) {
             const strikeLevelChangeStep = BattleSteps.strikeLevelChange(playerAction.targetPlayer, playerAction.strikeLevelChange);
             steps.push(strikeLevelChangeStep);
+        }
+
+        if(playerAction.maxApChange) {
+            const apChangeStep = BattleSteps.maxApChange(playerAction.targetPlayer, playerAction.maxApChange);
+            steps.push(apChangeStep);
         }
 
         if(playerAction.apChange) {
@@ -140,12 +158,11 @@ function executeAction(action, battleContext) {
             const fireResistAmpStep = BattleSteps.fireResistAmp(playerAction.targetPlayer, playerAction.fireResistAmp);
             steps.push(fireResistAmpStep);
         }
-    }
 
-    if(action.infoAction) {
-        const infoActionData = action.infoAction;
-        const infoAction = BattleSteps.info(infoActionData.description, action.infoAction.action, infoActionData.srcAgentId, infoActionData.targetAgentId, infoActionData.animation);
-        steps.push(infoAction);
+        if(playerAction.waterResistAmp) {
+            const waterResistAmpStep = BattleSteps.waterResistAmp(playerAction.targetPlayer, playerAction.waterResistAmp);
+            steps.push(waterResistAmpStep);
+        }
     }
 
     if(action.battleContextAction) {
@@ -189,6 +206,13 @@ function executeAction(action, battleContext) {
         const actionModAction = action.actionModAction;
         const actionModStep = BattleSteps.actionMod(actionModAction.targetAction, actionModAction.modFunction, actionModAction.targetId, actionModAction.action, actionModAction.description);
         steps.push(actionModStep);
+    }
+
+    // Text info comes last
+    if(action.infoAction && action.infoAction.description) {
+        const infoActionData = action.infoAction;
+        const infoAction = BattleSteps.info(infoActionData.description, action.infoAction.action, infoActionData.srcAgentId, infoActionData.targetAgentId);
+        steps.push(infoAction);
     }
     return steps;
 }

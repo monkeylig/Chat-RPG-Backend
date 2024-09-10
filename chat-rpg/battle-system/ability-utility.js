@@ -9,24 +9,149 @@
 const AbilityTypes = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const customActions = require("./custom-actions/custom-actions");
-const { getTarget, generateStandardActions } = require("./utility");
+const { getTarget } = require("./utility");
+/**
+ * 
+ * @param {BattleAgent} user 
+ * @param {AbilityActionData} actionData 
+ * @param {BattleContext} battleContext 
+ * @returns {Generator<Action, void, any>}
+ */
+/**
+ * @typedef {Object} AbilityGenUtility
+ * @property {(
+ * user: BattleAgent,
+ * actionData: AbilityActionData,
+ * battleContext: BattleContext) =>
+ * Generator<Action, void, any>} generateActionsFromActionData
+ * @property {(
+ * user: BattleAgent,
+ * moveData: AbilityData | ItemData,
+ * battleContext: BattleContext,
+ * options?: MoveActionOptions) =>
+ * Generator<Action, void, any>} generateMoveActions
+ */
 
 /**
  * 
  * @param {BattleAgent} user 
  * @param {AbilityActionData} actionData 
  * @param {BattleContext} battleContext 
- * @param {{disableCustomActions?: boolean}} [options={}] 
+ * @param {Object} [options={}] 
  * @returns {Generator<Action, void, any>}
  */
-function *generateActionsFromActionData(user, actionData, battleContext, options = {}) {
+function *generateStandardActions(user, actionData, battleContext, options = {}) {
+    let target = getTarget(user, actionData.target, battleContext);
 
-    if (actionData.customActions && customActions[actionData.customActions.name] && !options.disableCustomActions) {
-        const customActionData = actionData.customActions;       
-        yield* customActions[customActionData.name].generateActions(user, actionData, customActionData.data, battleContext);
+    /**@type {Action} */
+    const action = {
+        playerAction: {
+            baseDamage: actionData.baseDamage,
+            trueDamage: actionData.trueDamage,
+            defensePen: actionData.defensePen,
+            overrideDamageModifier: actionData.overrideDamageModifier,
+            elements: actionData.elements,
+            targetPlayer: target,
+            srcPlayer: user,
+            style: actionData.style,
+            type: actionData.type,
+            maxApChange: actionData.maxApChange,
+            apChange: actionData.apChange,
+            absorb: actionData.absorb,
+            recoil: actionData.recoil,
+            heal: actionData.heal,
+            healPercent: actionData.healPercent,
+            protection: actionData.protection,
+            defenseAmp: actionData.defenseAmp,
+            strengthAmp: actionData.strengthAmp,
+            weaponSpeedAmp:actionData.weaponSpeedAmp,
+            lightningResistAmp: actionData.lightningResistAmp,
+            fireResistAmp: actionData.fireResistAmp,
+            waterResistAmp: actionData.waterResistAmp,
+            addAbility: actionData.addAbility,
+            removeAbility: actionData.removeAbility
+        },
+    };
+
+    if(actionData.empowerment) {
+        let type;
+        let damageIncrease;
+        if (actionData.empowerment.magical) {
+            type = 'magical';
+            damageIncrease = actionData.empowerment.magical;
+        }
+
+        if (actionData.empowerment.physical) {
+            type = 'physical';
+            damageIncrease = actionData.empowerment.physical;
+        }
+
+        if (type && damageIncrease) {
+            action.battleContextAction = {
+                addEffect: {
+                    targetId: target.getData().id,
+                    className: 'EmpowermentEffect',
+                    inputData: {damageIncrease, type}
+                }
+            };
+        }
+
+
+    }
+
+    if (actionData.addEffect) {
+        const addEffectData = actionData.addEffect;
+        action.battleContextAction = {
+            addEffect: {
+                className: addEffectData.class,
+                targetId: target.getData().id,
+                inputData: addEffectData.inputData ? addEffectData.inputData : {}
+            }
+        };
+    }
+
+    if (actionData.animation) {
+        action.infoAction = {
+            description: '',
+            action: 'animation',
+            animation: actionData.animation,
+            targetAgentId: target.getData().id,
+            srcAgentId: user.getData().id
+        }
+    }
+    yield action;
+}
+
+/**
+ * 
+ * @param {BattleAgent} user 
+ * @param {AbilityActionData} actionData 
+ * @param {BattleContext} battleContext 
+ * @param {number} [customIndex=0] 
+ * @returns {Generator<Action, void, any>}
+ */
+function *generateActionsFromActionData(user, actionData, battleContext, customIndex = 0) {
+
+    if (actionData.customActions && actionData.customActions[customIndex] &&
+        customActions[actionData.customActions[customIndex].name]) {
+        const customActionData = actionData.customActions[customIndex];
+        const utilities = {
+            /**
+             * 
+             * @param {BattleAgent} user 
+             * @param {AbilityActionData} actionData 
+             * @param {BattleContext} battleContext 
+             * @returns {Generator<Action, void, any>}
+             */
+            generateActionsFromActionData: function *gen(user, actionData, battleContext) {
+                yield* generateActionsFromActionData(user, actionData, battleContext, customIndex + 1);
+            },
+            generateMoveActions
+        };
+        yield* customActions[customActionData.name].generateActions(user, actionData, customActionData.data, battleContext, utilities);
     }
     else {
-        yield* generateStandardActions(user, actionData, battleContext, options);
+        yield* generateStandardActions(user, actionData, battleContext);
     }
 }
 
@@ -42,29 +167,11 @@ function *generateActionsFromActionData(user, actionData, battleContext, options
  * @returns {Generator<Action, void, any>}
  */
 function *generateMoveActions(user, moveData, battleContext, options = {}) {
-    let target = getTarget(user, moveData.target, battleContext);
-
-    if(!options.skipAnimation && moveData.animation) {
-        yield {
-            infoAction: {
-                description: '',
-                action: 'animation',
-                animation: moveData.animation,
-                targetAgentId: target.getData().id,
-                srcAgentId: user.getData().id
-            }
-        };
-    }
-
-    for (const action of generateActionsFromActionData(user, moveData, battleContext, options)) {
-        yield action;
-    }
+    yield* generateActionsFromActionData(user, moveData, battleContext);
 
     if (moveData.postActions) {
         for (const actionData of moveData.postActions) {
-            for (const action of generateActionsFromActionData(user, actionData, battleContext, options)) {
-                yield action;
-            }       
+            yield* generateActionsFromActionData(user, actionData, battleContext);
         }
     }
 }
@@ -83,4 +190,4 @@ function *generateAbilityActions(user, abilityData, battleContext, options = {})
     }
 }
 
-module.exports = {generateAbilityActions, generateMoveActions, generateActionsFromActionData}
+module.exports = {generateAbilityActions, generateMoveActions, generateActionsFromActionData};

@@ -4,6 +4,7 @@
 
 const Ability = require("../../../datastore-objects/ability");
 const { BattleWeapon } = require("../../../datastore-objects/battle-agent");
+const { generateActionsFromActionData, generateMoveActions } = require("../../ability-utility");
 const { BattleContext } = require("../../battle-context");
 const { AblazedEffect } = require("../../effects/ablazed-effect");
 const { generateActions } = require("../effect-boost");
@@ -15,7 +16,11 @@ test('No Boost', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 10, effectClass: "AblazedEffect"}, battleContext);
+    const actions = generateActions(battleContext.player,
+        ability.getData(),
+        {damageIncrease: 10, effectClass: "AblazedEffect"},
+        battleContext,
+        {generateActionsFromActionData, generateMoveActions});
 
     const action = /**@type {Action}*/(actions.next().value);
     if (!action.playerAction || !action.playerAction.baseDamage) {
@@ -35,9 +40,13 @@ test('Boost', () => {
     });
 
     // @ts-ignore
-    const ablazedEffect = new AblazedEffect(battleContext.player, {});
+    const ablazedEffect = new AblazedEffect(battleContext.monster, {});
     battleContext.addEffect(ablazedEffect);
-    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 10, effectClass: "AblazedEffect"}, battleContext);
+    const actions = generateActions(battleContext.player,
+        ability.getData(),
+        {damageIncrease: 10, effectClass: "AblazedEffect"},
+        battleContext,
+        {generateActionsFromActionData, generateMoveActions});
 
     const action = /**@type {Action}*/(actions.next().value);
     if (!action.playerAction || !action.playerAction.baseDamage) {
@@ -48,4 +57,34 @@ test('Boost', () => {
 
     expect(action.playerAction.baseDamage).toBe(60);
     expect(action.playerAction.targetPlayer).toBe(battleContext.monster);
+});
+
+test('Extra Ability', () => {
+    const battleContext = new BattleContext();
+    battleContext.player.getData().weapon.speedAmp = 1;
+    const ability = new Ability({
+        baseDamage: 50,
+        target: 'opponent'
+    });
+
+    // @ts-ignore
+    const ablazedEffect = new AblazedEffect(battleContext.monster, {});
+    battleContext.addEffect(ablazedEffect);
+    const actions = generateActions(battleContext.player, ability.getData(), {
+        damageIncrease: 10, 
+        effectClass: "AblazedEffect",
+        extraAbility: {
+            strengthAmp: 2,
+            target: 'self'}
+    }, battleContext, {generateActionsFromActionData, generateMoveActions});
+
+    actions.next();
+    const action = /**@type {Action}*/(actions.next().value);
+    if (!action.playerAction || !action.playerAction.strengthAmp) {
+        fail();
+    }
+
+
+    expect(action.playerAction.strengthAmp).toBe(2);
+    expect(action.playerAction.targetPlayer).toBe(battleContext.player);
 });

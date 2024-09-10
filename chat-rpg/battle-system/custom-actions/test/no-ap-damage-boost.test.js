@@ -5,6 +5,7 @@
 const Ability = require("../../../datastore-objects/ability");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../no-ap-damage-boost");
+const utilities = require("../../ability-utility");
 
 test('No Boost', () => {
     const battleContext = new BattleContext();
@@ -13,7 +14,7 @@ test('No Boost', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 50}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 50}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
 
@@ -34,7 +35,7 @@ test('With Boost', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 50}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {damageIncrease: 50}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
 

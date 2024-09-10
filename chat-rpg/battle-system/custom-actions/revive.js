@@ -2,6 +2,7 @@
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {Action} from "../action"
  * @import {BattleContext} from "../battle-context"s
+ * @import {AbilityGenUtility} from "../ability-utility"
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
@@ -13,9 +14,10 @@ const { getTarget } = require("../utility");
  * @param {AbilityActionData} abilityActionData 
  * @param {Object} inputData 
  * @param {BattleContext} battleContext 
+ * @param {AbilityGenUtility} utilities 
  * @returns {Generator<Action, void, any>}
  */
-function *generateActions(user, abilityActionData, inputData, battleContext) {
+function *generateActions(user, abilityActionData, inputData, battleContext, utilities) {
     const targetPlayer = getTarget(user, abilityActionData.target, battleContext);
 
     if(targetPlayer.getData().effectsMap['revive']) {

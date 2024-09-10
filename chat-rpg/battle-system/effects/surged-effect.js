@@ -29,7 +29,7 @@ class SurgedEffect extends Effect{
             this._inputData.trueDamage = 30;
         }
 
-        if (!this._inputData.roundsLeft) {
+        if (this._inputData.roundsLeft === undefined) {
             this._inputData.roundsLeft = 2;
         }
     }
@@ -77,26 +77,6 @@ class SurgedEffect extends Effect{
                 }
             };
         }
-    }
-
-    /**
-     * Called at the end of a round of battle round
-     * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorObject}
-     */
-    *battleRoundEndEvent(battleContext) {
-        const inputData = /**@type {SurgedEffectData}*/(yield true);
-
-        if (inputData.roundsLeft <= 0) {
-            yield {
-                battleContextAction: {
-                    removeEffect: this
-                }
-            };
-            return;
-        }
-
-        this.getInputData().roundsLeft -= 1;
     }
 };
 

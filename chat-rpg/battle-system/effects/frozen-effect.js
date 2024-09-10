@@ -29,7 +29,7 @@ class FrozenEffect extends Effect {
             this._inputData.attackChance = 1;
         }
 
-        if (!this._inputData.roundsLeft) {
+        if (this._inputData.roundsLeft === undefined) {
             this._inputData.roundsLeft = 1;
         }
     }
@@ -77,25 +77,6 @@ class FrozenEffect extends Effect {
                 }
             };
         }
-    }
-
-    /**
-     * Called at the end of a round of battle round
-     * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorObject}
-     */
-    *battleRoundEndEvent(battleContext) {
-        const inputData = /**@type {FrozenEffectData}*/(yield true);
-
-        if (inputData.roundsLeft <= 0) {
-            yield {
-                battleContextAction: {
-                    removeEffect: this
-                }                
-            };
-        }
-
-        this.getInputData().roundsLeft -= 1;
     }
 }
 

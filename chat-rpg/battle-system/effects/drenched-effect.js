@@ -30,7 +30,7 @@ class DrenchedEffect extends Effect {
             this._inputData.trueDamage = 20;
         }
 
-        if (!this._inputData.roundsLeft) {
+        if (this._inputData.roundsLeft === undefined) {
             this._inputData.roundsLeft = 5;
         }
     }
@@ -121,25 +121,6 @@ class DrenchedEffect extends Effect {
             };
             return;
         }
-    }
-
-    /**
-     * Called at the end of a round of battle round
-     * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorObject}
-     */
-    *battleRoundEndEvent(battleContext) {
-        const inputData = /**@type {DrenchedEffectData}*/(yield true);
-
-        if (inputData.roundsLeft <= 0) {
-            yield {
-                battleContextAction: {
-                    removeEffect: this
-                }                
-            };
-        }
-
-        this.getInputData().roundsLeft -= 1;
     }
 }
 

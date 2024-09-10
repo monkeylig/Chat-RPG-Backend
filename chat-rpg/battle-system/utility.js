@@ -53,6 +53,7 @@ function findElement(element, elements) {
  * @property {BattleAgent} [srcAgent]
  * @property {boolean} [isAttack]
  * @property {string} [style]
+ * @property {string} [type]
  * 
  * @param {Action} action 
  * @param {ActionFilter} [actionFilter]
@@ -97,6 +98,10 @@ function matchPlayerAction(action, actionFilter) {
         if (actionFilter.style && actionFilter.style != playerAction.style) {
             return false;
         }
+
+        if (actionFilter.type && actionFilter.type != playerAction.type) {
+            return false;
+        }
     }
 
     return true;
@@ -124,86 +129,12 @@ function isBattleMove(creator) {
         creator.creatorType === GeneratorCreatorType.Item;
 }
 
-/**
- * 
- * @param {BattleAgent} user 
- * @param {AbilityActionData} actionData 
- * @param {BattleContext} battleContext 
- * @param {Object} [options={}] 
- * @returns {Generator<Action, void, any>}
- */
-function *generateStandardActions(user, actionData, battleContext, options = {}) {
-    let target = getTarget(user, actionData.target, battleContext);
 
-    /**@type {Action} */
-    const action = {
-        playerAction: {
-            baseDamage: actionData.baseDamage,
-            trueDamage: actionData.trueDamage,
-            defensePen: actionData.defensePen,
-            overrideDamageModifier: actionData.overrideDamageModifier,
-            elements: actionData.elements,
-            targetPlayer: target,
-            srcPlayer: user,
-            style: actionData.style,
-            type: actionData.type,
-            apChange: actionData.apChange,
-            absorb: actionData.absorb,
-            recoil: actionData.recoil,
-            protection: actionData.protection,
-            defenseAmp: actionData.defenseAmp,
-            strengthAmp: actionData.strengthAmp,
-            lightningResistAmp: actionData.lightningResistAmp,
-            fireResistAmp: actionData.fireResistAmp,
-            addAbility: actionData.addAbility,
-            removeAbility: actionData.removeAbility
-        },
-    };
-
-    if(actionData.empowerment) {
-        let type;
-        let damageIncrease;
-        if (actionData.empowerment.magical) {
-            type = 'magical';
-            damageIncrease = actionData.empowerment.magical;
-        }
-
-        if (actionData.empowerment.physical) {
-            type = 'physical';
-            damageIncrease = actionData.empowerment.physical;
-        }
-
-        if (type && damageIncrease) {
-            action.battleContextAction = {
-                addEffect: {
-                    targetId: target.getData().id,
-                    className: 'EmpowermentEffect',
-                    inputData: {damageIncrease, type}
-                }
-            };
-        }
-
-
-    }
-
-    if (actionData.addEffect) {
-        const addEffectData = actionData.addEffect;
-        action.battleContextAction = {
-            addEffect: {
-                className: addEffectData.class,
-                targetId: target.getData().id,
-                inputData: addEffectData.inputData ? addEffectData.inputData : {}
-            }
-        };
-    }
-    yield action;
-}
 
 module.exports = {
     getTarget,
     findBattleStep,
     findElement,
-    generateStandardActions,
     matchPlayerAction,
     matchAttackAction,
     isBattleMove,

@@ -6,6 +6,8 @@ const SpeedDamageBoost = require('./speed-damage-boost');
 const ProtectionAttack = require('./protection-attack');
 const EffectBoost = require('./effect-boost');
 const RoundDamageBoost = require('./round-damage-boost');
+const IsHealthFull = require('./is-full-health');
+const RestoreAP = require('./restore-ap');
 
 module.exports = {
     Revive,
@@ -15,5 +17,7 @@ module.exports = {
     SpeedDamageBoost,
     RoundDamageBoost,
     ProtectionAttack,
-    EffectBoost
+    EffectBoost,
+    IsHealthFull,
+    RestoreAP,
 }

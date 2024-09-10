@@ -44,7 +44,7 @@ class StrikeAbilityBattleMove extends BattleMove {
 
         yield {
             infoAction: {
-                description: `${this.owner.getData().name} strikes with ${inputData.name}!`,
+                description: `${this.owner.getData().name} strikes ${target.getData().name} with ${inputData.name}!`,
                 action: 'strikeAbility',
                 targetAgentId: target.getData().id,
                 srcAgentId: this.owner.getData().id

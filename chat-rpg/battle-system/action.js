@@ -52,11 +52,14 @@ const ElementsEnum = {
  * @property {number} [baseDamage] - The Base damage for attacks from one agent to another
  * @property {number} [trueDamage]
  * @property {number} [defensePen]
+ * @property {number} [baseDamageChange]
  * @property {ElementsEnum[]} [elements]
  * @property {number} [strikeLevelChange]
+ * @property {number} [maxApChange]
  * @property {number} [apChange]
  * @property {string} [consumeItem]
  * @property {number} [heal]
+ * @property {number} [healPercent]
  * @property {number} [absorb]
  * @property {number} [recoil]
  * @property {number} [revive]
@@ -69,6 +72,7 @@ const ElementsEnum = {
  * @property {number} [weaponSpeedAmp]
  * @property {number} [lightningResistAmp]
  * @property {number} [fireResistAmp]
+ * @property {number} [waterResistAmp]
  * @property {string} [overrideDamageModifier]
  */
 

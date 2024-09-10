@@ -1,15 +1,13 @@
 /**
  * @import {BattleAgent} from "../../datastore-objects/battle-agent"
  * @import {BattleContext} from "../battle-context"
- * @import {ActiveAction, ActiveActionGenerator} from "../battle-system-types"
+ * @import {ActiveAction} from "../battle-system-types"
  * @import {BattleStep} from "../battle-steps"
  * @import {ActionGeneratorObject} from "../action-generator"
  * @import {AbilityData} from "../../datastore-objects/ability"
  */
 
 const { Effect } = require("../effect");
-const { GeneratorCreatorType } = require("../battle-system-types");
-const { BattleMove } = require("../battle-move");
 const { matchAttackAction } = require("../utility");
 
 class ImbueEffect extends Effect {
@@ -27,7 +25,7 @@ class ImbueEffect extends Effect {
         this.name = "ImbuedWeapon";
         this.unique = false;
 
-        if (!this._inputData.roundsLeft) {
+        if (this._inputData.roundsLeft === undefined) {
             this._inputData.roundsLeft = 1;
         }
     }
@@ -87,25 +85,6 @@ class ImbueEffect extends Effect {
                 }
             };
         }
-    }
-
-    /**
-     * Called at the end of a round of battle round
-     * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorObject}
-     */
-    *battleRoundEndEvent(battleContext) {
-        const inputData = /**@type {ImbueEffectData}*/(yield true);
-
-        if (inputData.roundsLeft <= 0) {
-            yield {
-                battleContextAction: {
-                    removeEffect: this
-                }                
-            };
-        }
-
-        this.getInputData().roundsLeft -= 1;
     }
 }
 

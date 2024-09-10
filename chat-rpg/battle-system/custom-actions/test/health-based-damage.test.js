@@ -5,6 +5,7 @@
 const Ability = require("../../../datastore-objects/ability");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../health-based-damage");
+const utilities = require("../../ability-utility");
 
 test('Max Damage', () => {
     const battleContext = new BattleContext();
@@ -13,7 +14,7 @@ test('Max Damage', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {bonusDamage: 50}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {bonusDamage: 50}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
 
@@ -34,7 +35,7 @@ test('Minimum Damage', () => {
         target: 'opponent'
     });
 
-    const actions = generateActions(battleContext.player, ability.getData(), {bonusDamage: 50}, battleContext);
+    const actions = generateActions(battleContext.player, ability.getData(), {bonusDamage: 50}, battleContext, utilities);
 
     const action = /**@type {Action}*/(actions.next().value);
 

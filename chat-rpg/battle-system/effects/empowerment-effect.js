@@ -11,10 +11,11 @@ const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { PlayerActionType } = require("../action");
 const { Effect } = require("../effect");
 const { GeneratorCreatorType } = require("../battle-system-types");
+const { matchAttackAction } = require("../utility");
 
 class EmpowermentEffect extends Effect {
-    /**@type {ActionGenerator | undefined} */
-    #targetGenerator;
+    /**@type {boolean} */
+    #isActivated;
 
     /**
      * @typedef {Object} EmpowermentEffectData
@@ -35,52 +36,9 @@ class EmpowermentEffect extends Effect {
         if (!this._inputData.type) {
             this._inputData.type = PlayerActionType.Physical;
         }
+
         //Private data
-        this.#targetGenerator;
-    }
-
-    /**
-     * 
-     * @param {ActiveActionGenerator} actionGenerator 
-     * @returns {boolean}
-     */
-    #isTargetActionGenerator(actionGenerator) {
-        if ((actionGenerator.creator.creatorType !== GeneratorCreatorType.Strike &&
-            actionGenerator.creator.creatorType !== GeneratorCreatorType.StrikeAbility &&
-            actionGenerator.creator.creatorType !== GeneratorCreatorType.Ability) ||
-            !actionGenerator.generator.inputData.baseDamage
-        ) {
-            return false;
-        }
-
-        const battleMove = /**@type {BattleMove} */(actionGenerator.creator);
-
-        if (battleMove.owner !== this.targetPlayer) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Called when a new ActionGenerator is added to the stack in the battle system. This function generates the
-     * actions that respond the event
-     * @param {BattleContext} battleContext 
-     * @param {ActiveActionGenerator} actionGenerator
-     * @returns {ActionGeneratorObject}
-     */
-    *actionGeneratorBeginEvent(battleContext, actionGenerator) {
-        if (!this.#isTargetActionGenerator(actionGenerator)) {
-            return;
-        }
-        
-        const inputData = /**@type {EmpowermentEffectData} */(yield true);
-
-        if (actionGenerator.generator.inputData.type !== inputData.type) {
-            return;
-        }
-
-        this.#targetGenerator = actionGenerator.generator;
+        this.#isActivated = false;
     }
 
     /**
@@ -91,18 +49,17 @@ class EmpowermentEffect extends Effect {
      * @returns {ActionGeneratorObject}
      */
     *actionBeginEvent(battleContext, activeAction) {
-        if (activeAction.action.playerAction?.srcPlayer !== this.targetPlayer ||
-            !activeAction.action.playerAction.baseDamage ||
-            !this.#targetGenerator) {
+        if (!matchAttackAction(activeAction.action, {srcAgent: this.targetPlayer})) {
             return;
         }
 
         const inputData = /**@type {EmpowermentEffectData} */(yield true);
 
-        if (activeAction.generator.inputData.type !== inputData.type) {
+        if (!matchAttackAction(activeAction.action, {type: inputData.type})) {
             return;
         }
 
+        this.#isActivated = true;
         /**@type {(data: Action) => void} */
         const modFunction = (data) => {
             if (!data.playerAction || !data.playerAction.baseDamage) {
@@ -118,31 +75,6 @@ class EmpowermentEffect extends Effect {
                 modFunction,
                 action: 'buff',
                 targetId: this.targetPlayer.getData().id
-            }
-        };
-    }
-
-    /**
-     * Called when an ActionGenerator completed all of its actions and was removed from the battle system in
-     * the battle system. This function generates the actions that respond the event
-     * @param {BattleContext} battleContext 
-     * @param {ActiveActionGenerator} actionGenerator 
-     * @returns {ActionGeneratorObject}
-     */
-    *actionGeneratorEndEvent(battleContext, actionGenerator) {
-        if (this.#targetGenerator !== actionGenerator.generator) {
-            return;
-        }
-        
-        const inputData = /**@type {EmpowermentEffectData} */(yield true);
-
-        if (actionGenerator.generator.inputData.type !== inputData.type) {
-            return;
-        }
-
-        yield {
-            battleContextAction: {
-                removeEffect: this
             }
         };
     }
@@ -168,6 +100,21 @@ class EmpowermentEffect extends Effect {
                 action: 'empowerment',
             }
         };
+    }
+
+    /**
+     * Called at the end of a round of battle round
+     * @param {BattleContext} battleContext 
+     * @returns {ActionGeneratorObject}
+     */
+    *battleRoundEndEvent(battleContext) {
+        if (!this.#isActivated) {
+            return;
+        }
+
+        yield true;
+
+        yield this.endEffectAction();
     }
 }
 

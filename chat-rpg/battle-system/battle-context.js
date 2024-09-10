@@ -24,6 +24,8 @@ class BattleContext {
     #actionStack;
     /** @type {Effect[]} */
     #effects;
+    /** @type {Effect|null|undefined} */
+    #removedEffect;
 
     /**
      * 
@@ -44,6 +46,7 @@ class BattleContext {
         this.#actionGeneratorStack = [];
         this.#actionStack = [];
         this.#effects = [];
+        this.#removedEffect = null;
 
         // The Battle has just started restore the player effects
         if(initializeBattle) {
@@ -154,6 +157,11 @@ class BattleContext {
                 battleSteps.push(...actionBattleSteps);
                 this.popAction();
                 this.sendEffectEvent((_effect) => _effect.onActionEnd(this, topAction, actionBattleSteps));
+                if (this.#removedEffect) {
+                    this.addActionGenerator(
+                        this.#removedEffect.onActionEnd(this, topAction, actionBattleSteps), this.#removedEffect);
+                }
+                this.#removedEffect = null;
             }
         }
 
@@ -236,7 +244,8 @@ class BattleContext {
      * @returns {Effect | undefined}
      */
     removeEffect(effect) {
-        return chatRPGUtility.findAndRemoveFromArray(this.#effects, effect);
+        this.#removedEffect = chatRPGUtility.findAndRemoveFromArray(this.#effects, effect);
+        return this.#removedEffect;
     }
 
     /**

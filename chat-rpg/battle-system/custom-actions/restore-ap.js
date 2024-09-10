@@ -6,25 +6,27 @@
  * @import {Action} from "../action"
  */
 
-const { BattleWeapon } = require("../../datastore-objects/battle-agent");
+const { getTarget } = require("../utility");
 
 /**
  * 
  * @param {BattleAgent} user 
  * @param {AbilityActionData} abilityData 
- * @param {{damageMultiplier?: number}} inputData 
+ * @param {{deplete?: boolean}} inputData 
  * @param {BattleContext} battleContext 
  * @param {AbilityGenUtility} utilities 
  * @returns {Generator<Action, void, any>}
  */
 function *generateActions(user, abilityData, inputData, battleContext, utilities) {
-    if (!inputData.damageMultiplier) {
-        inputData.damageMultiplier = 1;
-    }
+    const targetPlayer = getTarget(user, abilityData.target, battleContext);
+    const targetPlayerData = targetPlayer.getData();
 
-    const weapon = new BattleWeapon(user.getData().weapon);
-    if(abilityData.baseDamage) {
-        abilityData.baseDamage += (weapon.getModifiedSpeed() - weapon.getData().speed) * inputData.damageMultiplier;
+    if (!inputData.deplete) {
+        const missingAp = targetPlayerData.maxAp - targetPlayerData.ap;
+        abilityData.apChange = missingAp;
+    }
+    else {
+        abilityData.apChange = -targetPlayerData.ap;   
     }
 
     yield* utilities.generateActionsFromActionData(user, abilityData, battleContext);

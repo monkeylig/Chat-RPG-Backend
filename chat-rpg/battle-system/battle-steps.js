@@ -38,6 +38,7 @@ const ELEMENTAL_BURST_BONUS = 1.5;
  * @param {BattleContext} battleContext 
  * @param {{
  * defensePen?: number,
+ * baseDamageChange?: number,
  * overrideDamageModifier?: string
  * }} options 
  * @returns {Array<BattleStep>}
@@ -73,19 +74,26 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     //defense will be at least 0.001
     let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, Math.max(0.001, defense));
 
+    let baseDamageChange = 1;
+
+    if (options.baseDamageChange !== undefined) {
+        baseDamageChange += options.baseDamageChange;
+    }
+
     //Weapon Synergy Bonus
     if(srcPlayerData.weapon.style === style) {
-        damage *= WEAPON_SYNERGY_BONUS;
+        baseDamageChange *= WEAPON_SYNERGY_BONUS;
     }
 
     let searchElements = elements ? element => elements.find(e => e === element) : (elements) => undefined;
     if(elements) {
         // Elemental burst
         if(elements.length > 1) {
-            damage *= ELEMENTAL_BURST_BONUS * (elements.length - 1);
+            baseDamageChange *= ELEMENTAL_BURST_BONUS * (elements.length - 1);
         }
     }
 
+    damage *= baseDamageChange;
     const damageStep = BattleSteps.damage(targetPlayer, damage, type);
     steps.push(damageStep);
 
@@ -93,21 +101,6 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
         const ablazed = gameplayObjects.statusEffects.ablazed;
         const surged = gameplayObjects.statusEffects.surged;
         const drenched = gameplayObjects.statusEffects.drenched;
-        const frozen = gameplayObjects.statusEffects.frozen;
-
-        if(elements.length > 1) {
-            let infoText = ''; 
-            elements.forEach((element, index) => {
-                if(elements.length === 2) {
-                    infoText += index === elements.length - 1 ? `and ${element}` : `${element} `;
-                }
-                else {
-                    infoText += index === elements.length - 1 ? `and ${element}` : `${element}, `;
-                }
-            });
-
-            steps.push(BattleSteps.info(`${srcPlayer.getData().name} combined ${infoText} for an elemental burst!`, 'elementalBurst'));
-        }
 
         /**
          * @param {GConstructor<Effect>} InflictEffect
@@ -541,7 +534,7 @@ function apGainStep(battlePlayer, apGain) {
  */
 function apChange(battleAgent, value) {
     const battlePlayerData = battleAgent.getData();
-    const netChange = Math.min(battlePlayerData.maxAp - battlePlayerData.ap, Math.max(value, -battlePlayerData.ap))
+    const netChange = Math.min(battlePlayerData.maxAp - battlePlayerData.ap, Math.max(value, -battlePlayerData.ap));
     battlePlayerData.ap += netChange;
 
     return {
@@ -550,6 +543,28 @@ function apChange(battleAgent, value) {
         netChange: netChange
     };
 
+}
+
+/**
+ * @typedef {BattleStep & {
+* targetId: string,
+* netChange: number
+* }} MaxApChangeStep
+* 
+* @param {BattleAgent} battleAgent 
+* @param {number} value 
+* @returns {MaxApChangeStep}
+*/
+function maxApChange(battleAgent, value) {
+    const battlePlayerData = battleAgent.getData();
+    const netChange =  Math.max(value, -battlePlayerData.maxAp);
+    battlePlayerData.maxAp += netChange;
+
+    return {
+        type: 'maxApChange',
+        targetId: battleAgent.getData().id,
+        netChange: netChange
+    };
 }
 
 function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
@@ -902,6 +917,7 @@ const BattleSteps = {
     apCost: apCostStep,
     apGain: apGainStep,
     apChange,
+    maxApChange,
     readyRevive: readyReviveStep,
     gainStatusEffect: gainStatusEffectStep,
     removeStatusEffect: removeStatusEffectStep,
@@ -919,7 +935,7 @@ const BattleSteps = {
     actionMod,
     genHitSteps,
     removeActionGenerator,
-    triggerAbility
+    triggerAbility,
 };
 
 module.exports = BattleSteps;

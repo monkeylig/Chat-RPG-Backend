@@ -2,12 +2,12 @@
  * @import {AbilityActionData} from "../../datastore-objects/ability"
  * @import {Action} from "../action"
  * @import {BattleContext} from "../battle-context"s
+ * @import {AbilityGenUtility} from "../ability-utility"
  */
 
-const Ability = require("../../datastore-objects/ability");
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { getRandomIntInclusive } = require("../../utility");
-const { getTarget, generateStandardActions } = require("../utility");
+const { getTarget } = require("../utility");
 
 /**
  * 
@@ -15,22 +15,25 @@ const { getTarget, generateStandardActions } = require("../utility");
  * @param {AbilityActionData} abilityActionData 
  * @param {{minHits: number, maxHits: number}} inputData 
  * @param {BattleContext} battleContext 
+ * @param {AbilityGenUtility} utilities 
  * @returns {Generator<Action, void, any>}
  */
-function *generateActions(user, abilityActionData, inputData, battleContext) {
+function *generateActions(user, abilityActionData, inputData, battleContext, utilities) {
     const hits = getRandomIntInclusive(inputData.minHits, inputData.maxHits);
 
-    const ability = new Ability(abilityActionData);
+    const target = getTarget(user, abilityActionData.target, battleContext);
+    let hitCount = 0;
     for (let i=0; i < hits; i++) {
-        for (const action of generateStandardActions(user, abilityActionData, battleContext)) {
-            yield action;
+        if (abilityActionData.baseDamage && target.isDefeated()) {
+            break;
         }
+        yield* utilities.generateActionsFromActionData(user, abilityActionData, battleContext);
+        hitCount += 1;
     }
 
-    const target = getTarget(user, abilityActionData.target, battleContext);
     yield {
         infoAction: {
-            description: `${target} was hit ${hits} times.`,
+            description: `${user.getData().name} attacked ${hitCount} times.`,
             targetAgentId: target.getData().id
         }
     };
