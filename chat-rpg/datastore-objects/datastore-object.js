@@ -1,7 +1,12 @@
+/**
+ * @import {GConstructor} from '../utility'
+ * 
+ */
+
 const utility = require("../../utility");
 
 /** 
- * @typedef {new (...args: any[]) => DatastoreObject} DatastoreConstructor
+ * @typedef {GConstructor<DatastoreObject>} DatastoreConstructor
  */
 
 /** A class representing an object that is stored in a datastore. */
@@ -21,12 +26,7 @@ class DatastoreObject {
             this.constructNewObject(this.datastoreObject);
         }
         else {
-            try {
-                objectData = utility.deepCopy(objectData);
-            }
-            catch (error) {
-                throw new Error(error);
-            }
+            objectData = utility.deepCopy(objectData);
             this.constructNewObject(this.datastoreObject);
             for(const property in this.datastoreObject) {
                 if(objectData.hasOwnProperty(property)) {

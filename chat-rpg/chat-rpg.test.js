@@ -1,5 +1,5 @@
 /**
- * @import {DamageInfo, InfoBattleStep} from './battle-system/battle-steps'
+ * @import {DamageStep, InfoBattleStep} from './battle-system/battle-steps'
  */
 
 const ChatRPG = require('./chat-rpg');
@@ -17,6 +17,7 @@ const { InventoryPage } = require('./datastore-objects/inventory-page');
 const { BookRequirement, Book } = require('./datastore-objects/book');
 const gameplayObjects = require('./gameplay-objects');
 const Ability = require('./datastore-objects/ability');
+const { findBattleStep } = require('./battle-system/utility');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -462,7 +463,7 @@ test('Magic Strike', async () => {
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
     expect(battleUpdate.steps[2].type).toMatch('damage');
-    const damageStep = /**@type {DamageInfo}*/(battleUpdate.steps[2])
+    const damageStep = /**@type {DamageStep}*/(battleUpdate.steps[2])
     expect(damageStep.damage).toBeGreaterThan(2);
 
 });
@@ -1760,4 +1761,78 @@ test('Get Inventory Page', async () => {
     expect(pageData).toBeDefined();
     expect(pageData.objects[0].content).toStrictEqual(object1.content);
     expect(pageData.objects[1].content).toStrictEqual(object2.content);
+});
+
+test('Use Item from bag', async () => {
+    let player = new Player();
+    player.getData().health = player.getData().maxHealth - 5;
+    const bagItem = player.addItemToBag(new Item({
+        name: 'Potion',
+        heal: 5,
+        target: 'self'
+    }));
+
+    if (!bagItem) {fail();}
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    const returnObject = await chatrpg.useItem('player1', bagItem.id);
+
+    player = new Player(chatrpg.findPlayerById('player1'));
+
+    if (!returnObject.player) {fail();}
+    if (!returnObject.steps) {fail();}
+    expect(player.getData().health).toBe(player.getData().maxHealth);
+    expect(player.getData()).toStrictEqual(new Player(returnObject.player).getData());
+    expect(findBattleStep('heal', returnObject.steps)).toBeDefined();
+
+    await expect(chatrpg.useItem('player1', bagItem.id)).rejects.toThrow(ChatRPGErrors.itemNotinBag);
+    await expect(chatrpg.useItem('player0', bagItem.id)).rejects.toThrow(ChatRPGErrors.playerNotFound);
+});
+
+test('Use Item from inventory', async () => {
+    let player = new Player();
+    player.getData().health = player.getData().maxHealth - 5;
+    const page = new InventoryPage();
+    const inventoryObject = page.addObjectToInventory(new Item({
+        name: 'Potion',
+        heal: 5,
+        target: 'self'
+    }).getData(), 'item');
+    const page1Id = 'page1';
+    player.onObjectAddedToInventory(page1Id);
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            player1: player.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [page1Id]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+
+    if (!inventoryObject) {fail();}
+
+    const returnObject = await chatrpg.useItem('player1', inventoryObject.id, {itemLocation: {type: 'inventory', source: {pageId: page1Id}}});
+
+    player = new Player(await chatrpg.findPlayerById('player1'));
+
+    if (!returnObject.player) {fail();}
+    if (!returnObject.steps) {fail();}
+    expect(player.getData().health).toBe(player.getData().maxHealth);
+    expect(player.getData()).toStrictEqual(new Player(returnObject.player).getData());
+    expect(findBattleStep('heal', returnObject.steps)).toBeDefined();
+
+    await expect(chatrpg.useItem('player1', inventoryObject.id, {itemLocation: {type: 'inventory', source: {pageId: page1Id}}})).rejects.toThrow(ChatRPGErrors.objectNotInInventory);
+    await expect(chatrpg.useItem('player0', inventoryObject.id, {itemLocation: {type: 'inventory', source: {pageId: page1Id}}})).rejects.toThrow(ChatRPGErrors.playerNotFound);
 });

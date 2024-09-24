@@ -35,6 +35,16 @@ class ReviveEffect extends Effect {
      * @returns {ActionGeneratorObject}
      */
     *actionEndEvent(battleContext, activeAction, battleSteps) {
+        if (this.isEffectStartEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is ready to revive!`,
+                    action: 'reviveReady'
+                }
+            };
+        }
+
         if (!this.targetPlayer.isDefeated()) {
             return;
         }

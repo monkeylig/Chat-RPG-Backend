@@ -8,6 +8,7 @@ const EffectBoost = require('./effect-boost');
 const RoundDamageBoost = require('./round-damage-boost');
 const IsHealthFull = require('./is-full-health');
 const RestoreAP = require('./restore-ap');
+const IsReviveSet = require('./is-revive-set');
 
 module.exports = {
     Revive,
@@ -20,4 +21,5 @@ module.exports = {
     EffectBoost,
     IsHealthFull,
     RestoreAP,
+    IsReviveSet,
 }

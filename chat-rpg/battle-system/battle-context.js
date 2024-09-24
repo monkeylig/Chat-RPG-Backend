@@ -55,6 +55,7 @@ class BattleContext {
                 const effectData = playerEffectsMap[effectId];
                 const newEffect = restoreEffect(effectData, this.player);
                 if (newEffect) {
+                    this.#battle.effects.push(newEffect.getData());
                     this.addEffect(newEffect);
                 }
             }

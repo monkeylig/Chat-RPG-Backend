@@ -5,6 +5,7 @@
  * @import {DatastoreConstructor} from './datastore-object'
  * @import {WeaponData} from './weapon'
  * @import {AbilityData} from './ability'
+ * @import {BattlePlayer} from './battle-agent'
  */
 
 const DatastoreObject = require('./datastore-object');
@@ -495,9 +496,13 @@ class Player extends BagHolderMixin(Agent) {
         return /** @type {PlayerData} */ (this.datastoreObject);
     }
 
+    /**
+     * 
+     * @param {BattlePlayer} battlePlayer 
+     */
     mergeBattlePlayer(battlePlayer) {
-        const thisPlayerData = this.datastoreObject;
-        const battlePlayerData = battlePlayer.datastoreObject;
+        const thisPlayerData = this.getData();
+        const battlePlayerData = battlePlayer.getData();
 
         thisPlayerData.maxHealth = battlePlayerData.maxHealth;
         thisPlayerData.health = battlePlayerData.health;
@@ -512,6 +517,7 @@ class Player extends BagHolderMixin(Agent) {
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
         thisPlayerData.lastDrops = battlePlayerData.lastDrops;
+        thisPlayerData.effectsMap = battlePlayerData.effectsMap;
 
         this.revive();
     }

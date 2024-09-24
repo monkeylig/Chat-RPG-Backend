@@ -6,7 +6,7 @@ const DatastoreObject = require('./datastore-object');
  * @typedef {AbilityData & {
  * count: number,
  * icon: string,
- * outOfBattle?: boolean
+ * outOfBattle: boolean
  * }} ItemData
  */
 
@@ -21,6 +21,7 @@ class Item extends DatastoreObject {
         item.icon = 'potion.png';
         item.count = 1;
         item.instanceNumber = 0;
+        item.outOfBattle = false;
     }
 
     isDepleted() {

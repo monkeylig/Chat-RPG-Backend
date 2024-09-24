@@ -1,11 +1,26 @@
+/**
+ * @import {Request, Response} from 'express'
+ * @import ChatRPG from '../chat-rpg/chat-rpg'
+ */
+
 const ChatRPGErrors = require('../chat-rpg/errors');
 const utility = require('../utility');
 
 //#region Utilities
+/**
+ * 
+ * @param {Response} res 
+ */
 function setStandardHeaders(res) {
     res.set('Access-Control-Allow-Origin', '*');
 }
 
+/**
+ * 
+ * @param {any} payload 
+ * @param {{name: string, type: string}[]} params 
+ * @returns 
+ */
 function validatePayloadParameters(payload, params)
 {
     if(!payload) {
@@ -24,6 +39,12 @@ function validatePayloadParameters(payload, params)
     return true;
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {Error} error 
+ */
 function internalErrorCatch(req, res, error) {
     let responce = {
         message: 'Internal Error',
@@ -33,7 +54,7 @@ function internalErrorCatch(req, res, error) {
     let status = 500;
 
     let errorCode = 1;
-    for(rpgError in ChatRPGErrors) {
+    for(const rpgError in ChatRPGErrors) {
         if(ChatRPGErrors[rpgError] === error.message) {
             responce.errorCode = errorCode;
             responce.message = ChatRPGErrors[rpgError];
@@ -47,6 +68,13 @@ function internalErrorCatch(req, res, error) {
     sendResponceObject(res, responce, status);
 }
 
+/**
+ * 
+ * @param {Response} res 
+ * @param {string} message 
+ * @param {number} rpgErrorCode 
+ * @param {number} errorCode 
+ */
 function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 400) {
     let responce = {
         message: message,
@@ -55,6 +83,12 @@ function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 40
     sendResponceObject(res, responce, errorCode);
 }
 
+/**
+ * 
+ * @param {Response} res 
+ * @param {object} message 
+ * @param {number} status 
+ */
 function sendResponceObject(res, message = {}, status = 200) {
     res.status(status);
     res.send(JSON.stringify(message));
@@ -574,6 +608,31 @@ function updateGame(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatrpg 
+ */
+function useItem(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if (!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'objectId', type: 'string'}
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    // @ts-ignore
+    chatrpg.useItem(req.query.playerId, req.query.objectId, req.body)
+    .then(update => {
+        sendResponceObject(res, update);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -601,5 +660,6 @@ module.exports = {
     move_object_from_inventory_to_bag,
     product_purchase,
     claim_object,
-    updateGame
+    updateGame,
+    useItem
 };
