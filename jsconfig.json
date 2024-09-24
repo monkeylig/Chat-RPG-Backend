@@ -1,0 +1,25 @@
+{
+    "typeAcquisition": {
+        "enable": true,
+        "include": [
+            "jest"
+        ]
+    },
+    "compileOnSave": true,
+    "typingOptions": {
+        "enableAutoDiscovery": true
+    },
+    "compilerOptions": {
+        "lib": ["es2023"],
+        "module": "CommonJS",
+        "target": "es2022",
+        "checkJs": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "noImplicitAny": false,
+      },
+    "include": ["./**/*"],
+    "exclude": [
+        "node_modules"
+    ]
+}

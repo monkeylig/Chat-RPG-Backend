@@ -6,7 +6,7 @@ const gameplayObjects = {
         ablazed: {
             name: 'ablazed',
             inflictChance: 0.30,
-            damagePercentage: 1/16,
+            trueDamage: 10,
             roundsLeft: 3
         },
         surged: {
@@ -18,14 +18,14 @@ const gameplayObjects = {
         drenched: {
             name: 'drenched',
             healthThreshold: 0.20,
-            lightningAmp: 0.2,
+            trueDamage: 20,
             roundsLeft: 5,
         },
         frozen: {
             name: 'frozen',
             drenchedInflict: 0.5,
-            attackChance: 0.5,
-            roundsLeft: 3,
+            attackChance: 1,
+            roundsLeft: 1,
         }
     },
     startingWeapons: {

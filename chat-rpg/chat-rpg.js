@@ -1,3 +1,13 @@
+/**
+ * @import {PlayerData} from "./datastore-objects/agent"
+ * @import {GConstructor} from "./utility"
+ * @import {Transaction} from "../data-source/backend-data-source"
+ * @import {BattleStep} from "./battle-system/battle-steps"
+ * @import {TransactionFunction} from "../data-source/backend-data-source"
+ * @import {InventoryPageData} from "./datastore-objects/inventory-page"
+ * @import {ConsumeItemStep} from "./battle-system/battle-steps"
+ */
+
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
 const Schema = require("./datasource-schema");
 const GameModes = require("./game-modes");
@@ -9,13 +19,22 @@ const Item = require('./datastore-objects/item');
 const {MonsterClass} = require("./datastore-objects/monster-class");
 const {Weapon} = require("./datastore-objects/weapon");
 const { Shop } = require("./datastore-objects/shop");
-const BattleFunctions = require('./battle/battle')
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
 const gameplayObjects = require("./gameplay-objects");
+const { BattleSystem } = require("./battle-system/battle-system");
+const { Battle } = require("./datastore-objects/battle");
+const { BattleContext } = require("./battle-system/battle-context");
+const DatastoreObject = require("./datastore-objects/datastore-object");
+const { BattleMove } = require("./battle-system/battle-move");
+const { ItemBattleMove } = require("./battle-system/item-battle-move");
+const BattleSteps = require("./battle-system/battle-steps");
 
 class ChatRPG {
+    /**
+     * @typedef {PlayerData & {id: string}} UserPlayerData
+     */
     /** @member {IBackendDataSource} */
     #datasource;
     
@@ -179,22 +198,24 @@ class ChatRPG {
         const battlePlayer = new BattlePlayer(player.datastoreObject);
         const battleMonster = new BattleMonster(targetMonsterData);
 
-        const battle = {
-            player: battlePlayer.datastoreObject,
-            monster: battleMonster.datastoreObject,
+        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
+        const battle = new Battle({
+            player: battlePlayer.getData(),
+            monster: battleMonster.getData(),
             gameId: gameSnap.ref.id,
             strikeAnim: chatRPGUtility.strikeAnim,
             environment: {},
             round: 1,
             active: true
+        });
+
+        const battleContext = new BattleContext(battle.getData(), true);
+
+        await battleRef.set(battleContext.battle);
+        return {
+            ...battleContext.battle,
+            id: battleRef.id
         };
-
-        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
-        await battleRef.set(battle);
-
-        battle.id = battleRef.id;
-
-        return battle;
     }
 
     async battleAction(battleId, actionRequest) {
@@ -204,11 +225,13 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.battleNotFound);
         }
 
-        const battle = battleSnap.data();
-        const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
+        //const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
+        const battleSystem = new BattleSystem(battleSnap.data());
+        const steps = battleSystem.singlePlayerBattleIteration(actionRequest);
+        const battle = battleSystem.battleContext.battle;
 
         const battlePlayer = new BattlePlayer(battle.player);
-        const battlePlayerData = battlePlayer.datastoreObject;
+        const battlePlayerData = battlePlayer.getData();
         const monster = new BattleMonster(battle.monster);
         const monsterData = monster.getData();
 
@@ -245,8 +268,11 @@ class ChatRPG {
 
             await this.#finishBattle(battleSnap.ref, playerRef, player, battlePlayer);
 
-            const updatedPlayer = player.getData();
-            updatedPlayer.id = battlePlayerData.id;
+            /**@type {PlayerData & {id: string}} */
+            const updatedPlayer = {
+                ...player.getData(),
+                id: battlePlayerData.id
+            };
             return {
                 ...battle,
                 updatedPlayer,
@@ -602,6 +628,155 @@ class ChatRPG {
         await gameRef.set(game.getData());
 
         return game.getData();
+    }   
+    /**
+     * Use an Item outside of battle. By default, the item will be used from the bag.
+     * Use the options parameter to use an item from an inventory page instead.
+     * @param {string} playerId
+     * @param {string} objectId 
+     * @param {{
+     * itemLocation?: {type: string, source: {pageId?: string}}
+     * }} [options]
+     * @returns {Promise<{
+     * player: UserPlayerData,
+     * inventoryPage?: InventoryPageData & {id: string}
+     * steps: BattleStep[]
+     * }>}
+     */
+    async useItem(playerId, objectId, options) {
+        return await this.#runTransaction(async(transaction) => {
+            if (options && options.itemLocation) {
+                if (options.itemLocation.type === 'inventory') {
+                    const locationSource = options.itemLocation.source;
+                    if (locationSource.pageId) {
+                        return this.useItemFromInventory(playerId, objectId, locationSource.pageId, transaction);
+                    }
+                }
+            }
+
+            return await this.useItemFromBag(playerId, objectId, transaction);
+        });
+    }
+
+    /**
+     * Use an Item outside of battle from the player's bag.
+     * @param {string} playerId
+     * @param {string} objectId
+     * @param {Transaction} transaction 
+     * @returns {Promise<{
+     * player: UserPlayerData,
+     * steps: BattleStep[]
+     * }>}
+     */
+    async useItemFromBag(playerId, objectId, transaction) {
+        return this.#withObjectTransaction(Player, (player) => {
+            const bagItem = player.findObjectInBag(objectId);
+            if (!bagItem || bagItem.type !== 'item') {
+                throw new Error(ChatRPGErrors.itemNotinBag);
+            }
+
+            const item = new Item(bagItem.content);
+
+            const result = this.#useItemOutOfBattle(player, item);
+
+            return {player: {...player.getData(), id: playerId}, steps: result.steps};
+        }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
+    }
+
+    /**
+     * Use item outside of battle from inventory page.
+     * @param {string} playerId 
+     * @param {string} objectId 
+     * @param {string} pageId
+     * @param {Transaction} transaction 
+     * @returns {Promise<{
+     * player: UserPlayerData,
+     * inventoryPage: InventoryPageData & {id: string}
+     * steps: BattleStep[]
+     * }>}
+     */
+    async useItemFromInventory(playerId, objectId, pageId, transaction) {
+        return this.#withObjectTransaction(Player, async (player) => {
+            return this.#withObjectTransaction(InventoryPage, (page) => {
+                const inventoryItem = page.findObjectById(objectId);
+                if (!inventoryItem || inventoryItem.type !== 'item') {
+                    throw new Error(ChatRPGErrors.objectNotInInventory);
+                }
+
+                const item = new Item(inventoryItem.content);
+                
+                const result = this.#useItemOutOfBattle(player, item);
+
+                for (const step of result.steps) {
+                    if (step.type === 'consumeItem') {
+                        const consumeItem = /**@type {ConsumeItemStep}*/(step);
+                        if (consumeItem.itemName === item.getData().name) {
+                            item.getData().count -= 1;
+                            inventoryItem.content = item.getData();
+                            if (item.isDepleted()) {
+                                const droppedItem = page.dropObjectFromInventory(objectId);
+                                if (droppedItem) {
+                                    player.onObjectRemovedFromInventory(pageId);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return {player: {...result.player, id: playerId}, inventoryPage: {...page.getData(), id: pageId}, steps: result.steps};
+            }, transaction, Schema.Collections.InventoryPages, pageId, ChatRPGErrors.inventoryPageNotFound);
+        }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
+    }
+    
+    /**
+     * 
+     * @param {Player} player 
+     * @param {Item} item 
+     * @returns {{player: PlayerData, steps: BattleStep[]}}
+     */
+    #useItemOutOfBattle(player, item) {
+        const battleContext = new BattleContext(new Battle({player: player.getData()}).getData());
+
+        battleContext.activateBattleMove(new ItemBattleMove(battleContext.player, item));
+        const steps = battleContext.resolve();
+
+        player.mergeBattlePlayer(battleContext.player);
+
+        return {player: {...player.getData()}, steps}
+    }
+
+    /**
+     * 
+     * @param {TransactionFunction} transactionFunction 
+     */
+    #runTransaction(transactionFunction) {
+        return this.#datasource.runTransaction(transactionFunction);
+    }
+
+    /**
+     * @template {DatastoreObject} TDatastoreType
+     * 
+     * @param {GConstructor<TDatastoreType>} objectConstrunctor 
+     * @param {(dataObject: TDatastoreType) => void} logicFunc 
+     * @param {Transaction} transaction 
+     * @param {string} collection 
+     * @param {string} documentId 
+     * @returns {Promise<*>}
+     */
+    async #withObjectTransaction(objectConstrunctor, logicFunc, transaction, collection, documentId, notFoundError = ChatRPGErrors.objectNotFound) {
+        const documentRef = this.#datasource.collection(collection).doc(documentId);
+        const documentSnap = await transaction.get(documentRef);
+
+        if (!documentSnap.exists) {
+            throw new Error(notFoundError);
+        }
+
+        const dataObject = new objectConstrunctor(documentSnap.data());
+        const returnData = await Promise.resolve(logicFunc(dataObject));
+
+        transaction.set(documentRef, dataObject.getData());
+
+        return returnData;
     }
 
     #returnPlayerResponce(player, id) {

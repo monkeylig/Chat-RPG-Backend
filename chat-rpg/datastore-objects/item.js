@@ -1,4 +1,14 @@
+/** @import {AbilityData} from "./ability" */
+const Ability = require("./ability");
 const DatastoreObject = require('./datastore-object');
+
+/**
+ * @typedef {AbilityData & {
+ * count: number,
+ * icon: string,
+ * outOfBattle: boolean
+ * }} ItemData
+ */
 
 class Item extends DatastoreObject {
     constructor(objectData) {
@@ -6,33 +16,12 @@ class Item extends DatastoreObject {
     }
 
     constructNewObject(item) {
+        Ability.constructNewObject(item)
         item.name = 'nothing';
-        item.instanceNumber = 0;
         item.icon = 'potion.png';
         item.count = 1;
-        item.effectName = '';
-        item.heal = 0;
-        item.description = 'A useful Item.';
+        item.instanceNumber = 0;
         item.outOfBattle = false;
-        item.imbue = {
-            fire: null,
-            lightning: null,
-            water: null,
-            ice: null,
-        };
-        item.apGain = 0;
-        item.apReduce = 0;
-        item.strikeLevelChange = 0;
-        item.relativeRecoil = 0;
-        item.strengthAmp = 0;
-        item.targetStrengthAmp = 0;
-        item.defenseAmp = 0;
-        item.targetDefenseAmp = 0;
-        item.magicAmp = 0;
-        item.targetMagicAmp = 0;
-        item.speedAmp = 0;
-        item.weaponSpeedAmp = 0;
-        item.targetWeaponSpeedAmp = 0;
     }
 
     isDepleted() {
@@ -51,6 +40,14 @@ class Item extends DatastoreObject {
         if(!Item.isDepleted(datastoreObject)) {
             datastoreObject.count -= 1;
         }
+    }
+
+    /**
+     * @override
+     * @returns {ItemData}
+     */
+    getData() {
+        return /** @type {ItemData} */ (this.datastoreObject);
     }
 }
 

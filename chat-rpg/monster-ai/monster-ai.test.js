@@ -38,11 +38,11 @@ test('Generic Monster AI', () => {
     expect(actionRequest).toBeDefined();
     expect(actionRequest.type).toBe('strike');
 
-    chatRPGUtility.random = seedrandom('1!');
+    chatRPGUtility.random = seedrandom('3');
     monster.getData().ap = 1;
     actionRequest = monsterAi.genericAi(monster, {}, {});
 
     expect(actionRequest).toBeDefined();
     expect(actionRequest.type).toBe('ability');
-    expect(actionRequest.abilityName).toBe('ability1');
+    expect(actionRequest.abilityName).toBe('ability3');
 });

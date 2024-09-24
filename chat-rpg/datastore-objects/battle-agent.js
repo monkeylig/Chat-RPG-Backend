@@ -1,12 +1,18 @@
+/**
+ * @import {MonsterData} from './monster-class'
+ * @import {AgentData, BagHolderData} from './agent'
+ * @import {GConstructor} from '../utility'
+ * @import {WeaponData} from './weapon'
+ */
+
 const Ability = require('./ability');
 const {Agent, Player, BagHolderMixin} = require('./agent');
+const DatastoreObject = require('./datastore-object');
 const {Monster} = require('./monster-class');
 const { Weapon } = require('./weapon');
 
 /**
- * @typedef {import('./agent').AgentData} AgentData
- * @typedef {import('./agent').BagHolderData} BagHolderData
- * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
+ * @typedef {GConstructor<Agent>} AgentConstructor
  */
 
 const BATTLE_AP = 3;
@@ -51,7 +57,7 @@ function statAmp(datastoreObject, statAmp, stages) {
     }
 
     datastoreObject[statAmp] += ampAmount;
-    return ampAmount !== 0;
+    return ampAmount;
 }
 
 function getModifiedStat(datastoreObject, stat, statAmp) {
@@ -59,35 +65,35 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
 }
 
 /**
- * @typedef {Object} BattleAgentData
- * @property {number} ap
- * @property {number} maxAp
- * @property {number} strikeLevel
- * @property {number} id
- * @property {number} strength
- * @property {number} defense
- * @property {number} magic
- * @property {number} strengthAmp
- * @property {number} defenseAmp
- * @property {number} magicAmp
- * @property {boolean} reviveReady
- * @property {Object} empowerment
- * @property {Object} protection
- * @property {Object} statusEffects
- * @property {number} fireResist
- * @property {number} lightningResist
- * @property {number} waterResist
- * @property {number} iceResist
- * @property {number} fireResistAmp
- * @property {number} lightningResistAmp
- * @property {number} waterResistAmp
- * @property {number} iceResistAmp
- * @property {Object} counter
- * @property {Object[]} abilityStrikes
+ * @typedef {AgentData & {
+ * weapon: BattleWeaponData,
+ * ap: number,
+ * maxAp: number,
+ * strikeLevel: number, 
+ * id: string,
+ * strengthAmp: number, 
+ * defenseAmp: number, 
+ * magicAmp: number, 
+ * reviveReady: boolean, 
+ * empowerment: object,
+ * protection: object,
+ * statusEffects: object,
+ * fireResist: number,
+ * lightningResist: number,
+ * waterResist: number,
+ * iceResist: number,
+ * fireResistAmp: number,
+ * lightningResistAmp: number,
+ * waterResistAmp: number,
+ * iceResistAmp: number,
+ * counter: object,
+ * abilityStrikes: object[],
+ * evasion: number
+ * }} BattleAgentData
  */
 
 /**
- * @template {DatastoreConstructor} TBase
+ * @template {AgentConstructor} TBase
  * @param {TBase} Base 
  */
 function BattleAgentMixin(Base) {
@@ -103,13 +109,11 @@ function BattleAgentMixin(Base) {
 
         constructNewObject(agent) {
             super.constructNewObject(agent);
+            agent.weapon = new BattleWeapon(agent.weapon).getData();
             agent.ap = BATTLE_AP;
             agent.maxAp = BATTLE_AP;
             agent.strikeLevel = 0;
-            agent.id = 0;
-            agent.strength = 0;
-            agent.defense = 0;
-            agent.magic = 0;
+            agent.id = '';
             agent.strengthAmp = 0;
             agent.defenseAmp = 0;
             agent.magicAmp = 0;
@@ -133,6 +137,7 @@ function BattleAgentMixin(Base) {
             agent.iceResistAmp = 0;
             agent.counter = null;
             agent.abilityStrikes = [];
+            agent.evasion = 0;
         }
 
         statAmp(stat, stages) {
@@ -295,6 +300,12 @@ function BattleAgentMixin(Base) {
             return protection[type] / this.datastoreObject.maxHealth * 100;
         }
 
+        /**
+         * 
+         * @param {number} initialDamage 
+         * @param {string} [type] 
+         * @returns {{totalDamage: number, protectedDamage: number}}
+         */
         dealDamage(initialDamage, type) {
             let damage = Math.floor(initialDamage);
             const protection = this.datastoreObject.protection;
@@ -370,18 +381,37 @@ function BattleAgentMixin(Base) {
         getAbilityStrikes() {
             return this.datastoreObject.abilityStrikes;
         }
+
+        /**
+         * 
+         * @param {number} speed 
+         */
+        setEvasiveSpeed(speed) {
+            const maxEvasion = 0.3;
+            this.getData().evasion = Math.min(Math.max(0, speed/10 * maxEvasion), maxEvasion);
+        }
+
+        /**
+         * @override
+         * @returns {BattleAgentData}
+         */
+        getData() {
+            return /** @type {BattleAgentData} */ (this.datastoreObject);
+        }
     }
 }
 
+class BattleAgent extends BattleAgentMixin(Agent){};
+
 /**
- * @typedef {BattleAgentData & AgentData & BagHolderData} BattlePlayerData
+ * @typedef {BattleAgentData & BagHolderData} BattlePlayerData
  * 
  */
 
 /**
- * An intermediate class
+ * A version of the player class with data fields for battles
  */
-class BattlePlayerAgent extends Agent {
+class BattlePlayer extends BattleAgentMixin(BagHolderMixin(Agent)) {
     constructor(objectData) {
         super(objectData)
     }
@@ -399,9 +429,15 @@ class BattlePlayerAgent extends Agent {
     }
 }
 
-const BattlePlayer = BattleAgentMixin(BagHolderMixin(BattlePlayerAgent));
+/**
+ * @typedef {BattleAgentData & MonsterData} BattleMonsterData
+ * 
+ */
 
-class _BattleMonster extends Monster {
+/**
+ * A version of the monster class with data fields for battles
+ */
+class BattleMonster extends BattleAgentMixin(Monster) {
     constructor(objectData) {
         super(objectData)
     }
@@ -409,9 +445,21 @@ class _BattleMonster extends Monster {
     constructNewObject(agent) {
         super.constructNewObject(agent);
     }
+
+    /**
+     * @override
+     * @returns {BattleMonsterData}
+     */
+    getData() {
+        return /** @type {BattleMonsterData} */ (this.datastoreObject);
+    }
 }
 
-const BattleMonster = BattleAgentMixin(_BattleMonster);
+/**
+ * @typedef {WeaponData & {
+* speedAmp: number,
+* }} BattleWeaponData
+*/
 
 class BattleWeapon extends Weapon {
     constructNewObject(weapon) {
@@ -455,4 +503,4 @@ class BattleWeapon extends Weapon {
     }
 }
 
-module.exports = {BattlePlayer, BattleMonster, BattleWeapon};
+module.exports = {BattlePlayer, BattleMonster, BattleWeapon, BattleAgent};

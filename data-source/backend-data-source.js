@@ -1,3 +1,15 @@
+/**
+ * @typedef {Object} Transaction
+ * @property {(refOrQuery: *) => *} get
+ * @property {(documentRef: *, data: *) => *} create
+ * @property {(documentRef: *, data: *) => *} set
+ * @property {(documentRef: *, updateObject: *) => *} update
+ * 
+ * @callback TransactionFunction
+ * @param {Transaction} transaction
+ * @returns {*}
+ */
+
 /** An abstract class providing an interface to NoSQL datastore */
 class IBackendDataSource {
     async initializeDataSource(options) {
@@ -10,16 +22,9 @@ class IBackendDataSource {
     }
 
     /**
-     * @callback TransactionFunction
-     * @param {Object} transaction
-     * @returns {*}
-     */
-
-    /**
-     * 
-     * @param {TransactionFunction} transactionFunction 
-     * @returns {Promise}
-     */
+    * @param {TransactionFunction} transactionFunction 
+    * @returns {Promise}
+    */
     async runTransaction(transactionFunction) {
         console.log("backend runTransaction()");
     }
@@ -172,4 +177,9 @@ class FieldValue {
     }
 }
 
-module.exports = {IBackendDataSource, FieldValue};
+module.exports = {
+    IBackendDataSource,
+    IBackendDataSourceCollectionRef,
+    IBackendDataSourceDocumentRef,
+    FieldValue
+};

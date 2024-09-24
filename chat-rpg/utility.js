@@ -1,8 +1,23 @@
+/** 
+ * @template {{}} TCon
+ * @typedef {new (...args: any[]) => TCon} GConstructor
+ */
 
 const EXP_MODIFIER = 6;
 
 function calcHitDamge(srclevel, baseDamage, attack, defense) {
     return ((2 * srclevel / 5 + 2) * baseDamage * attack / defense) / 50 + 2;
+}
+
+/**
+ * 
+ * @param {number} trueDamage 
+ * @param {number} targetLevel
+ * @returns {number} 
+ */
+function calcTrueDamage(trueDamage, targetLevel) {
+    const minExpectedHealth = targetLevel * 2;
+    return minExpectedHealth * (trueDamage/100);
 }
 
 function expFunc(level) {
@@ -34,6 +49,24 @@ function findInObjectArray(arr, matcher, matchValue) {
     return item;
 }
 
+/**
+ * @template {any} T
+ * 
+ * @param {T[]} arr 
+ * @param {T} value 
+ * @returns {T | undefined}
+ */
+function findAndRemoveFromArray(arr, value) {
+    const objectIndex = arr.findIndex(element => element === value);
+
+    if(objectIndex === -1) {
+        return;
+    }
+
+    const objectData = arr.splice(objectIndex, 1);
+    return objectData[0];
+}
+
 const chatRPGUtility = {
     random: Math.random,
     getRandomIntInclusive,
@@ -53,9 +86,16 @@ const chatRPGUtility = {
         baseDamage: 10,
         speed: 3,
         icon: 'fist.png',
+        /** @type {import("./datastore-objects/ability").AbilityData} */
         strikeAbility: {
             name: 'Heavy Strike',
-            baseDamage: 30
+            baseDamage: 30,
+            type: 'physical',
+            style: 'fist',
+            speed: 3,
+            target: 'opponent',
+            description: 'A heavy punch',
+            animation: {}
         },
         statGrowth: {
             maxHealth: 2,
@@ -104,7 +144,9 @@ const chatRPGUtility = {
         return Math.round(monster.expYield * monster.level/7 * EXP_MODIFIER);
     },
     findInObjectArray,
-    calcHitDamge
+    findAndRemoveFromArray,
+    calcHitDamge,
+    calcTrueDamage
 };
 
 module.exports = chatRPGUtility;

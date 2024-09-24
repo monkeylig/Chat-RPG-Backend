@@ -1,15 +1,19 @@
+/**
+ * @import {ItemData} from './item'
+ * @import {EffectData} from '../battle-system/effect'
+ * @import {CollectionContainer} from './utilities'
+ * @import {DatastoreConstructor} from './datastore-object'
+ * @import {WeaponData} from './weapon'
+ * @import {AbilityData} from './ability'
+ * @import {BattlePlayer} from './battle-agent'
+ */
+
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
 const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
-
-/**
- * @typedef {import('./utilities').Collection} Collection
- * @typedef {import('./utilities').CollectionContainer} CollectionContainer
- * @typedef {import('./datastore-object').DatastoreConstructor} DatastoreConstructor
- */
 
 /**
  * Calculates how much exp is needed to reach a level
@@ -144,6 +148,11 @@ function BagHolderMixin(Base) {
             return this.addObjectToBag(book, 'book');
         }
 
+        /**
+         * 
+         * @param {Item} item 
+         * @returns {CollectionContainer | undefined}
+         */
         addItemToBag(item) {
             return this.addObjectToBag(item.getData(), 'item');
         }
@@ -161,6 +170,11 @@ function BagHolderMixin(Base) {
             this.datastoreObject.lastDrops.objects = [];
         }
 
+        /**
+         * 
+         * @param {Item} item 
+         * @returns {ItemData | undefined}
+         */
         onItemUsed(item) {
             const bag = this.datastoreObject.bag;
             const itemIndex = bag.objects.findIndex(element => element.content.name === item.getData().name);
@@ -172,10 +186,35 @@ function BagHolderMixin(Base) {
             Item.onUsed(thisItemData);
 
             if(!Item.isDepleted(thisItemData)) {
-                return;
+                return thisItemData;
             }
 
             bag.objects.splice(itemIndex, 1);
+            return thisItemData;
+        }
+
+        /**
+         * 
+         * @param {string} name 
+         * @returns {Item | undefined}
+         */
+        consumeItem(name) {
+            const bag = this.datastoreObject.bag;
+            const itemIndex = bag.objects.findIndex(element => element.content.name === name);
+            if(itemIndex === -1) {
+                return;
+            }
+
+            const thisItem = new Item(bag.objects[itemIndex].content);
+            thisItem.onUsed();
+
+            if(!thisItem.isDepleted()) {
+                bag.objects[itemIndex].content = thisItem.getData();
+                return thisItem;
+            }
+
+            bag.objects.splice(itemIndex, 1);
+            return thisItem;
         }
 
         addCoins(coins) {
@@ -210,8 +249,8 @@ function BagHolderMixin(Base) {
  * @typedef {Object} AgentData
  * @property {string} name
  * @property {string} avatar
+ * @property {WeaponData} weapon
  * @property {Object[]} abilities
- * @property {Object} weapon
  * @property {number} autoRevive
  * @property {number} maxHealth
  * @property {number} health
@@ -221,10 +260,10 @@ function BagHolderMixin(Base) {
  * @property {number} level
  * @property {number} exp
  * @property {number} expToNextLevel
+ * @property {Object.<string, EffectData>} effectsMap
  */
 
 class Agent extends DatastoreObject {
-
     static MAXABILITIES = 5;
     constructor(objectData) {
         super(objectData);
@@ -233,8 +272,8 @@ class Agent extends DatastoreObject {
     constructNewObject(agent) {
         agent.name = 'Unknown';
         agent.avatar = 'unknown.png';
-        agent.abilities = [];
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
+        agent.abilities = [];
         agent.autoRevive = 0;
         agent.maxHealth = 0;
         agent.health = 0;
@@ -244,8 +283,17 @@ class Agent extends DatastoreObject {
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
+        agent.effectsMap = {};
 
         this.setStatsAtLevel(1);
+    }
+
+    /**
+     * @override
+     * @returns {AgentData}
+     */
+    getData() {
+        return /** @type {AgentData} */ (this.datastoreObject);
     }
 
     setStatsAtLevel(level) {
@@ -284,12 +332,19 @@ class Agent extends DatastoreObject {
         return datastoreObject.health <= 0;
     }
 
+    /**
+     * 
+     * @param {number} hp 
+     * @returns {number}
+     */
     heal(hp) {
+        if (this.isDefeated()) {
+            return 0;
+        }
+
         let healAmount = Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health);
 
-        if (healAmount > 0) {
-            healAmount = Math.max(healAmount, 1);
-        }
+        healAmount = Math.max(healAmount, 0);
         this.datastoreObject.health += Math.floor(healAmount);
 
         return healAmount;
@@ -320,7 +375,12 @@ class Agent extends DatastoreObject {
             this.addAbility(abilityData);
         }
     }
-
+    
+    /**
+     * 
+     * @param {string} abilityName 
+     * @returns {AbilityData | undefined}
+     */
     removeAbility(abilityName) {
         const abilities = this.datastoreObject.abilities;
         const abilityIndex = abilities.findIndex(element => element.name === abilityName);
@@ -343,25 +403,68 @@ class Agent extends DatastoreObject {
         return this.datastoreObject;
     }
 
+    /**
+     * 
+     * @param {number} healPercent 
+     * @returns {number}
+     */
     revive(healPercent = 1) {
-        Agent.revive(this.datastoreObject, healPercent);
+        return Agent.revive(this.datastoreObject, healPercent);
     }
 
     static revive(datastoreObject, healPercent = 1) {
-        if(Agent.isDefeated(datastoreObject)) {
-            datastoreObject.health = Math.floor(datastoreObject.maxHealth * healPercent);
+        if(!Agent.isDefeated(datastoreObject)) {
+            return 0;
+        }
+
+        const healAmount = Math.floor(datastoreObject.maxHealth * healPercent);
+        datastoreObject.health = healAmount;
+        return healAmount;
+    }
+
+    /**
+     * 
+     * @param {EffectData} effectData 
+     */
+    setEffect(effectData) {
+        if (effectData.persistentId) {
+            this.getData().effectsMap[effectData.persistentId] = effectData;
         }
     }
-}
+
+    /**
+     * 
+     * @param {string} id
+     * @returns {EffectData | undefined} 
+     */
+    getEffect(id) {
+        return this.getData().effectsMap[id];
+    }
+
+    /**
+     * 
+     * @param {string} id 
+     */
+    removeEffect(id) {
+        delete this.getData().effectsMap[id];
+    }
+};
 
 /**
- * A class representing a player
- * 
- * @extends Agent
+ * @typedef {AgentData & BagHolderData & {
+ * currentGameId: string,
+ * twitchId: string,
+ * inventory: object,
+ * trackers: object
+ * }} PlayerData
  */
-class PlayerAgent extends Agent {
+
+/**
+ * A class representing a player 
+ */
+class Player extends BagHolderMixin(Agent) {
     /**
-     * @param {*} objectData 
+     * @param {*} [objectData] 
      */
     constructor(objectData) {
         super(objectData);
@@ -385,9 +488,21 @@ class PlayerAgent extends Agent {
         };
     }
 
+    /**
+     * @override
+     * @returns {PlayerData}
+     */
+    getData() {
+        return /** @type {PlayerData} */ (this.datastoreObject);
+    }
+
+    /**
+     * 
+     * @param {BattlePlayer} battlePlayer 
+     */
     mergeBattlePlayer(battlePlayer) {
-        const thisPlayerData = this.datastoreObject;
-        const battlePlayerData = battlePlayer.datastoreObject;
+        const thisPlayerData = this.getData();
+        const battlePlayerData = battlePlayer.getData();
 
         thisPlayerData.maxHealth = battlePlayerData.maxHealth;
         thisPlayerData.health = battlePlayerData.health;
@@ -402,6 +517,7 @@ class PlayerAgent extends Agent {
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
         thisPlayerData.lastDrops = battlePlayerData.lastDrops;
+        thisPlayerData.effectsMap = battlePlayerData.effectsMap;
 
         this.revive();
     }
@@ -462,9 +578,5 @@ class PlayerAgent extends Agent {
         leger[pageIndex].count -= Math.min(1, leger[pageIndex].count);
     }
 }
-
-//Object.assign(Player.prototype, BagHolderMixin);
-
-const Player = BagHolderMixin(PlayerAgent);
 
 module.exports = {Agent, Player, BagHolderMixin};

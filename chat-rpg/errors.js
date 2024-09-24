@@ -24,7 +24,8 @@ const Errors = {
     objectCantBeclaimed: 'Object cannot be claimed',
     unrecognizedItemType: 'Unrecognized item type',
     productSkuNotFound: 'Product SKU not found',
-    bagFull: 'The player\'s bag is full'
+    bagFull: 'The player\'s bag is full',
+    objectNotFound: 'Object not found'
 }
 
 module.exports = Errors;

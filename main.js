@@ -8,6 +8,7 @@ const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const endpoints = require('./endpoints/endpoints');
 const utility = require('./utility');
+const { type } = require('os');
 let twitchExtentionSecret;
 
 function twitchJWTValidation(req, res, next) {
@@ -28,7 +29,7 @@ function twitchJWTValidation(req, res, next) {
         return;
     }
 
-    auth = authHeader.split(' ');
+    const auth = authHeader.split(' ');
 
     if(auth[0] !== 'bearer') {
         rejectRequest('Unauthorized');
@@ -39,7 +40,7 @@ function twitchJWTValidation(req, res, next) {
         const payload = utility.verifyJWT(auth[1], twitchExtentionSecret);
         req.twitchUser = payload;
     }
-    catch (error) {
+    catch (/**@type {any}*/error) {
         res.status(401);
         res.set('Access-Control-Allow-Origin', '*');
         res.send(error.message);
@@ -86,6 +87,7 @@ function startServer(dataSource) {
     app.post('/product_purchase', (req, res) => endpoints.product_purchase(req, res, chatrpg, twitchExtentionSecret));
     app.post('/claim_object', (req, res) => endpoints.claim_object(req, res, chatrpg));
     app.post('/updateGame', (req, res) => endpoints.updateGame(req, res, chatrpg));
+    app.post('/useItem', (req, res) => endpoints.useItem(req, res, chatrpg));
     
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {

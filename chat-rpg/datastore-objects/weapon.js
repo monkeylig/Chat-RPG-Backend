@@ -1,5 +1,5 @@
+const Ability = require('./ability');
 const DatastoreObject = require('./datastore-object');
-const chatRPGUtility = require('../utility');
 
 /**
  * @typedef {Object} WeaponData
@@ -9,7 +9,7 @@ const chatRPGUtility = require('../utility');
  * @property {string} style
  * @property {number} baseDamage
  * @property {number} speed
- * @property {Object} strikeAbility
+ * @property {Ability.AbilityData} strikeAbility
  * @property {Object} statGrowth
  * @property {string} description
  * @property {string} icon
@@ -41,7 +41,7 @@ class Weapon extends DatastoreObject {
             style: 'sword',
             baseDamage: 0,
             speed: 0,
-            strikeAbility: {},
+            strikeAbility: (new Ability()).getData(),
             statGrowth: {
                 maxHealth: 1,
                 strength: 1,
@@ -52,6 +52,14 @@ class Weapon extends DatastoreObject {
             icon: 'sword-icon.png'
         };
         Object.assign(weapon, weaponData);
+    }
+
+    /**
+     * @override
+     * @returns {WeaponData}
+     */
+    getData() {
+        return /** @type {WeaponData} */ (this.datastoreObject);
     }
 }
 
