@@ -17,6 +17,7 @@ const {ElementsEnum} = require('./action');
 const { SurgedEffect } = require('./effects/surged-effect');
 const { DrenchedEffect } = require('./effects/drenched-effect');
 const { AbilityBattleMove } = require('./ability-battle-move');
+const { calcHitDamge } = require('./utility');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
 const ELEMENTAL_BURST_BONUS = 1.5;
@@ -72,7 +73,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
     // Factor in elemental resistances
     defense *= targetPlayer.getTotalElementalResistance(elements);
     //defense will be at least 0.001
-    let damage = chatRPGUtility.calcHitDamge(srcPlayerData.level, baseDamage, power, Math.max(0.001, defense));
+    let damage = calcHitDamge(srcPlayerData.level, baseDamage, power, Math.max(0.001, defense));
 
     let baseDamageChange = 1;
 
@@ -144,7 +145,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
  * @returns {DamageStep}
  */
 function damageStep(targetPlayer, damage, type) {
-    const netDamage = Math.floor(damage);
+    const netDamage = damage;
     const targetPlayerData = targetPlayer.getData();
 
     //Apply damage step

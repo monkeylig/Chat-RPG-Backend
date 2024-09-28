@@ -11,6 +11,20 @@ const { GeneratorCreatorType } = require("./battle-system-types");
 
 /**
  * 
+ * @param {number} attackerLevel 
+ * @param {number} baseDamage 
+ * @param {number} attack 
+ * @param {number} defense 
+ * @returns {number}
+ */
+function calcHitDamge(attackerLevel, baseDamage, attack, defense) {
+    const hpGrowthBaseline = 1.1;
+    const hpBaseline = hpGrowthBaseline ** attackerLevel / 4;
+    return ((hpBaseline / 5 + 2) * baseDamage * attack / defense) / 50 + 2;
+}
+
+/**
+ * 
  * @param {BattleAgent} user 
  * @param {string} targetStr 
  * @param {BattleContext} battleContext 
@@ -138,5 +152,5 @@ module.exports = {
     matchPlayerAction,
     matchAttackAction,
     isBattleMove,
-
+    calcHitDamge
 }

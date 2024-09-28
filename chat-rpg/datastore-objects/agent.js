@@ -275,11 +275,11 @@ class Agent extends DatastoreObject {
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.abilities = [];
         agent.autoRevive = 0;
-        agent.maxHealth = 0;
-        agent.health = 0;
-        agent.strength = 0;
-        agent.magic = 0;
-        agent.defense = 0;
+        agent.maxHealth = 12;
+        agent.health = 12;
+        agent.strength = 1;
+        agent.magic = 1;
+        agent.defense = 1;
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
@@ -297,24 +297,154 @@ class Agent extends DatastoreObject {
     }
 
     setStatsAtLevel(level) {
-        const player = this.datastoreObject;
-        Agent.setStatsAtLevel(player, player.weapon.statGrowth, level)
+        Agent.setStatsAtLevel(this.getData(), level)
     }
 
-    static setStatsAtLevel(datastoreObject, growthObject, level) {
-        datastoreObject.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
-        datastoreObject.health = datastoreObject.maxHealth;
-        datastoreObject.strength = Math.floor(growthObject.strength * level);
-        datastoreObject.magic =  Math.floor(growthObject.magic * level);
-        datastoreObject.defense = Math.floor(growthObject.defense * level);
-        datastoreObject.level = level;
-        datastoreObject.exp = 0;
-        datastoreObject.expToNextLevel = getExpToNextLevel(datastoreObject.level);
+    /**
+     * @param {AgentData} agentData 
+     * @param {number} level 
+     * @param {{
+     * maxHealth: number,
+     * strength: number,
+     * magic: number,
+     * defense: number}} [overrideGrowthObject] 
+     */
+    static setStatsAtLevel(agentData, level, overrideGrowthObject) {
+        const growthRate = 1.1; // 10%
+        const randomGrowthRate = 1.01; // 1%
+        const levelDiff = level - agentData.level;
+        if (levelDiff === 0) {
+            return;
+        }
+
+        const pointsChanged = growthRate ** Math.abs(levelDiff) * Math.sign(levelDiff);
+        const randomPointsChanged = randomGrowthRate ** Math.abs(levelDiff) * Math.sign(levelDiff);
+
+        const growthObject = overrideGrowthObject ? overrideGrowthObject : {
+            maxHealth: 1,
+            strength: 1,
+            magic: 1,
+            defense: 1
+        };
+
+        const randomGrowthObject = {
+            maxHealth: chatRPGUtility.random(),
+            strength: chatRPGUtility.random(),
+            magic: chatRPGUtility.random(),
+            defense: chatRPGUtility.random()
+        };
+
+        /**@type {(arg0: string) => string} */
+        const typeToStat = (type) => {
+            if (type === 'physical') {
+                return 'strength';
+            }
+            else if (type === 'magical') {
+                return 'magic'
+            }
+
+            return 'maxHealth';
+        };
+
+        /**@type {(abilityData: AbilityData, stat: string) => boolean} */
+        const hasAbilityStat = (abilityData, stat) => {
+            if (abilityData[stat]) {
+                return true;
+            }
+
+            if (abilityData.postActions) {
+                for (const action of abilityData.postActions) {
+                    if (action[stat]) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /**@type {(abilityData: AbilityData, multiplier?: number) => void} */
+        const addAbilityGrowth = (abilityData, multiplier = 1) => {
+            let elements = [];
+            if (abilityData.elements) {
+                elements = abilityData.elements;
+            }
+
+            /**@type {(element: string) => boolean} */
+            const hasElement = (element) => {
+                if (elements.find((value) => value === element)) {
+                    return true;
+                }
+                return false;
+            }
+
+            if (abilityData.type) {
+                if (abilityData.baseDamage && abilityData.baseDamage > 30 ||
+                    hasElement('fire') ||
+                    hasElement('lightning')
+                ) {
+                    growthObject[typeToStat(abilityData.type)] += multiplier;
+                }
+            }
+
+            if (hasAbilityStat(abilityData, 'protection') ||
+                hasAbilityStat(abilityData, 'heal') ||
+                hasAbilityStat(abilityData, 'healPercent') ||
+                hasAbilityStat(abilityData, 'absorb') ||
+                hasAbilityStat(abilityData, 'revive') ||
+                hasElement('water')
+            )
+            {
+                growthObject.maxHealth += multiplier;
+            }
+
+            if (hasAbilityStat(abilityData, 'defenseAmp') ||
+                hasAbilityStat(abilityData, 'lightningResistAmp') ||
+                hasAbilityStat(abilityData, 'fireResistAmp') ||
+                hasAbilityStat(abilityData, 'waterResistAmp') ||
+                hasAbilityStat(abilityData, 'recoil') ||
+                hasElement('ice') ||
+                elements.length === 0
+            ) {
+                growthObject.defense += 0.5 * multiplier;
+            }
+        }
+
+        if (!overrideGrowthObject) {
+            // Weapon calibration
+            addAbilityGrowth(agentData.weapon.strikeAbility, 2);
+            
+            // Ability calibration
+            for (const abilityData of agentData.abilities) {
+                addAbilityGrowth(abilityData);
+            }
+        }
+
+        //Distribute points
+        const growthTotal = growthObject.defense + growthObject.magic + growthObject.maxHealth + growthObject.strength;
+        const randomGrowthTotal = randomGrowthObject.defense + randomGrowthObject.magic + randomGrowthObject.maxHealth + randomGrowthObject.strength;
+
+        const levelUpReport = {
+            maxHealth: growthObject.maxHealth/growthTotal * pointsChanged + randomGrowthObject.maxHealth/randomGrowthTotal * randomPointsChanged,
+            strength: growthObject.strength/growthTotal * pointsChanged + randomGrowthObject.strength/randomGrowthTotal * randomPointsChanged,
+            magic: growthObject.magic/growthTotal * pointsChanged + randomGrowthObject.magic/randomGrowthTotal * randomPointsChanged,
+            defense: growthObject.defense/growthTotal * pointsChanged + randomGrowthObject.defense/randomGrowthTotal * randomPointsChanged
+        };
+
+        agentData.maxHealth += levelUpReport.maxHealth;
+        agentData.health = agentData.maxHealth;
+        agentData.strength += levelUpReport.strength;
+        agentData.magic += levelUpReport.magic;
+        agentData.defense += levelUpReport.defense;
+        agentData.level = level;
+        agentData.exp = 0;
+        agentData.expToNextLevel = getExpToNextLevel(agentData.level);
+
+        return levelUpReport;
     }
 
     levelUp() {
-        const player = this.datastoreObject;
-        levelUpPlayer(player, player.weapon.statGrowth);
+        this.setStatsAtLevel(this.getData().level + 1);
     }
 
     addExpAndLevel(_exp) {
