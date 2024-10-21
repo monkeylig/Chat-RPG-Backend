@@ -11,6 +11,64 @@ const { GeneratorCreatorType } = require("./battle-system-types");
 
 /**
  * 
+ * @param {number} level
+ * @returns {number}
+ */
+function agentGrowthAtLevel(level) {
+    if (level <= 1) {
+        return 0;
+    }
+
+    const pointRamp = 5;
+    const firstHundredLevelPoints = pointRamp * 100;
+    const hundredsLevels = Math.floor(level/100);
+
+    let pointsGained = firstHundredLevelPoints * hundredsLevels * (hundredsLevels + 1) / 2;
+
+    const hundredsRemainder = level - hundredsLevels*100;
+    const currentPointRamp = pointRamp * (hundredsLevels + 1);
+
+    pointsGained += hundredsRemainder * currentPointRamp;
+
+    return pointsGained - 5;
+}
+
+/**
+ * Return the points that should be added to an Agent's stats upon leveling up to a target level
+ * @param {number} level
+ * @param {number} fromLevel
+ * @returns {number} 
+ */
+function calcAgentGrowth(level, fromLevel = 1) {
+    if (level <= fromLevel) {
+        return 0;
+    }
+
+    return agentGrowthAtLevel(level) - agentGrowthAtLevel(fromLevel);
+}
+
+/**
+ * 
+ * @param {number} level 
+ * @returns {number}
+ */
+function calcAgentBaselineHealth(level) {
+    return calcAgentGrowth(level) / 4 * 0.8;
+}
+
+/**
+ * 
+ * @param {number} trueDamage 
+ * @param {number} targetLevel
+ * @returns {number} 
+ */
+function calcTrueDamage(trueDamage, targetLevel) {
+    return calcAgentBaselineHealth(targetLevel) * (trueDamage/100);
+}
+
+
+/**
+ * 
  * @param {number} attackerLevel 
  * @param {number} baseDamage 
  * @param {number} attack 
@@ -18,9 +76,8 @@ const { GeneratorCreatorType } = require("./battle-system-types");
  * @returns {number}
  */
 function calcHitDamge(attackerLevel, baseDamage, attack, defense) {
-    const hpGrowthBaseline = 1.1;
-    const hpBaseline = hpGrowthBaseline ** attackerLevel / 4;
-    return ((hpBaseline / 5 + 2) * baseDamage * attack / defense) / 50 + 2;
+    const hpBaseline =calcAgentBaselineHealth(attackerLevel);
+    return ((hpBaseline * 0.2 + 2) * baseDamage * attack / defense) / 50 + 2;
 }
 
 /**
@@ -152,5 +209,8 @@ module.exports = {
     matchPlayerAction,
     matchAttackAction,
     isBattleMove,
-    calcHitDamge
+    calcHitDamge,
+    calcAgentGrowth,
+    agentGrowthAtLevel,
+    calcTrueDamage
 }

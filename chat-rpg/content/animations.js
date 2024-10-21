@@ -495,6 +495,24 @@ const bluePowerUp = {
     duration: 12 * 1000/24
 }
 
+const dodge = {
+    spriteSheet: 'dodge.webp',
+    frameWidth: 230,
+    frameHeight: 250,
+    columns: 8,
+    rows: 3,
+    duration: 22 * 1000/30
+};
+
+const ember = {
+    spriteSheet: 'ember.webp',
+    frameWidth: 158,
+    frameHeight: 250,
+    columns: 5,
+    rows: 5,
+    duration: 25 * 1000/24
+};
+
 const animations = {
     impact1,
     impact2,
@@ -550,7 +568,9 @@ const animations = {
     explosion2,
     bluePowerUp,
     greenExplosion,
-    blueFireWave
+    blueFireWave,
+    dodge,
+    ember
 };
 
 module.exports = animations;

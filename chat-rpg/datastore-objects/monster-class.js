@@ -83,6 +83,7 @@ class MonsterClass extends DatastoreObject {
             ...monsterClassData,
             id: utility.genId(),
             maxHealth: nature.maxHealth,
+            health: nature.maxHealth,
             strength: nature.strength,
             magic: nature.magic,
             defense: nature.defense

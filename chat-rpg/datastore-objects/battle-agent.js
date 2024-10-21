@@ -286,7 +286,7 @@ function BattleAgentMixin(Base) {
                 this.datastoreObject.protection[type] = 0;
             }
 
-            const hpValue = Math.max(Math.floor(this.datastoreObject.maxHealth * (value/100)), 1);
+            const hpValue = Math.max(this.datastoreObject.maxHealth * (value/100), 1);
             this.datastoreObject.protection[type] += hpValue;
             return hpValue;
         }
@@ -307,7 +307,7 @@ function BattleAgentMixin(Base) {
          * @returns {{totalDamage: number, protectedDamage: number}}
          */
         dealDamage(initialDamage, type) {
-            let damage = Math.floor(initialDamage);
+            let damage = initialDamage;
             const protection = this.datastoreObject.protection;
             let protectedDamage = 0;
             if(type && protection[type]) {
@@ -473,7 +473,8 @@ class BattleWeapon extends Weapon {
     }
 
     getModifiedSpeed() {
-        return getModifiedStat(this.datastoreObject, 'speed', 'speedAmp');
+        const weapon = this.getData();
+        return weapon.speed + weapon.speedAmp;
     }
 
     /**
@@ -500,6 +501,14 @@ class BattleWeapon extends Weapon {
         }
 
         return elements;
+    }
+
+    /**
+     * @override
+     * @returns {BattleWeaponData}
+     */
+    getData() {
+        return /** @type {BattleWeaponData} */ (this.datastoreObject);
     }
 }
 

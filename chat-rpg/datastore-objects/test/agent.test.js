@@ -2,7 +2,7 @@ const Ability = require("../ability");
 const { Player, Agent } = require("../agent");
 const { InventoryPage } = require("../inventory-page");
 
-test.only('Changing levels', () => {
+test('Changing levels', () => {
     const startingStats = {
         maxHealth: 12,
         health: 12,

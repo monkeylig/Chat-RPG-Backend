@@ -99,7 +99,7 @@ test('Battle Royal Create Game', async () => {
 
     expect(battleRoyal.mode).toMatch("battleRoyal");
     expect(battleRoyal.monsters.length).toBe(10);
-    expect(battleRoyal.monsters[0].strengthRating).toBe(0.5);
+    expect(battleRoyal.monsters[0].monsterNumber).toBe(0);
 
     datasource = new MemoryBackedDataSource();
     await datasource.initializeDataSource();

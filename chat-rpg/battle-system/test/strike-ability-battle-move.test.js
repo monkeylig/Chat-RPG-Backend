@@ -2,7 +2,6 @@ const Ability = require("../../datastore-objects/ability");
 const { BattleContext } = require("../battle-context");
 const { StrikeAbilityBattleMove } = require("../strike-ability-battle-move");
 const ActionTypes = require("../action");
-const { AbilityBattleMove } = require("../ability-battle-move");
 
 test("Damage strike ability", () => {
     const battleContext = new BattleContext();
@@ -34,9 +33,6 @@ test("Damage strike ability", () => {
     expect(actionObject.infoAction?.animation).toBeDefined();
     expect(actionObject.infoAction?.srcAgentId).toMatch("player");
     expect(actionObject.infoAction?.targetAgentId).toMatch("monster");
-
-    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
-
     expect(actionObject.playerAction).toBeDefined();
     expect(actionObject.playerAction?.baseDamage).toBe(20);
     expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.monster);
@@ -46,4 +42,6 @@ test("Damage strike ability", () => {
     expect(actionObject.playerAction).toBeDefined();
     expect(actionObject.playerAction?.strikeLevelChange).toBe(-battleContext.player.getData().strikeLevel);
     expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.player);
+
+    expect(actionGenerator.next().value).toBeUndefined();
 });

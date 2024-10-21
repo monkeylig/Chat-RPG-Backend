@@ -48,20 +48,7 @@ class AbilityBattleMove extends BattleMove {
             return;
         }
 
-        const actionWord = inputData.type === PlayerActionType.Magical ? 'casts' : 'uses';
-
-        yield {
-            infoAction: {
-                description: `${this.owner.getData().name} ${actionWord} ${inputData.name}!`,
-                action: 'ability',
-                targetAgentId: target.getData().id,
-                srcAgentId: this.owner.getData().id,
-            }
-        };
-
-        for(const action of generateAbilityActions(this.owner, inputData, battleContext)) {
-            yield action;
-        }
+        const actionWord = inputData.type === PlayerActionType.Magical ? 'casted' : 'used';
 
         if (inputData.apCost) {
             yield {
@@ -88,6 +75,19 @@ class AbilityBattleMove extends BattleMove {
                     }
                 };
             }
+        }
+
+        yield {
+            infoAction: {
+                description: `${this.owner.getData().name} ${actionWord} ${inputData.name}!`,
+                action: 'ability',
+                targetAgentId: target.getData().id,
+                srcAgentId: this.owner.getData().id,
+            }
+        };
+
+        for(const action of generateAbilityActions(this.owner, inputData, battleContext)) {
+            yield action;
         }
     }
 }

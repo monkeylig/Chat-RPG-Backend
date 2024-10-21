@@ -17,7 +17,7 @@ const { BattleContext } = require('../battle-context');
 const { StrikeAbilityBattleMove } = require('../strike-ability-battle-move');
 const { StrikeBattleMove } = require('../strike-battle-move');
 const { Battle } = require('../../datastore-objects/battle');
-const { findBattleStep } = require('../utility');
+const { findBattleStep, calcHitDamge } = require('../utility');
 const { ActionGeneratorCreator, GeneratorCreatorType } = require('../battle-system-types');
 const { BattleMove } = require('../battle-move');
 
@@ -223,7 +223,7 @@ test('Generate Hit Steps: damage', ()=>{
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', [], battleContext);
     const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
+    const damage = calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -242,7 +242,7 @@ test('Generate Hit Steps: weapon synergy', () => {
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [], battleContext);
     const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
-    const damage = Math.floor(chatRPGUtility.calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense));
+    const damage = calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
@@ -343,7 +343,7 @@ describe.each([
         expect(empowermentStep).toBeDefined();
         expect(empowermentStep.type).toMatch('protection');
         expect(empowermentStep.description).toMatch(new RegExp(`${protectionType}`));
-        expect(player1.getData().protection[protectionType]).toBe(Math.floor(player1.getData().maxHealth/2));
+        expect(player1.getData().protection[protectionType]).toBe(player1.getData().maxHealth/2);
     });
 });
 

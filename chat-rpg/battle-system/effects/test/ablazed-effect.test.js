@@ -161,3 +161,35 @@ test('Interaction with water', () => {
 
     expect(lastYield.done).toBeTruthy();
 });
+
+test('Remove Ablazed', () => {
+    const battleContext = new BattleContext();
+    const ablazedEffect = new AblazedEffect(battleContext.player, {trueDamage: 20, roundsLeft: 2});
+    battleContext.addEffect(ablazedEffect);
+    const battleMove = new BattleMove(battleContext.player);
+    const testGen = battleMove.onActivate(battleContext);
+
+    /**@type {Action} */
+    const testAction = {
+        battleContextAction: {}
+    };
+
+    const actionGen = ablazedEffect.onActionEnd(battleContext, {
+        creator: battleMove,
+        generator: testGen,
+        action: testAction
+    }, [BattleSteps.removeEffect(battleContext, ablazedEffect)]);
+
+    const firstYield = actionGen.next();
+
+    expect(firstYield.value).toBe(true);
+
+    let action = /**@type {Action}*/(actionGen.next().value);
+
+    if (!action.infoAction) {fail();}
+    expect(action.infoAction.action).toMatch('ablazed-recovery');
+
+    let lastYield = actionGen.next();
+
+    expect(lastYield.done).toBeTruthy();
+});

@@ -34,9 +34,6 @@ test("Simple damage ability", () => {
     expect(actionObject.infoAction?.animation).toBeDefined();
     expect(actionObject.infoAction?.srcAgentId).toMatch("player");
     expect(actionObject.infoAction?.targetAgentId).toMatch("monster");
-
-    actionObject = /**@type {Action}*/(actionGenerator.next().value);
-
     expect(actionObject.playerAction).toBeDefined();
     expect(actionObject.playerAction?.baseDamage).toBe(20);
     expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.monster);
@@ -70,8 +67,7 @@ test('Ability uses last charge', () => {
     expect(firstYield).toBe(true);
 
     let action = /**@type {Action}*/(actionGenerator.next().value); // Announcing ability
-    action = /**@type {Action}*/(actionGenerator.next().value); // Ability animation
-    action = /**@type {Action}*/(actionGenerator.next().value); // Execute empty ability
+    action = /**@type {Action}*/(actionGenerator.next().value); // Ability animation and Execute ability
 
     let lastYield = actionGenerator.next();
 
@@ -85,8 +81,7 @@ test('Ability uses last charge', () => {
     expect(firstYield).toBe(true);
 
     action = /**@type {Action}*/(actionGenerator.next().value); // Announcing ability
-    action = /**@type {Action}*/(actionGenerator.next().value); // Ability animation
-    action = /**@type {Action}*/(actionGenerator.next().value); // Execute empty ability
+    action = /**@type {Action}*/(actionGenerator.next().value); // Ability animation and Execute ability
     action = /**@type {Action}*/(actionGenerator.next().value); // Remove charge
 
     if (!action.playerAction) {fail();}

@@ -17,6 +17,8 @@ const { ItemBattleMove } = require("./item-battle-move");
 const BattleSteps = require("./battle-steps");
 const { Weapon } = require("../datastore-objects/weapon");
 const { Book } = require("../datastore-objects/book");
+const content = require("../content/content");
+const DatastoreObject = require("../datastore-objects/datastore-object");
 
 /**
  * @typedef {Object} PlayerActionRequest
@@ -125,22 +127,31 @@ class BattleSystem {
             battlePlayer.clearLastDrops();
     
             // Compute the monster drops
-            //Check for weapon drops
-            const willDropWeapon = chatRPGUtility.chance(battleMonster.getData().weaponDropRate);
-    
-            if(willDropWeapon) {
-                const monsterWeapon = new Weapon(battleMonster.getData().weapon);
-                const drop = {
-                    type: 'weapon',
-                    content: monsterWeapon.getData(),
-                    bagFull: false
-                };
-    
-                if(!battlePlayer.addWeaponToBag(monsterWeapon)) {
-                    drop.bagFull = true;
-                    battlePlayer.addObjectToLastDrops(monsterWeapon.getData(), 'weapon');
+            //Check for generic drops
+            for (const equipDrop of battleMonster.getData().drops) {
+                const willDrop = chatRPGUtility.chance(equipDrop.dropRate);
+
+                if (willDrop) {
+                    const drop = {
+                        type: equipDrop.type,
+                        content: equipDrop.content,
+                        bagFull: false
+                    }
+
+                    /**@type {DatastoreObject | undefined} */
+                    let droppedObject;
+                    if (equipDrop.type === 'weapon') {
+                        droppedObject = new Weapon(equipDrop.content);
+                    }
+
+                    if (droppedObject) {
+                        if(!battlePlayer.addObjectToBag(droppedObject.getData(), drop.type)) {
+                            drop.bagFull = true;
+                            battlePlayer.addObjectToLastDrops(droppedObject.getData(), 'weapon');
+                        }
+                        result.drops.push(drop);
+                    }
                 }
-                result.drops.push(drop);
             }
     
             //Check for coin drops
@@ -157,7 +168,7 @@ class BattleSystem {
                 result.drops.push(drop);
             }
     
-            // Check for unlucked abilities
+            // Check for unlocked abilities
             for(const bagItem of battlePlayer.getData().bag.objects) {
                 if(bagItem.type !== 'book') {
                     continue;
@@ -274,13 +285,14 @@ class BattleSystem {
             secondAgent = agent1;
         }
 
+        const checkdefeat = () => !firstAgent.isDefeated() && !secondAgent.isDefeated()
         /** @type {BattleStep[]} */
         const steps = [];
-        if(!firstAgent.isDefeated()) {
+        if(checkdefeat()) {
             steps.push(...this.executeMove(firstAgent, secondAgent, firstMove));
         }
 
-        if(!secondAgent.isDefeated()) {
+        if(checkdefeat()) {
             steps.push(...this.executeMove(secondAgent, firstAgent, secondMove));
         }
 

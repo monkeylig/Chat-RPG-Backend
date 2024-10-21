@@ -14,6 +14,7 @@ const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
+const { calcAgentGrowth } = require('../battle-system/utility');
 
 /**
  * Calculates how much exp is needed to reach a level
@@ -140,6 +141,11 @@ function BagHolderMixin(Base) {
             return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
         }
 
+        /**
+         * 
+         * @param {Weapon} weapon 
+         * @returns {CollectionContainer | undefined}
+         */
         addWeaponToBag(weapon) {
             return this.addObjectToBag(weapon.getData(), 'weapon');
         }
@@ -157,6 +163,12 @@ function BagHolderMixin(Base) {
             return this.addObjectToBag(item.getData(), 'item');
         }
 
+        /**
+         * 
+         * @param {object} object 
+         * @param {string} type 
+         * @returns 
+         */
         addObjectToLastDrops(object, type) {
             const lastDrops = this.datastoreObject.lastDrops;
             return gameColection.addObjectToCollection(lastDrops.objects, object, type);
@@ -310,28 +322,13 @@ class Agent extends DatastoreObject {
      * defense: number}} [overrideGrowthObject] 
      */
     static setStatsAtLevel(agentData, level, overrideGrowthObject) {
-        const growthRate = 1.1; // 10%
-        const randomGrowthRate = 1.01; // 1%
-        const levelDiff = level - agentData.level;
-        if (levelDiff === 0) {
-            return;
-        }
-
-        const pointsChanged = growthRate ** Math.abs(levelDiff) * Math.sign(levelDiff);
-        const randomPointsChanged = randomGrowthRate ** Math.abs(levelDiff) * Math.sign(levelDiff);
+        const pointsChanged = calcAgentGrowth(level, agentData.level);
 
         const growthObject = overrideGrowthObject ? overrideGrowthObject : {
             maxHealth: 1,
             strength: 1,
             magic: 1,
             defense: 1
-        };
-
-        const randomGrowthObject = {
-            maxHealth: chatRPGUtility.random(),
-            strength: chatRPGUtility.random(),
-            magic: chatRPGUtility.random(),
-            defense: chatRPGUtility.random()
         };
 
         /**@type {(arg0: string) => string} */
@@ -379,20 +376,20 @@ class Agent extends DatastoreObject {
             }
 
             if (abilityData.type) {
-                if (abilityData.baseDamage && abilityData.baseDamage > 30 ||
-                    hasElement('fire') ||
-                    hasElement('lightning')
-                ) {
+                if (abilityData.baseDamage && abilityData.baseDamage >= 50) {
                     growthObject[typeToStat(abilityData.type)] += multiplier;
                 }
             }
 
-            if (hasAbilityStat(abilityData, 'protection') ||
-                hasAbilityStat(abilityData, 'heal') ||
+            if (hasAbilityStat(abilityData, 'protection')) {
+                growthObject.maxHealth += multiplier;
+                growthObject.defense += multiplier;
+            }
+
+            if (hasAbilityStat(abilityData, 'heal') ||
                 hasAbilityStat(abilityData, 'healPercent') ||
                 hasAbilityStat(abilityData, 'absorb') ||
-                hasAbilityStat(abilityData, 'revive') ||
-                hasElement('water')
+                hasAbilityStat(abilityData, 'revive')
             )
             {
                 growthObject.maxHealth += multiplier;
@@ -402,17 +399,15 @@ class Agent extends DatastoreObject {
                 hasAbilityStat(abilityData, 'lightningResistAmp') ||
                 hasAbilityStat(abilityData, 'fireResistAmp') ||
                 hasAbilityStat(abilityData, 'waterResistAmp') ||
-                hasAbilityStat(abilityData, 'recoil') ||
-                hasElement('ice') ||
-                elements.length === 0
+                hasAbilityStat(abilityData, 'recoil')
             ) {
-                growthObject.defense += 0.5 * multiplier;
+                growthObject.defense += multiplier;
             }
         }
 
         if (!overrideGrowthObject) {
             // Weapon calibration
-            addAbilityGrowth(agentData.weapon.strikeAbility, 2);
+            addAbilityGrowth(agentData.weapon.strikeAbility);
             
             // Ability calibration
             for (const abilityData of agentData.abilities) {
@@ -422,13 +417,12 @@ class Agent extends DatastoreObject {
 
         //Distribute points
         const growthTotal = growthObject.defense + growthObject.magic + growthObject.maxHealth + growthObject.strength;
-        const randomGrowthTotal = randomGrowthObject.defense + randomGrowthObject.magic + randomGrowthObject.maxHealth + randomGrowthObject.strength;
 
         const levelUpReport = {
-            maxHealth: growthObject.maxHealth/growthTotal * pointsChanged + randomGrowthObject.maxHealth/randomGrowthTotal * randomPointsChanged,
-            strength: growthObject.strength/growthTotal * pointsChanged + randomGrowthObject.strength/randomGrowthTotal * randomPointsChanged,
-            magic: growthObject.magic/growthTotal * pointsChanged + randomGrowthObject.magic/randomGrowthTotal * randomPointsChanged,
-            defense: growthObject.defense/growthTotal * pointsChanged + randomGrowthObject.defense/randomGrowthTotal * randomPointsChanged
+            maxHealth: growthObject.maxHealth/growthTotal * pointsChanged,
+            strength: growthObject.strength/growthTotal * pointsChanged,
+            magic: growthObject.magic/growthTotal * pointsChanged,
+            defense: growthObject.defense/growthTotal * pointsChanged
         };
 
         agentData.maxHealth += levelUpReport.maxHealth;
@@ -475,7 +469,7 @@ class Agent extends DatastoreObject {
         let healAmount = Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health);
 
         healAmount = Math.max(healAmount, 0);
-        this.datastoreObject.health += Math.floor(healAmount);
+        this.datastoreObject.health += healAmount;
 
         return healAmount;
     }
@@ -547,7 +541,7 @@ class Agent extends DatastoreObject {
             return 0;
         }
 
-        const healAmount = Math.floor(datastoreObject.maxHealth * healPercent);
+        const healAmount = datastoreObject.maxHealth * healPercent;
         datastoreObject.health = healAmount;
         return healAmount;
     }
