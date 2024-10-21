@@ -2,6 +2,43 @@ const Ability = require("../ability");
 const { Player, Agent } = require("../agent");
 const { InventoryPage } = require("../inventory-page");
 
+test('Changing levels', () => {
+    const startingStats = {
+        maxHealth: 12,
+        health: 12,
+        strength: 1,
+        magic: 1,
+        defense: 1
+    }
+    const agent = new Agent(startingStats);
+
+    expect(agent.getData().level).toBe(1);
+
+    agent.levelUp();
+
+    expect(agent.getData().level).toBe(2);
+    expect(agent.getData().maxHealth).toBeGreaterThan(12);
+    expect(agent.getData().health).toBe(agent.getData().maxHealth);
+    expect(agent.getData().strength).toBeGreaterThan(1);
+    expect(agent.getData().magic).toBeGreaterThan(1);
+    expect(agent.getData().defense).toBeGreaterThan(1);
+
+    let oldMaxHealth = agent.getData().maxHealth;
+    let oldStrength = agent.getData().strength;
+    let oldMagic = agent.getData().magic;
+    let oldDefense = agent.getData().defense;
+
+    agent.levelUp();
+
+    expect(agent.getData().level).toBe(3);
+    expect(agent.getData().maxHealth).toBeGreaterThan(oldMaxHealth);
+    expect(agent.getData().health).toBe(agent.getData().maxHealth);
+    expect(agent.getData().strength).toBeGreaterThan(oldStrength);
+    expect(agent.getData().magic).toBeGreaterThan(oldMagic);
+    expect(agent.getData().defense).toBeGreaterThan(oldDefense);
+
+});
+
 test('Adding and removing effects', () => {
     const agent = new Agent();
     agent.setEffect({
@@ -139,7 +176,10 @@ test('Add and remove abilities', () => {
     expect(abilities[1].name).toBe("ability2");
     expect(abilities[2].name).toBe("ability3");
 
-    player.removeAbility(ability2.getData().name);
+    const abilityName = ability2.getData().name;
+
+    if (!abilityName) {fail();}
+    player.removeAbility(abilityName);
 
     expect(abilities.length).toBe(2);
     expect(abilities[0].name).toBe("ability1");

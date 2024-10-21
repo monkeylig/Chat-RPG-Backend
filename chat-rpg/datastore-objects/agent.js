@@ -14,6 +14,7 @@ const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
+const { calcAgentGrowth } = require('../battle-system/utility');
 
 /**
  * Calculates how much exp is needed to reach a level
@@ -140,6 +141,11 @@ function BagHolderMixin(Base) {
             return this.datastoreObject.bag.objects.length >= this.datastoreObject.bag.capacity;
         }
 
+        /**
+         * 
+         * @param {Weapon} weapon 
+         * @returns {CollectionContainer | undefined}
+         */
         addWeaponToBag(weapon) {
             return this.addObjectToBag(weapon.getData(), 'weapon');
         }
@@ -157,6 +163,12 @@ function BagHolderMixin(Base) {
             return this.addObjectToBag(item.getData(), 'item');
         }
 
+        /**
+         * 
+         * @param {object} object 
+         * @param {string} type 
+         * @returns 
+         */
         addObjectToLastDrops(object, type) {
             const lastDrops = this.datastoreObject.lastDrops;
             return gameColection.addObjectToCollection(lastDrops.objects, object, type);
@@ -275,11 +287,11 @@ class Agent extends DatastoreObject {
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.abilities = [];
         agent.autoRevive = 0;
-        agent.maxHealth = 0;
-        agent.health = 0;
-        agent.strength = 0;
-        agent.magic = 0;
-        agent.defense = 0;
+        agent.maxHealth = 12;
+        agent.health = 12;
+        agent.strength = 1;
+        agent.magic = 1;
+        agent.defense = 1;
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
@@ -297,24 +309,136 @@ class Agent extends DatastoreObject {
     }
 
     setStatsAtLevel(level) {
-        const player = this.datastoreObject;
-        Agent.setStatsAtLevel(player, player.weapon.statGrowth, level)
+        Agent.setStatsAtLevel(this.getData(), level)
     }
 
-    static setStatsAtLevel(datastoreObject, growthObject, level) {
-        datastoreObject.maxHealth = Math.floor(growthObject.maxHealth * level + 10 + level);
-        datastoreObject.health = datastoreObject.maxHealth;
-        datastoreObject.strength = Math.floor(growthObject.strength * level);
-        datastoreObject.magic =  Math.floor(growthObject.magic * level);
-        datastoreObject.defense = Math.floor(growthObject.defense * level);
-        datastoreObject.level = level;
-        datastoreObject.exp = 0;
-        datastoreObject.expToNextLevel = getExpToNextLevel(datastoreObject.level);
+    /**
+     * @param {AgentData} agentData 
+     * @param {number} level 
+     * @param {{
+     * maxHealth: number,
+     * strength: number,
+     * magic: number,
+     * defense: number}} [overrideGrowthObject] 
+     */
+    static setStatsAtLevel(agentData, level, overrideGrowthObject) {
+        const pointsChanged = calcAgentGrowth(level, agentData.level);
+
+        const growthObject = overrideGrowthObject ? overrideGrowthObject : {
+            maxHealth: 1,
+            strength: 1,
+            magic: 1,
+            defense: 1
+        };
+
+        /**@type {(arg0: string) => string} */
+        const typeToStat = (type) => {
+            if (type === 'physical') {
+                return 'strength';
+            }
+            else if (type === 'magical') {
+                return 'magic'
+            }
+
+            return 'maxHealth';
+        };
+
+        /**@type {(abilityData: AbilityData, stat: string) => boolean} */
+        const hasAbilityStat = (abilityData, stat) => {
+            if (abilityData[stat]) {
+                return true;
+            }
+
+            if (abilityData.postActions) {
+                for (const action of abilityData.postActions) {
+                    if (action[stat]) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /**@type {(abilityData: AbilityData, multiplier?: number) => void} */
+        const addAbilityGrowth = (abilityData, multiplier = 1) => {
+            let elements = [];
+            if (abilityData.elements) {
+                elements = abilityData.elements;
+            }
+
+            /**@type {(element: string) => boolean} */
+            const hasElement = (element) => {
+                if (elements.find((value) => value === element)) {
+                    return true;
+                }
+                return false;
+            }
+
+            if (abilityData.type) {
+                if (abilityData.baseDamage && abilityData.baseDamage >= 50) {
+                    growthObject[typeToStat(abilityData.type)] += multiplier;
+                }
+            }
+
+            if (hasAbilityStat(abilityData, 'protection')) {
+                growthObject.maxHealth += multiplier;
+                growthObject.defense += multiplier;
+            }
+
+            if (hasAbilityStat(abilityData, 'heal') ||
+                hasAbilityStat(abilityData, 'healPercent') ||
+                hasAbilityStat(abilityData, 'absorb') ||
+                hasAbilityStat(abilityData, 'revive')
+            )
+            {
+                growthObject.maxHealth += multiplier;
+            }
+
+            if (hasAbilityStat(abilityData, 'defenseAmp') ||
+                hasAbilityStat(abilityData, 'lightningResistAmp') ||
+                hasAbilityStat(abilityData, 'fireResistAmp') ||
+                hasAbilityStat(abilityData, 'waterResistAmp') ||
+                hasAbilityStat(abilityData, 'recoil')
+            ) {
+                growthObject.defense += multiplier;
+            }
+        }
+
+        if (!overrideGrowthObject) {
+            // Weapon calibration
+            addAbilityGrowth(agentData.weapon.strikeAbility);
+            
+            // Ability calibration
+            for (const abilityData of agentData.abilities) {
+                addAbilityGrowth(abilityData);
+            }
+        }
+
+        //Distribute points
+        const growthTotal = growthObject.defense + growthObject.magic + growthObject.maxHealth + growthObject.strength;
+
+        const levelUpReport = {
+            maxHealth: growthObject.maxHealth/growthTotal * pointsChanged,
+            strength: growthObject.strength/growthTotal * pointsChanged,
+            magic: growthObject.magic/growthTotal * pointsChanged,
+            defense: growthObject.defense/growthTotal * pointsChanged
+        };
+
+        agentData.maxHealth += levelUpReport.maxHealth;
+        agentData.health = agentData.maxHealth;
+        agentData.strength += levelUpReport.strength;
+        agentData.magic += levelUpReport.magic;
+        agentData.defense += levelUpReport.defense;
+        agentData.level = level;
+        agentData.exp = 0;
+        agentData.expToNextLevel = getExpToNextLevel(agentData.level);
+
+        return levelUpReport;
     }
 
     levelUp() {
-        const player = this.datastoreObject;
-        levelUpPlayer(player, player.weapon.statGrowth);
+        this.setStatsAtLevel(this.getData().level + 1);
     }
 
     addExpAndLevel(_exp) {
@@ -345,7 +469,7 @@ class Agent extends DatastoreObject {
         let healAmount = Math.min(hp, this.datastoreObject.maxHealth - this.datastoreObject.health);
 
         healAmount = Math.max(healAmount, 0);
-        this.datastoreObject.health += Math.floor(healAmount);
+        this.datastoreObject.health += healAmount;
 
         return healAmount;
     }
@@ -417,7 +541,7 @@ class Agent extends DatastoreObject {
             return 0;
         }
 
-        const healAmount = Math.floor(datastoreObject.maxHealth * healPercent);
+        const healAmount = datastoreObject.maxHealth * healPercent;
         datastoreObject.health = healAmount;
         return healAmount;
     }

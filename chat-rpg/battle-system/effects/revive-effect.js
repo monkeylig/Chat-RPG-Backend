@@ -45,7 +45,7 @@ class ReviveEffect extends Effect {
             };
         }
 
-        if (!this.targetPlayer.isDefeated()) {
+        if (!this.targetPlayer.isDefeated() || activeAction.creator === this) {
             return;
         }
         for(const activeAction of battleContext.getActionStack()) {

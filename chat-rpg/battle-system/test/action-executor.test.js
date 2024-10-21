@@ -277,7 +277,7 @@ test("recoil", () => {
     const recoilStep = /** @type {DamageStep} */(battleSteps[1]);
 
     expect(recoilStep.type).toMatch('damage');
-    expect(recoilStep.damage).toBe(Math.floor(damageStep.damage/2));
+    expect(recoilStep.damage).toBe(damageStep.damage/2);
     expect(recoilStep.targetId).toBe('player');
 });
 

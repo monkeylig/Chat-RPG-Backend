@@ -6,11 +6,12 @@
  */
 
 const { BattlePlayer } = require("../datastore-objects/battle-agent");
-const { calcTrueDamage, chance } = require("../utility");
+const { chance } = require("../utility");
 const BattleSteps = require("./battle-steps");
-const { findBattleStep } = require("./utility");
+const { findBattleStep, calcTrueDamage } = require("./utility");
 const { PlayerActionType } = require('./action');
 const { createEffect } = require("./effects/effects");
+const { dodge } = require("../content/animations");
 
 /**
  * Executes an action that will have side effects on game objects.
@@ -37,7 +38,7 @@ function executeAction(action, battleContext) {
         if(playerAction.baseDamage && playerAction.srcPlayer && playerAction.type && playerAction.style) {
             const targetAgentData = playerAction.targetPlayer.getData();
             if (chance(targetAgentData.evasion) && process.env.NODE_ENV !== 'test') {
-                return [BattleSteps.info(`${targetAgentData.name} dodged an attack.`, 'dodge', targetAgentData.id, targetAgentData.id)];
+                return [BattleSteps.info(`${targetAgentData.name} dodged an attack.`, 'dodge', targetAgentData.id, targetAgentData.id, dodge)];
             }
 
             const hitSteps = BattleSteps.genHitSteps(playerAction.srcPlayer,

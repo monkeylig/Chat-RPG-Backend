@@ -5,6 +5,7 @@
  * @import {BattleContext} from "../battle-context"
  */
 
+const { ember } = require("../../content/animations");
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { PlayerActionType, ElementsEnum } = require("../action");
 const { Effect } = require("../effect");
@@ -64,6 +65,8 @@ class AblazedEffect extends Effect {
             },
             infoAction: {
                 description: `${this.targetPlayer.getData().name} was burned by the flames.`,
+                animation: ember,
+                targetAgentId: this.targetPlayer.getData().id,
                 action: 'ablazeDamage'
             }
         }
@@ -81,12 +84,24 @@ class AblazedEffect extends Effect {
         if (this.targetPlayer.isDefeated()) {
             return;
         }
+
         if (this.isEffectStartEvent(activeAction, battleSteps)) {
             yield true;
             yield {
                 infoAction: {
                     description: `${this.targetPlayer.getData().name} is now ${this.name}!`,
                     action: 'ablazed'
+                }
+            };
+        }
+
+        if (this.isEffectEndEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is no longer ${this.name}.`,
+                    action: 'ablazed-recovery',
+                    targetAgentId: this.targetPlayer.getData().id
                 }
             };
         }

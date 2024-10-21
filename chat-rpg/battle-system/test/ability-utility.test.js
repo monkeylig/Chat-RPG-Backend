@@ -20,9 +20,6 @@ test('Generate root level hit action', () => {
     let action = /** @type {Action} */(actions.next().value);
 
     expect(action.infoAction).toBeDefined();
-
-    action = /** @type {Action} */(actions.next().value);
-
     expect(action.playerAction).toBeDefined();
     expect(action.playerAction?.baseDamage).toBe(10);
     expect(action.playerAction?.targetPlayer).toBe(battleContext.monster);

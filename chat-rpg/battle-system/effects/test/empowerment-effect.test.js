@@ -18,41 +18,24 @@ describe.each([
 ])('%s empowerment effect test', (type) => {
     test('Empowerment', () => {
         const battleContext = new BattleContext();
-        battleContext.player.getData().weapon.baseDamage = 10;
-        battleContext.player.getData().weapon.type = type;
         const empowermentEffect = new EmpowermentEffect(battleContext.player, {damageIncrease: 10, type});
         const strikeMove = new StrikeBattleMove(battleContext.player);
-        /**@type {ActiveActionGenerator} */
-        const activeActionGen = {
-            creator: strikeMove,
-            generator: strikeMove.onActivate(battleContext)
-        };
-        let actionGen = empowermentEffect.onActionGeneratorBegin(battleContext, activeActionGen);
-
-        let firstYield = actionGen.next();
-
-        expect(firstYield.value).toBe(true);
-
-        let lastYield = actionGen.next();
-
-        expect(lastYield.done).toBeTruthy();
-
         /**@type {ActiveAction} */
         const strikeAction = {
             creator: strikeMove,
-            generator: activeActionGen.generator,
+            generator: strikeMove.onActivate(battleContext),
             action: {
                 playerAction: {
                     targetPlayer: battleContext.monster,
                     srcPlayer: battleContext.player,
-                    baseDamage: 10,
-                    type
+                    type: type,
+                    baseDamage: 10
                 }
             }
         };
 
-        actionGen = empowermentEffect.onActionBegin(battleContext, strikeAction);
-        firstYield = actionGen.next();
+        let actionGen = empowermentEffect.onActionBegin(battleContext, strikeAction);
+        let firstYield = actionGen.next();
 
         expect(firstYield.value).toBe(true);
         
@@ -67,7 +50,7 @@ describe.each([
 
         expect(strikeAction.action.playerAction?.baseDamage).toBe(20);
 
-        lastYield = actionGen.next();
+        let lastYield = actionGen.next();
 
         expect(lastYield.done).toBeTruthy();
     });
@@ -110,16 +93,22 @@ describe.each([
 
     test('Empowerment: Wrong type', () => {
         const battleContext = new BattleContext();
-        battleContext.player.getData().weapon.baseDamage = 10;
-        battleContext.player.getData().weapon.type = 'wrong type';
         const empowermentEffect = new EmpowermentEffect(battleContext.player, {damageIncrease: 10, type});
         const strikeMove = new StrikeBattleMove(battleContext.player);
-        /**@type {ActiveActionGenerator} */
+        /**@type {ActiveAction} */
         const activeAction = {
             creator: strikeMove,
-            generator: strikeMove.onActivate(battleContext)
+            generator: strikeMove.onActivate(battleContext),
+            action: {
+                playerAction: {
+                    targetPlayer: battleContext.monster,
+                    srcPlayer: battleContext.player,
+                    type: 'wrong type',
+                    baseDamage: 10
+                }
+            }
         };
-        const actionGen = empowermentEffect.onActionGeneratorBegin(battleContext, activeAction);
+        const actionGen = empowermentEffect.onActionBegin(battleContext, activeAction);
 
         const firstYield = actionGen.next();
 

@@ -29,24 +29,24 @@ test("Basic strikes", () => {
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
 
     expect(steps.length).toBe(10);
-    expect(steps[0].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('player');
-    expect(steps[1].type).toMatch('info');
-    expect(steps[2].type).toMatch('damage');
+    expect(steps[0].type).toMatch('strikeLevel');
+    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
+    expect(steps[1].type).toMatch('apChange');
+    expect(/** @type {InfoBattleStep} */(steps[1]).targetId).toMatch('monster');
+    expect(steps[2].type).toMatch('info');
     expect(/** @type {InfoBattleStep} */(steps[2]).targetId).toMatch('player');
-    expect(steps[3].type).toMatch('strikeLevel');
-    expect(/** @type {InfoBattleStep} */(steps[3]).targetId).toMatch('monster');
-    expect(steps[4].type).toMatch('apChange');
-    expect(/** @type {InfoBattleStep} */(steps[4]).targetId).toMatch('monster');
-    expect(steps[5].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[5]).targetId).toMatch('monster');
-    expect(steps[6].type).toMatch('info');
-    expect(steps[7].type).toMatch('damage');
+    expect(steps[3].type).toMatch('info');
+    expect(steps[4].type).toMatch('damage');
+    expect(/** @type {InfoBattleStep} */(steps[2]).targetId).toMatch('player');
+    expect(steps[5].type).toMatch('strikeLevel');
+    expect(/** @type {InfoBattleStep} */(steps[5]).targetId).toMatch('player');
+    expect(steps[6].type).toMatch('apChange');
+    expect(/** @type {InfoBattleStep} */(steps[6]).targetId).toMatch('player');
+    expect(steps[7].type).toMatch('info');
     expect(/** @type {InfoBattleStep} */(steps[7]).targetId).toMatch('monster');
-    expect(steps[8].type).toMatch('strikeLevel');
-    expect(/** @type {InfoBattleStep} */(steps[8]).targetId).toMatch('player');
-    expect(steps[9].type).toMatch('apChange');
-    expect(/** @type {InfoBattleStep} */(steps[9]).targetId).toMatch('player');
+    expect(steps[8].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[8]).targetId).toMatch('monster');
+    expect(steps[9].type).toMatch('damage');
 
     expect(battleSystem.battleContext.player.getData().evasion).not.toBe(0);
 });
@@ -219,6 +219,7 @@ test('Monster Weapon Drop rate', () => {
     chatRPGUtility.random = seedrandom('0');
 
     const weaponDropRate = 0.2;
+    const weapon = new BattleWeapon({name: 'monster weapon'}).getData();
     const dropRate = testSuccessRate(() => {
         const player = new BattlePlayer({id: 'player'});
         const monster = new BattleMonster({
@@ -226,8 +227,15 @@ test('Monster Weapon Drop rate', () => {
             health: 1,
             expYield: 5,
             weaponDropRate: weaponDropRate,
-            weapon: new BattleWeapon({name: 'monster weapon'}).getData()
-        })
+            drops: [
+                {
+                    type: 'weapon',
+                    content: weapon,
+                    dropRate: weaponDropRate
+                }
+            ],
+            weapon: weapon
+        });
         player.getData().weapon.speed = 100;
 
         const battleSystem = new BattleSystem(new Battle({

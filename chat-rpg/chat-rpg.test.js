@@ -462,8 +462,8 @@ test('Magic Strike', async () => {
     let battleState = await chatrpg.startBattle(playerId.id, gameState.id, gameState.monsters[0].id);
     let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.steps[2].type).toMatch('damage');
-    const damageStep = /**@type {DamageStep}*/(battleUpdate.steps[2])
+    const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleUpdate.steps));
+    if (!damageStep) {fail();}
     expect(damageStep.damage).toBeGreaterThan(2);
 
 });
@@ -487,10 +487,18 @@ test('Battle Actions: Ability', async () => {
         monsters: {
             eye_sack: {
                 monsterNumber: 0,
-                strengthRating: 0.2,
-                defenseRating: 0.2,
-                healthRating: 40,
-                magicRating: 0.2,
+                nature: {
+                    maxHealth: 100,
+                    strength: 0,
+                    magic: 0,
+                    defense: 0,
+                },
+                talent: {
+                    maxHealth: 10,
+                    strength: 0,
+                    magic: 0,
+                    defense: 0,
+                },
                 name: "Eye Sack",
                 weapon: new Weapon ({
                     baseDamage: 10,
@@ -772,10 +780,18 @@ test('Unlocking abilities after battle', async () => {
         monsters: {
             eye_sack: {
                 monsterNumber: 0,
-                strengthRating: 0,
-                defenseRating: 0.2,
-                healthRating: 0.01,
-                magicRating: 0,
+                nature: {
+                    maxHealth: 0.1,
+                    strength: 1,
+                    magic: 1,
+                    defense: 1,
+                },
+                talent: {
+                    maxHealth: 0,
+                    strength: 1,
+                    magic: 1,
+                    defense: 1,
+                },
                 expYield: 36,
                 name: "Eye Sack",
                 weapon: new Weapon({
@@ -887,10 +903,18 @@ test('Low level monster coin drop rate', async () => {
             monsters: {
                 eye_sack: {
                     monsterNumber: 0,
-                    strengthRating: 0.2,
-                    defenseRating: 0.2,
-                    healthRating: 0.1,
-                    magicRating: 0.2,
+                    nature: {
+                        maxHealth: 0.1,
+                        strength: 1,
+                        magic: 1,
+                        defense: 1,
+                    },
+                    talent: {
+                        maxHealth: 0,
+                        strength: 1,
+                        magic: 1,
+                        defense: 1,
+                    },
                     expYield: 36,
                     name: "Eye Sack",
                     weapon: {
@@ -1785,7 +1809,7 @@ test('Use Item from bag', async () => {
 
     const returnObject = await chatrpg.useItem('player1', bagItem.id);
 
-    player = new Player(chatrpg.findPlayerById('player1'));
+    player = new Player(await chatrpg.findPlayerById('player1'));
 
     if (!returnObject.player) {fail();}
     if (!returnObject.steps) {fail();}

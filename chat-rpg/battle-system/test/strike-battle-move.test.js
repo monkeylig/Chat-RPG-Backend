@@ -22,6 +22,10 @@ test("Basic strike action creator", () => {
     expect(action.infoAction?.action).toMatch('strike');
     expect(action.infoAction?.targetAgentId).toMatch('monster');
     expect(action.infoAction?.srcAgentId).toMatch('player');
+    expect(action.playerAction).toBeDefined();
+    expect(action.playerAction?.targetPlayer).toBe(battleContext.player);
+    expect(action.playerAction?.apChange).toBe(1);
+    expect(action.playerAction?.strikeLevelChange).toBe(1);
 
     action = /** @type {Action} */ (actionGenerator.next().value);
 
@@ -29,22 +33,12 @@ test("Basic strike action creator", () => {
     expect(action.infoAction?.animation).toBeDefined();
     expect(action.infoAction?.srcAgentId).toMatch('player');
     expect(action.infoAction?.targetAgentId).toMatch('monster');
-
-    action = /** @type {Action} */ (actionGenerator.next().value);
-
     expect(action.playerAction).toBeDefined();
     expect(action.playerAction?.srcPlayer).toBe(battleContext.player);
     expect(action.playerAction?.targetPlayer).toBe(battleContext.monster);
     expect(action.playerAction?.type).toBe(battleContext.player.getData().weapon.type);
     expect(action.playerAction?.style).toBe(battleContext.player.getData().weapon.style);
     expect(action.playerAction?.baseDamage).toBe(battleContext.player.getData().weapon.baseDamage);
-
-    action = /** @type {Action} */ (actionGenerator.next().value);
-
-    expect(action.playerAction).toBeDefined();
-    expect(action.playerAction?.targetPlayer).toBe(battleContext.player);
-    expect(action.playerAction?.apChange).toBe(1);
-    expect(action.playerAction?.strikeLevelChange).toBe(1);
 
     actionObject = actionGenerator.next();
     action = /** @type {Action} */ (actionObject.value);

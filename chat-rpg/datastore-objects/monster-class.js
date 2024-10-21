@@ -13,10 +13,23 @@ const chatRPGUtility = require('../utility');
 /** 
  * @typedef {Object} MonsterClassData
  * @property {Object[]} abilities
- * @property {number} strengthRating
- * @property {number} magicRating
- * @property {number} defenseRating
- * @property {number} healthRating
+ * @property {{
+ * maxHealth: number,
+ * strength: number,
+ * magic: number,
+ * defense: number,
+ * }} nature
+ * @property {{
+ * maxHealth: number,
+ * strength: number,
+ * magic: number,
+ * defense: number,
+ * }} talent
+ * @property {{
+ * type: string,
+ * content: object,
+ * dropRate: number
+ * }[]} drops
  * @property {string} avatar
  * @property {string} expYield
  * @property {number} monsterNumber
@@ -35,10 +48,19 @@ class MonsterClass extends DatastoreObject {
 
     static setFields(monster) {
         monster.abilities = [];
-        monster.strengthRating = 0.25;
-        monster.magicRating = 0.25;
-        monster.defenseRating = 0.25;
-        monster.healthRating = 0.25;
+        monster.nature = {
+            maxHealth: 12,
+            strength: 1,
+            magic: 1,
+            defense: 1,
+        };
+        monster.talent = {
+            maxHealth: 1,
+            strength: 1,
+            magic: 1,
+            defense: 1,
+        };
+        monster.drops = [];
         monster.avatar = '';
         monster.expYield = 0;
         monster.monsterNumber = 0;
@@ -55,7 +77,17 @@ class MonsterClass extends DatastoreObject {
     }
 
     createMonsterInstance(level) {
-        const newMonster = new Monster({...this.datastoreObject, id: utility.genId()});
+        const monsterClassData = this.getData();
+        const nature = monsterClassData.nature;
+        const newMonster = new Monster({
+            ...monsterClassData,
+            id: utility.genId(),
+            maxHealth: nature.maxHealth,
+            health: nature.maxHealth,
+            strength: nature.strength,
+            magic: nature.magic,
+            defense: nature.defense
+        });
         newMonster.setStatsAtLevel(level);
         return newMonster;
     }
@@ -94,13 +126,8 @@ class Monster extends Agent {
     }
 
     setStatsAtLevel(level) {
-        const monster = this.datastoreObject;
-        Agent.setStatsAtLevel(monster, {
-            maxHealth: monster.healthRating * Monster.STAT_POINTS_PER_LEVEL,
-            strength: monster.strengthRating * Monster.STAT_POINTS_PER_LEVEL,
-            defense: monster.defenseRating * Monster.STAT_POINTS_PER_LEVEL,
-            magic: monster.magicRating * Monster.STAT_POINTS_PER_LEVEL,
-        }, level);
+        const monsterData = this.getData();
+        Agent.setStatsAtLevel(monsterData, level, monsterData.talent);
     }
 
     /**

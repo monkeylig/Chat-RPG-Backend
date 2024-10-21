@@ -1,5 +1,5 @@
 /**
- * @import {AddEffectStep, BattleStep} from "./battle-steps"
+ * @import {AddEffectStep, BattleStep, RemoveEffectStep} from "./battle-steps"
  * @import {ActionGeneratorObject} from "./action-generator"
  * @import {ActiveActionGenerator, ActiveAction} from "./battle-system-types"
  * @import {BattleContext} from "./battle-context"
@@ -218,6 +218,21 @@ class Effect extends ActionGeneratorCreator {
      */
     isEffectStartEvent(activeAction, battleSteps) {
         const effectStep = /**@type {AddEffectStep|undefined}*/(findBattleStep('addEffect', battleSteps));
+        if (effectStep && effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 
+     * @param {ActiveAction} activeAction 
+     * @param {BattleStep[]} battleSteps 
+     * @returns {boolean}
+     */
+    isEffectEndEvent(activeAction, battleSteps) {
+        const effectStep = /**@type {RemoveEffectStep|undefined}*/(findBattleStep('removeEffect', battleSteps));
         if (effectStep && effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
             return true;
         }
