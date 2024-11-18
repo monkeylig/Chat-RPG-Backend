@@ -6,9 +6,10 @@
  * @import {ActiveAction} from "../battle-system-types"
  */
 
+const animations = require("../../content/animations");
 const { ElementsEnum, PlayerActionStyle, PlayerActionType } = require("../action");
 const { Effect } = require("../effect");
-const { findBattleStep, findElement } = require("../utility");
+const { findBattleStep, findElement, matchAttackAction, dodgedSteps } = require("../utility");
 
 class SurgedEffect extends Effect{
     /**
@@ -47,7 +48,6 @@ class SurgedEffect extends Effect{
      * @returns {ActionGeneratorObject}
      */
     *actionEndEvent(battleContext, activeAction, battleSteps) {
-        const playerAction = activeAction.action.playerAction;
         if (this.isEffectStartEvent(activeAction, battleSteps)) {
             yield true;
 
@@ -58,24 +58,23 @@ class SurgedEffect extends Effect{
                 }
             };
         }
-        else if (playerAction && playerAction.baseDamage && playerAction.baseDamage > 0 &&
-            findBattleStep('damage', battleSteps) && findElement(ElementsEnum.Lightning, playerAction.elements)
-        ) {
+        else if (matchAttackAction(activeAction.action, {targetAgent: this.targetPlayer, elements: [ElementsEnum.Lightning]}) && !dodgedSteps(battleSteps)) {
             const inputData = /**@type {SurgedEffectData}*/(yield true);
             yield {
                 playerAction: {
                     targetPlayer: this.targetPlayer,
                     trueDamage: inputData.trueDamage,
                     type: PlayerActionType.Natural
-                }
-            };
-
-            yield {
+                },
                 infoAction: {
+                    animation: animations.electric,
                     description: `${this.targetPlayer.getData().name} was discarged.`,
+                    targetAgentId: this.targetPlayer.getData().id,
                     action: 'surgeDamage'
                 }
             };
+
+            yield this.endEffectAction();
         }
     }
 };

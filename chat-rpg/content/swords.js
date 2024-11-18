@@ -1,7 +1,6 @@
-const { Weapon } = require('../datastore-objects/weapon');
 const animations = require('./animations');
 
-const braveCutlass = new Weapon({
+const braveCutlass = {
     name: 'Brave Cutlass',
     type: 'physical',
     style: 'sword',
@@ -11,21 +10,21 @@ const braveCutlass = new Weapon({
         name: 'Brave Engage',
         type: 'physical',
         style: 'sword',
-        baseDamage: 55,
-        defenseAmp: 2,
+        baseDamage: 30,
+        target: 'opponent',
         speed: 2,
         description: 'Slightly increases the users defense.',
-        animation: animations.blueStab1
-    },
-    statGrowth: {
-        maxHealth: 2,
-        strength: 1,
-        magic: 1,
-        defense: 2
+        animation: animations.blueStab1,
+        postActions: [
+            {
+                target: 'self',
+                defenseAmp: 1,
+            }
+        ]
     },
     description: 'A dependable weapon to take into any fight.',
-    icon: 'brave_cutlass.webp'
-}).getData();
+    icon: 'brave_cutlass.webp',
+};
 
 module.exports = {
     braveCutlass

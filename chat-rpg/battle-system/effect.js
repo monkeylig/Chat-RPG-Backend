@@ -17,7 +17,7 @@
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const { ActionGenerator } = require("./action-generator");
 const { ActionGeneratorCreator, GeneratorCreatorType } = require("./battle-system-types");
-const { findBattleStep } = require("./utility");
+const { findBattleStep, findBattleSteps } = require("./utility");
 
 class Effect extends ActionGeneratorCreator {
     /**
@@ -217,9 +217,11 @@ class Effect extends ActionGeneratorCreator {
      * @returns {boolean}
      */
     isEffectStartEvent(activeAction, battleSteps) {
-        const effectStep = /**@type {AddEffectStep|undefined}*/(findBattleStep('addEffect', battleSteps));
-        if (effectStep && effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
-            return true;
+        const effectSteps = /**@type {AddEffectStep[]}*/(findBattleSteps('addEffect', battleSteps));
+        for (const effectStep of effectSteps) {
+            if (effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
+                return true;
+            }
         }
 
         return false;
@@ -232,9 +234,11 @@ class Effect extends ActionGeneratorCreator {
      * @returns {boolean}
      */
     isEffectEndEvent(activeAction, battleSteps) {
-        const effectStep = /**@type {RemoveEffectStep|undefined}*/(findBattleStep('removeEffect', battleSteps));
-        if (effectStep && effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
-            return true;
+        const effectSteps = /**@type {RemoveEffectStep[]}*/(findBattleSteps('removeEffect', battleSteps));
+        for (const effectStep of effectSteps) {
+            if (effectStep.successful && effectStep.effect.inputData === this.getInputData()) {
+                return true;
+            }
         }
 
         return false;

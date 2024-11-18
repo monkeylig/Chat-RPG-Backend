@@ -22,7 +22,8 @@ const { getTarget } = require("./utility");
  * @property {(
  * user: BattleAgent,
  * actionData: AbilityActionData,
- * battleContext: BattleContext) =>
+ * battleContext: BattleContext,
+ * customIndex?: number) =>
  * Generator<Action, void, any>} generateActionsFromActionData
  * @property {(
  * user: BattleAgent,
@@ -68,6 +69,7 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
             lightningResistAmp: actionData.lightningResistAmp,
             fireResistAmp: actionData.fireResistAmp,
             waterResistAmp: actionData.waterResistAmp,
+            iceResistAmp: actionData.iceResistAmp,
             addAbility: actionData.addAbility,
             removeAbility: actionData.removeAbility
         },
@@ -141,10 +143,16 @@ function *generateActionsFromActionData(user, actionData, battleContext, customI
              * @param {BattleAgent} user 
              * @param {AbilityActionData} actionData 
              * @param {BattleContext} battleContext 
+             * @param {number} [index] 
              * @returns {Generator<Action, void, any>}
              */
-            generateActionsFromActionData: function *gen(user, actionData, battleContext) {
-                yield* generateActionsFromActionData(user, actionData, battleContext, customIndex + 1);
+            generateActionsFromActionData: function *gen(user, actionData, battleContext, index) {
+                if (index === undefined) {
+                    yield* generateActionsFromActionData(user, actionData, battleContext, customIndex + 1);
+                }
+                else {
+                    yield* generateActionsFromActionData(user, actionData, battleContext, index);
+                }
             },
             generateMoveActions
         };

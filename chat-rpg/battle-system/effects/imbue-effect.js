@@ -4,20 +4,23 @@
  * @import {ActiveAction} from "../battle-system-types"
  * @import {BattleStep} from "../battle-steps"
  * @import {ActionGeneratorObject} from "../action-generator"
- * @import {AbilityData} from "../../datastore-objects/ability"
+ * @import {Action} from "../action"
  */
 
 const { Effect } = require("../effect");
 const { matchAttackAction } = require("../utility");
 
+/**
+ * @typedef {Object} ImbueEffectData
+ * @property {string} element
+ * @property {number} roundsLeft 
+ */
+
 class ImbueEffect extends Effect {
     /**
-     * @typedef {Object} ImbueEffectData
-     * @property {string} element
-     * @property {number} roundsLeft
      * 
      * @param {BattleAgent} targetAgent 
-     * @param {ImbueEffectData} inputData 
+     * @param {ImbueEffectData} inputData
      */
     constructor(targetAgent, inputData) {
         super(targetAgent, inputData);
@@ -55,13 +58,16 @@ class ImbueEffect extends Effect {
                 targetId: this.targetPlayer.getData().id,
                 /**
                  * 
-                 * @param {AbilityData} genData 
+                 * @param {Action} actionData 
                  */
-                modFunction(genData) {
-                    if (!genData.elements) {
-                        genData.elements = [];
+                modFunction(actionData) {
+                    if (!actionData.playerAction) {
+                        return;
                     }
-                    genData.elements.push(inputData.element);
+                    if (actionData.playerAction.elements === undefined) {
+                        actionData.playerAction.elements = [];
+                    }
+                    actionData.playerAction.elements.push(inputData.element);
                 }
             }
         };

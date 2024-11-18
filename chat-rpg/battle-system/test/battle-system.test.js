@@ -260,6 +260,48 @@ test('Monster Weapon Drop rate', () => {
     expect(dropRate).toBeLessThan(weaponDropRate + 0.05);
 });
 
+describe.each([
+    [-1, 10],
+    [0, 10],
+    [1, 15],
+    [2, 20],
+    [3, 25],
+    [4, 30],
+])('', (levelDiff, coins) => {
+    test('Coin drop amount', () => {
+        chatRPGUtility.random = seedrandom('1');
+        const playerLevel = 5;
+        const player = new BattlePlayer({id: 'player', level: playerLevel, coins: 0});
+        player.getData().weapon.speed = 100;
+        const monster = new BattleMonster({
+            id: 'monster',
+            expYield: 5,
+            coinDrop: 10,
+            level: playerLevel + levelDiff
+        });
+        monster.getData().health = 1;
+    
+        const battleSystem = new BattleSystem(new Battle({
+            player: player.getData(),
+            monster: monster.getData()
+        }).getData());
+        const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ''});
+        if(!battleSystem.battleContext.battle.result) {
+            fail();
+        }
+    
+        let coinsDropped = false;
+        for(const drop of battleSystem.battleContext.battle.result.drops) {
+            if(drop.type === 'coin') {
+                coinsDropped = true;
+                expect(battleSystem.battleContext.player.getData().coins).toBe(coins);
+            }
+        }
+    
+        expect(coinsDropped).toBe(true);
+    });
+});
+
 test('Monster Coin Drop rate', () => {
     chatRPGUtility.random = seedrandom('1');
 
@@ -270,6 +312,7 @@ test('Monster Coin Drop rate', () => {
         const monster = new BattleMonster({
             id: 'monster',
             expYield: 5,
+            coinDrop: 10
         });
         monster.getData().health = 1;
 

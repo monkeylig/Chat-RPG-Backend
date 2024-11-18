@@ -3,6 +3,8 @@ const {MonsterClass, Monster} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');
 const { genId } = require("../utility");
+const { IBackendDataSource } = require("../data-source/backend-data-source");
+const { BattleAgent } = require("./datastore-objects/battle-agent");
 
 const AUTO_GAME_MODE = "arena";
 
@@ -116,20 +118,21 @@ async function BattleRoyalCreateGame(dataSource) {
     return battleRoyalGame;
 }
 
+/**
+ * 
+ * @param {IBackendDataSource} dataSource 
+ * @param {Game} game 
+ * @param {BattleAgent} player 
+ * @param {Monster} monster 
+ */
 async function BattleRoyalOnMonsterDefeated(dataSource, game, player, monster) {
     const newMonster = new Monster(player.getData());
     const monsterData = newMonster.getData();
     monsterData.weaponDropRate = 0;
     monsterData.id = genId();
-
-    const statSum = (monsterData.strength + monsterData.magic + newMonster.defense + newMonster.maxHealth) * 0.5;
-
-    monsterData.strengthRating = monsterData.strength / statSum;
-    monsterData.magicRating = monsterData.magic / statSum;
-    monsterData.defenseRating = newMonster.defense / statSum;
-    monsterData.healthRating = newMonster.maxHealth / statSum;
     monsterData.expYield = 36;
     monsterData.coinDrop = 3;
+    monsterData.health = monsterData.maxHealth;
     game.addMonster(newMonster);
 }
 

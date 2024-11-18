@@ -30,7 +30,7 @@ const statAmpTable = {
     '-4': 0.5,
     '-3': 0.58,
     '-2': 0.66,
-    '-1': 0.83,
+    '-1': 0.80,
     '0': 1,
     '1': 1.25,
     '2': 1.5,
@@ -60,8 +60,19 @@ function statAmp(datastoreObject, statAmp, stages) {
     return ampAmount;
 }
 
+/**
+ * 
+ * @param {Object} datastoreObject 
+ * @param {string} stat 
+ * @param {string} statAmp 
+ * @returns {number}
+ */
 function getModifiedStat(datastoreObject, stat, statAmp) {
-    return Math.max(datastoreObject[stat] * statAmpTable[datastoreObject[statAmp]], 1);
+    let modifier = Math.abs(datastoreObject[statAmp]) * 0.25 + 1;
+    if (datastoreObject[statAmp] < 0) {
+        modifier = 1/modifier;
+    }
+    return Math.max(datastoreObject[stat] * modifier, 1);
 }
 
 /**

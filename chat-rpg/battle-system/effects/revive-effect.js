@@ -8,12 +8,13 @@
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { Effect } = require("../effect");
 
+/**
+ * @typedef {Object} ReviveEffectData
+ * @property {number} healthRecoverPercent
+ */
 class ReviveEffect extends Effect {
 
     /**
-     * @typedef {Object} ReviveEffectData
-     * @property {number} healthRecoverPercent
-     * 
      * @param {BattleAgent} targetPlayer 
      * @param {ReviveEffectData} [inputData] 
      */

@@ -3,26 +3,42 @@ const { getFirestore, Timestamp, FieldValue } = require('firebase-admin/firestor
 const BDS = require("./backend-data-source")
 
 class FirebaseDataSource extends BDS.IBackendDataSource {
-
+    /**@type {FirebaseFirestore.Firestore|undefined} */
+    #db;
     constructor() {
         super();
     }
 
-    async initializeDataSource() {
+    initializeFirestore() {
         if(process.env.NODE_ENV === 'production') {
             initializeApp({ credential: applicationDefault() });
         }
         else {
             initializeApp({ projectId: "demo-test" });
         }
+
+        this.#db = getFirestore();
+        this.#db.settings({
+            ignoreUndefinedProperties: true
+        });
+    }
+
+    async initializeDataSource() {
+        this.initializeFirestore();
     }
 
     collection(name) {
+        if (!this.#db) {
+            this.initializeFirestore();
+        }
         let col = getFirestore().collection(name);
         return new FirebaseDataSourceCollectionRef(col);
     }
 
     async runTransaction(transactionFunction) {
+        if (!this.#db) {
+            return;
+        }
         return await getFirestore().runTransaction(async (t) => {
             return await transactionFunction(new FirebaseDataSourceTransaction(t));
         });

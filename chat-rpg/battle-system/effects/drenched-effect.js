@@ -27,7 +27,7 @@ class DrenchedEffect extends Effect {
         this.unique = true;
 
         if (!this._inputData.trueDamage) {
-            this._inputData.trueDamage = 20;
+            this._inputData.trueDamage = 5;
         }
 
         if (this._inputData.roundsLeft === undefined) {

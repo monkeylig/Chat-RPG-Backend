@@ -72,7 +72,7 @@ class FrozenEffect extends Effect {
                     targetId: this.targetPlayer.getData().id,
                 },
                 infoAction: {
-                    description: `${this.targetPlayer.getData().id} is frozen and can't move.`,
+                    description: `${this.targetPlayer.getData().name} is frozen and can't move.`,
                     action: 'freeze'
                 }
             };

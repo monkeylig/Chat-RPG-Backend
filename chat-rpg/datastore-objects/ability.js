@@ -7,7 +7,7 @@ const animations = require('../content/animations');
  * target: TargetEnum,
  * animation?: object,
  * customActions?: {name: string, data: object}[],
- * addEffect?: {class: string, inputData?: Object},
+ * addEffect?: {class: string, inputData?: object},
  * empowerment?: {physical?: number, magical?: number}
  * }} AbilityActionData
  * 
@@ -43,6 +43,7 @@ class Ability extends DatastoreObject {
         ability.speed = 0;
         ability.priority = 0;
         ability.apChange = 0;
+        ability.maxApChange = 0;
         ability.strikeLevelChange = 0;
         ability.apCost = 0;
         ability.postActions = [],
@@ -55,6 +56,7 @@ class Ability extends DatastoreObject {
         ability.speedAmp = 0;
         ability.weaponSpeedAmp = 0;
         ability.heal = 0;
+        ability.healPercent = 0;
         ability.absorb = 0;
         ability.recoil = 0;
         ability.protection = null;

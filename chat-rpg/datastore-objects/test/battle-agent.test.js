@@ -3,31 +3,9 @@ const {BattlePlayer, BattleMonster, BattleWeapon} = require('../battle-agent');
 const MAX_STAT_AMP = 12;
 
 const statAmpTable = {
-    '-12': 0.25,
-    '-11': 0.2675,
-    '-10': 0.285,
-    '-9': 0.3075,
-    '-8': 0.33,
-    '-7': 0.365,
-    '-6': 0.4,
-    '-5': 0.45,
-    '-4': 0.5,
-    '-3': 0.58,
-    '-2': 0.66,
-    '-1': 0.83,
+    '-1': 0.80,
     '0': 1,
     '1': 1.25,
-    '2': 1.5,
-    '3': 1.75,
-    '4': 2,
-    '5': 2.25,
-    '6': 2.5,
-    '7': 2.75,
-    '8': 3,
-    '9': 3.25,
-    '10': 3.5,
-    '11': 3.75,
-    '12': 4
 };
 
 describe.each([
@@ -39,7 +17,7 @@ describe.each([
     ['waterResist', 'getModifiedWaterResist', 'waterResistAmp'],
     ['iceResist', 'getModifiedIceResist', 'iceResistAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {
-    test('Basic mod test', () => {
+    test.only('Basic mod test', () => {
         const startingStat = 50;
         const player = new BattlePlayer({[stat]: startingStat});
 

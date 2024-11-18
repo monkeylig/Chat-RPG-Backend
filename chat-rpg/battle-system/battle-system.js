@@ -29,7 +29,6 @@ const DatastoreObject = require("../datastore-objects/datastore-object");
  */
 
 const ESCAPE_PRIORITY = 30000;
-const COUNTER_PRIORITY = 20000;
 const ITEM_PRIORITY = 10000;
 const LOW_LEVEL_COIN_DROP_RATE = 0.3;
 
@@ -156,15 +155,17 @@ class BattleSystem {
     
             //Check for coin drops
             let shouldDropCoin = oldLevel <= battleMonster.getData().level || chatRPGUtility.chance(LOW_LEVEL_COIN_DROP_RATE);
+            const coinBonus = Math.max((battleMonster.getData().level - oldLevel) * Math.floor(battleMonster.getData().coinDrop/2), 0);
             if(battleMonster.getData().coinDrop > 0 && shouldDropCoin) {
+                const coinReward = battleMonster.getData().coinDrop + coinBonus;
                 const drop = {
                     type: 'coin',
                     content: {
-                        name: `${battleMonster.getData().coinDrop} coins`,
+                        name: `${coinReward} coins`,
                         icon: 'coin.webp'
                     }
                 };
-                battlePlayer.addCoins(battleMonster.getData().coinDrop);
+                battlePlayer.addCoins(coinReward);
                 result.drops.push(drop);
             }
     
@@ -237,7 +238,7 @@ class BattleSystem {
             const abilityPriority = ability.getData().priority;
             battleMove.ability = ability;
             battleMove.speed = abilitySpeed ? abilitySpeed : 3;
-            battleMove.priority = abilityPriority ? abilityPriority : 3;
+            battleMove.priority = abilityPriority ? abilityPriority : 0;
             battlePlayer.setEvasiveSpeed(battleMove.speed);
         }
         else if(actionRequest.type === 'item' && actionRequest.itemId) {

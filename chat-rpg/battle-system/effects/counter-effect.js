@@ -11,17 +11,17 @@
 const Ability = require("../../datastore-objects/ability");
 const { Effect } = require("../effect");
 
+/**
+ * @typedef {Object} CounterEffectData
+ * @property {AbilityData} ability
+ * @property {{
+ * attackType: string
+ * }} filter
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {CounterEffectData} inputData 
+ */
 class CounterEffect extends Effect {
-    /**
-     * @typedef {Object} CounterEffectData
-     * @property {AbilityData} ability
-     * @property {{
-     * attackType: string
-     * }} filter
-     * 
-     * @param {BattleAgent} targetAgent 
-     * @param {CounterEffectData} inputData 
-     */
     constructor(targetAgent, inputData) {
         super(targetAgent, inputData);
 

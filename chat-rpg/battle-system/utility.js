@@ -1,8 +1,7 @@
 /**
  * @import {Action} from "./action"
- * @import {BattleStep} from "./battle-steps"
+ * @import {BattleStep, InfoBattleStep} from "./battle-steps"
  * @import {BattleContext} from "./battle-context"
- * @import {AbilityActionData} from "../datastore-objects/ability"
  * @import {BattleAgent} from "../datastore-objects/battle-agent"
  * @import {ActionGeneratorCreator} from "./battle-system-types"
  */
@@ -75,8 +74,8 @@ function calcTrueDamage(trueDamage, targetLevel) {
  * @param {number} defense 
  * @returns {number}
  */
-function calcHitDamge(attackerLevel, baseDamage, attack, defense) {
-    const hpBaseline =calcAgentBaselineHealth(attackerLevel);
+function calcHitDamage(attackerLevel, baseDamage, attack, defense) {
+    const hpBaseline = calcAgentBaselineHealth(attackerLevel);
     return ((hpBaseline * 0.2 + 2) * baseDamage * attack / defense) / 50 + 2;
 }
 
@@ -103,6 +102,33 @@ function getTarget(user, targetStr, battleContext) {
  */
 function findBattleStep(type, battleSteps) {
     return battleSteps.find((step) => {return step.type === type});
+}
+
+/**
+ * Return array of a all battle step of a certain type
+ * @param {string} type Battle step type
+ * @param {BattleStep[]} battleSteps Array of battle steps
+ * @returns {BattleStep[]}
+ */
+function findBattleSteps(type, battleSteps) {
+    const result = [];
+    for (const step of battleSteps) {
+        if (step.type === type) {
+            result.push(step);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Return true if the array contains a dodge battle step, and false otherwise
+ * @param {BattleStep[]} battleSteps 
+ * @returns {boolean}
+ */
+function dodgedSteps(battleSteps) {
+    const step = /**@type {InfoBattleStep|undefined}*/(findBattleStep('info', battleSteps));
+    return step !== undefined && step.action === 'dodge';
 }
 
 /**
@@ -209,8 +235,10 @@ module.exports = {
     matchPlayerAction,
     matchAttackAction,
     isBattleMove,
-    calcHitDamge,
+    calcHitDamage,
     calcAgentGrowth,
     agentGrowthAtLevel,
-    calcTrueDamage
+    calcTrueDamage,
+    dodgedSteps,
+    findBattleSteps
 }

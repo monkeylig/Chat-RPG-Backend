@@ -3,14 +3,12 @@
  * @import {ActionGenerator, ActionGeneratorObject} from "../action-generator"
  * @import {BattleStep} from "../battle-steps"
  * @import {Action} from "../action"
- * @import {BattleMove} from "../battle-move"
  * @import {BattleContext} from "../battle-context"
  */
 
 const { BattleAgent } = require("../../datastore-objects/battle-agent");
 const { PlayerActionType } = require("../action");
 const { Effect } = require("../effect");
-const { GeneratorCreatorType } = require("../battle-system-types");
 const { matchAttackAction } = require("../utility");
 
 class EmpowermentEffect extends Effect {

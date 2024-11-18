@@ -27,9 +27,7 @@ const { BattleSystem } = require("./battle-system/battle-system");
 const { Battle } = require("./datastore-objects/battle");
 const { BattleContext } = require("./battle-system/battle-context");
 const DatastoreObject = require("./datastore-objects/datastore-object");
-const { BattleMove } = require("./battle-system/battle-move");
 const { ItemBattleMove } = require("./battle-system/item-battle-move");
-const BattleSteps = require("./battle-system/battle-steps");
 
 class ChatRPG {
     /**
@@ -101,6 +99,9 @@ class ChatRPG {
         player.addItemToBag(gameplayObjects.startingItems.items.phoenixDown);
         player.addBookToBag(gameplayObjects.startingItems.books.warriorMasteryI);
         player.addBookToBag(gameplayObjects.startingItems.books.wizardMasteryI);
+
+        player.addAbility(gameplayObjects.startingItems.books.warriorMasteryI.abilities[0].ability);
+        player.addAbility(gameplayObjects.startingItems.books.wizardMasteryI.abilities[0].ability);
 
         const playerRef = playersRef.doc();
         await playerRef.set(player.getData());
@@ -225,7 +226,6 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.battleNotFound);
         }
 
-        //const steps = BattleFunctions.singlePlayerBattleIteration(battle, actionRequest);
         const battleSystem = new BattleSystem(battleSnap.data());
         const steps = battleSystem.singlePlayerBattleIteration(actionRequest);
         const battle = battleSystem.battleContext.battle;
@@ -395,7 +395,7 @@ class ChatRPG {
         return shopData;
     }
 
-    async buy(playerId, shopId, productId, amount) {
+    async buy(playerId, shopId, productId, amount=1) {
         const shopSnapshot = await this.#findShop(shopId);
 
         const shop = new Shop(shopSnapshot.data());
@@ -415,11 +415,11 @@ class ChatRPG {
 
             const player = new Player(playerSnap.data());
 
-            if(player.getData().coins < shopItem.getData().price) {
+            if(player.getData().coins < shopItem.getData().price * amount) {
                 throw new Error(ChatRPGErrors.insufficientFunds);
             }
 
-            player.getData().coins -= shopItem.getData().price;
+            player.getData().coins -= shopItem.getData().price * amount;
             let purchacedObject;
             switch(shopItem.getData().type) {
                 case 'weapon':
@@ -435,11 +435,8 @@ class ChatRPG {
                     throw new Error(ChatRPGErrors.unrecognizedItemType);
             }
 
-            if(player.getData().bag.objects.length >= player.getData().bag.capacity) {
+            if(!player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type)) {
                 await this.#addObjectToPlayerInventoryT(player, purchacedObject.getData(), shopItem.getData().type, transaction);
-            }
-            else {
-                player.addObjectToBag(purchacedObject.getData(), shopItem.getData().type);
             }
 
             transaction.update(playerRef, player.getData());

@@ -6,19 +6,19 @@ const gameplayObjects = {
         ablazed: {
             name: 'ablazed',
             inflictChance: 0.30,
-            trueDamage: 10,
+            trueDamage: 6,
             roundsLeft: 3
         },
         surged: {
             name: 'surged',
             inflictChance: 0.30,
-            damagePercentage: 0.15,
+            trueDamage: 12,
             roundsLeft: 2
         },
         drenched: {
             name: 'drenched',
-            healthThreshold: 0.20,
-            trueDamage: 20,
+            healthThreshold: 0.15,
+            trueDamage: 5,
             roundsLeft: 5,
         },
         frozen: {
@@ -34,8 +34,8 @@ const gameplayObjects = {
     },
     startingItems: {
         items: {
-            potion: new Item({...content.items.potion.getData(), count: 10}),
-            phoenixDown: new Item({...content.items.pheonixDown.getData(), count: 10})
+            potion: new Item({...content.items.potion, count: 10}),
+            phoenixDown: new Item({...content.items.phoenixDown, count: 10})
         },
         books: {
             warriorMasteryI: content.books.warriorMasteryI,

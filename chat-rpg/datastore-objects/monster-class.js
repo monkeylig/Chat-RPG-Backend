@@ -31,7 +31,7 @@ const chatRPGUtility = require('../utility');
  * dropRate: number
  * }[]} drops
  * @property {string} avatar
- * @property {string} expYield
+ * @property {number} expYield
  * @property {number} monsterNumber
  * @property {string} name
  * @property {WeaponData} weapon

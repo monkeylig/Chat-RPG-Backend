@@ -24,7 +24,10 @@ const PlayerActionType = {
 /** @enum {string} */
 const PlayerActionStyle = {
     Sword: 'sword',
-    Staff: 'staff'
+    Staff: 'staff',
+    Dagger: 'dagger',
+    Melee: 'melee',
+    Natural: 'natural'
 };
 
 /** @enum {string} */
@@ -73,6 +76,7 @@ const ElementsEnum = {
  * @property {number} [lightningResistAmp]
  * @property {number} [fireResistAmp]
  * @property {number} [waterResistAmp]
+ * @property {number} [iceResistAmp]
  * @property {string} [overrideDamageModifier]
  */
 

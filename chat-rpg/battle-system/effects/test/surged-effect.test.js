@@ -113,6 +113,11 @@ test('Triggering damage', () => {
     if(!action.infoAction) {fail();}
     expect(action.infoAction.action).toMatch('surgeDamage');
 
+    action = /**@type {Action}*/(surgedGen.next().value);
+
+    if(!action.battleContextAction) {fail();}
+    expect(action.battleContextAction.removeEffect).toBe(surgedEffect);
+
     const lastYield = surgedGen.next();
 
     expect(lastYield.done).toBeTruthy();
@@ -160,4 +165,45 @@ test('Not triggering damage', () => {
     lastYield = actionGen.next();
 
     expect(lastYield.done).toBeTruthy();
+});
+
+test('Wrong target', () => {
+    const battleContext = new BattleContext();
+    const surgedEffect = new SurgedEffect(battleContext.player, {
+        trueDamage: 30,
+        roundsLeft: 2
+    });
+
+    class TestMove extends BattleMove {
+        /**
+         * @override
+         * @param {BattleContext} battleContext 
+         * @returns {ActionGeneratorObject}
+         */
+        *activate(battleContext) {
+            yield {
+                playerAction: {
+                    targetPlayer: battleContext.monster,
+                    srcPlayer: this.owner,
+                    style: PlayerActionStyle.Sword,
+                    type: PlayerActionType.Magical,
+                    baseDamage: 10,
+                    elements: [ElementsEnum.Lightning]
+                }
+            };
+        }
+    }
+
+    const testMove = new TestMove(battleContext.player);
+    const testMoveGenerator = testMove.onActivate(battleContext);
+    const addEffectAction = /**@type {Action}*/(testMoveGenerator.next().value);
+    const steps = ActionExecutor.execute(addEffectAction, battleContext);
+    const surgedGen = surgedEffect.onActionEnd(battleContext, {
+        action: addEffectAction, 
+        generator: testMoveGenerator,
+        creator: testMove}, steps);
+
+    const firstYield = surgedGen.next();
+
+    expect(firstYield.done).toBe(true);
 });

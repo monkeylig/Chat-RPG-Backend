@@ -94,11 +94,12 @@ test('Imbuing Attacks', () => {
     expect(action.actionModAction.targetAction).toBe(strikeAction);
     expect(action.actionModAction.targetId).toMatch(battleContext.player.getData().id);
 
-    const inpuData = strike.getInputData();
-    action.actionModAction.modFunction(inpuData);
+    const targetAction = action.actionModAction.targetAction;
+    action.actionModAction.modFunction(targetAction);
 
-    if (!inpuData.elements) {fail();}
-    expect(inpuData.elements[0]).toBe(ElementsEnum.Fire);
+    if (!targetAction.playerAction) {fail();}
+    if (!targetAction.playerAction.elements) {fail();}
+    expect(targetAction.playerAction.elements[0]).toBe(ElementsEnum.Fire);
 });
 
 test('Imbuing Attacks: Wrong Attack', () => {

@@ -164,6 +164,11 @@ function executeAction(action, battleContext) {
             const waterResistAmpStep = BattleSteps.waterResistAmp(playerAction.targetPlayer, playerAction.waterResistAmp);
             steps.push(waterResistAmpStep);
         }
+
+        if(playerAction.iceResistAmp) {
+            const iceResistAmpStep = BattleSteps.iceResistAmp(playerAction.targetPlayer, playerAction.iceResistAmp);
+            steps.push(iceResistAmpStep);
+        }
     }
 
     if(action.battleContextAction) {

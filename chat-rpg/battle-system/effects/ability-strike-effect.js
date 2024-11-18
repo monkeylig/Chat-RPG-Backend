@@ -12,16 +12,15 @@ const { GeneratorCreatorType } = require('../battle-system-types');
 const { BattleMove } = require("../battle-move");
 const { generateMoveActions } = require("../ability-utility");
 
+/**
+ * @typedef {Object} AbilityStrikeEffectData
+ * @property {number} strikeDuration
+ * @property {AbilityData} ability
+ * 
+ * @param {BattleAgent} targetAgent 
+ * @param {AbilityStrikeEffectData} inputData 
+ */
 class AbilityStrikeEffect extends Effect {
-
-    /**
-     * @typedef {Object} AbilityStrikeData
-     * @property {number} strikeDuration
-     * @property {AbilityData} ability
-     * 
-     * @param {BattleAgent} targetAgent 
-     * @param {AbilityStrikeData} inputData 
-     */
     constructor(targetAgent, inputData) {
         super(targetAgent, inputData)
 
@@ -36,7 +35,7 @@ class AbilityStrikeEffect extends Effect {
     }
 
     getInputData() {
-        return /**@type {AbilityStrikeData}*/(this._inputData);
+        return /**@type {AbilityStrikeEffectData}*/(this._inputData);
     }
 
     /**
@@ -57,7 +56,7 @@ class AbilityStrikeEffect extends Effect {
             return;
         }
 
-        const inputData = /**@type {AbilityStrikeData}*/(yield true);
+        const inputData = /**@type {AbilityStrikeEffectData}*/(yield true);
 
         yield* generateMoveActions(this.targetPlayer, inputData.ability, battleContext);
 

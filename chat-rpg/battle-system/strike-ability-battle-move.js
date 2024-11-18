@@ -7,6 +7,7 @@ const ActionGeneratorTypes = require("./action-generator");
 const BattleAgentTypes = require("../datastore-objects/battle-agent");
 const { generateAbilityActions } = require("./ability-utility");
 const { PlayerActionType } = require("./action");
+const { getTarget } = require("./utility");
 
 class StrikeAbilityBattleMove extends BattleMove {
     /**
@@ -36,11 +37,19 @@ class StrikeAbilityBattleMove extends BattleMove {
      */
     *activate(battleContext) {
         const inputData = /**@type {Ability.AbilityData} */(yield true);
-        const target = inputData.target === 'opponent' ? battleContext.getOpponent(this.owner) : this.owner;
+        const target = getTarget(this.owner, inputData.target, battleContext);
 
         if(!target) {
             return;
         }
+
+        yield {
+            playerAction: {
+                targetPlayer: this.owner,
+                srcPlayer: this.owner,
+                strikeLevelChange: -this.owner.getData().strikeLevel
+            }
+        };
 
         yield {
             infoAction: {
@@ -54,16 +63,6 @@ class StrikeAbilityBattleMove extends BattleMove {
         for(const action of generateAbilityActions(this.owner, inputData, battleContext)) {
             yield action;
         }
-
-        yield {
-            playerAction: {
-                targetPlayer: this.owner,
-                srcPlayer: this.owner,
-                type: '',
-                style: '',
-                strikeLevelChange: -this.owner.getData().strikeLevel
-            }
-        };
     }
 }
 

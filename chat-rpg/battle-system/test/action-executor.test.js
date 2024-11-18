@@ -443,6 +443,7 @@ describe.each([
     ['lightningResistAmp', 'lightningResistAmp'],
     ['fireResistAmp', 'fireResistAmp'],
     ['waterResistAmp', 'waterResistAmp'],
+    ['iceResistAmp', 'iceResistAmp'],
 ])('%s test', (statAmp, stepType) => {
     test('Stat increase action', () => {
         const battleContext = new BattleContext();

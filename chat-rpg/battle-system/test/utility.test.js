@@ -1,4 +1,6 @@
-const { calcAgentGrowth, agentGrowthAtLevel } = require("../utility");
+const { BattleAgent } = require("../../datastore-objects/battle-agent");
+const BattleSteps = require("../battle-steps");
+const { calcAgentGrowth, agentGrowthAtLevel, findBattleSteps } = require("../utility");
 
 test('Level up stat points gain helper function', () => {
     expect(agentGrowthAtLevel(-1)).toBe(0);
@@ -72,4 +74,23 @@ test('Level up stat points gain', () => {
     //Leveling across hundred level borders
     expect(calcAgentGrowth(101, 99)).toBe(15);
     expect(calcAgentGrowth(250, 50)).toBe(2000);
+});
+
+test('Find all battle steps', () => {
+    const agent = new BattleAgent();
+    const steps = [
+        BattleSteps.damage(agent, 1, ''),
+        BattleSteps.info(''),
+        BattleSteps.damage(agent, 1, ''),
+        BattleSteps.info(''),
+        BattleSteps.damage(agent, 1, ''),
+        BattleSteps.info(''),
+    ];
+
+    const damageSteps = findBattleSteps('damage', steps);
+
+    expect(damageSteps.length).toBe(3);
+    for (const step of damageSteps) {
+        expect(step.type).toMatch('damage');
+    }
 });

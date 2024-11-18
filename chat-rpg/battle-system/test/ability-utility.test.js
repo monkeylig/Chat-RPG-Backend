@@ -157,6 +157,7 @@ describe.each([
     ['lightningResistAmp'],
     ['fireResistAmp'],
     ['waterResistAmp'],
+    ['iceResistAmp'],
     ['weaponSpeedAmp'],
 ])('%s test', (stat) => {
     test('basic modding', () => {

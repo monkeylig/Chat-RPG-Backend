@@ -15,6 +15,7 @@ const { CounterEffect } = require("./counter-effect");
 const { ElementalBoost } = require("./elemental-boost");
 const { StrikeAbilitySurgeEffect } = require("./strike-ability-surge-effect");
 const { MultiTriggerEffect } = require("./multi-trigger-effect");
+const { ActionTriggerEffect } = require("./action-trigger-effect");
 
 /**
  * 
@@ -71,7 +72,8 @@ const EffectsLibrary = {
     CounterEffect,
     ElementalBoost,
     StrikeAbilitySurgeEffect,
-    MultiTriggerEffect
+    MultiTriggerEffect,
+    ActionTriggerEffect
 };
 
 module.exports = {

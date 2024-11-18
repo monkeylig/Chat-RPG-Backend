@@ -6,14 +6,14 @@ const chatRPGUtility = require('../utility');
  */
 
 /**
- * @typedef {Object[]} Collection
- */
-
-/**
  * @typedef {Object} CollectionContainer
  * @property {string} type
  * @property {string} id
  * @property {Object} content
+ */
+
+/**
+ * @typedef {CollectionContainer[]} Collection
  */
 
 /**
@@ -26,16 +26,16 @@ const chatRPGUtility = require('../utility');
  * @returns {CollectionContainer | undefined} The new object that was added.
  */
 function addObjectToCollection(collection, object, type, limit) {
-    if(limit && collection.length >= limit) {
-        return;
-    }
-
     if(type === 'item') { // Don't like that this is checked here
         const itemObject = findObjectInCollectionByName(collection, object.name);
         if(itemObject) {
             itemObject.content.count += object.count;
             return itemObject;
         }
+    }
+
+    if(limit && collection.length >= limit) {
+        return;
     }
 
     const objectContainer = {

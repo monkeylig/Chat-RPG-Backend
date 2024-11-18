@@ -13,6 +13,7 @@ describe.each([
     ['ElementalBoost'],
     ['StrikeAbilitySurgeEffect'],
     ['MultiTriggerEffect'],
+    ['ActionTriggerEffect']
 ])('%s test', (effectClass) => {
     test('Discovery', () => {
         expect(EffectsLibrary[effectClass]).toBeDefined();

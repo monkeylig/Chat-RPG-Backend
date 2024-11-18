@@ -21,15 +21,29 @@ function *generateActions(user, abilityData, inputData, battleContext, utilities
     const targetPlayer = getTarget(user, abilityData.target, battleContext);
     const targetPlayerData = targetPlayer.getData();
 
+    yield* utilities.generateActionsFromActionData(user, abilityData, battleContext);
+    
+    let apChange = 0;
     if (!inputData.deplete) {
         const missingAp = targetPlayerData.maxAp - targetPlayerData.ap;
-        abilityData.apChange = missingAp;
+        apChange = missingAp;
     }
     else {
-        abilityData.apChange = -targetPlayerData.ap;   
+        apChange = -targetPlayerData.ap;   
     }
 
-    yield* utilities.generateActionsFromActionData(user, abilityData, battleContext);
+    if (apChange) {
+        /**@type {Action} */
+        yield {
+            playerAction: {
+                targetPlayer,
+                type: abilityData.type,
+                style: abilityData.style,
+                elements: abilityData.elements,
+                apChange
+            }
+        };
+    }
 }
 
 module.exports = {generateActions};

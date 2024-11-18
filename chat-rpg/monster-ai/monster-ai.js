@@ -15,15 +15,15 @@ const chatRPGUtility = require("../utility");
  * @returns {PlayerActionRequest}
  */
 function genericAi(monster, opponent, battle) {
-    let choice = chatRPGUtility.getRandomIntInclusive(0, 1);
+    let useAbility = chatRPGUtility.chance(0.7);
 
     const monsterData = monster.getData();
-    if(choice === 1 && monsterData.abilities.length > 0) {
-        choice = chatRPGUtility.getRandomIntInclusive(0, monsterData.abilities.length - 1);
+    if(useAbility && monsterData.abilities.length > 0) {
+        const choice = chatRPGUtility.getRandomIntInclusive(0, monsterData.abilities.length - 1);
         
         const ability = new Ability(monsterData.abilities[choice]);
-        const apCost = ability.getData().apCost;
-        if(apCost && monsterData.ap >= apCost) {
+        let apCost = ability.getData().apCost;
+        if(apCost !== undefined && monsterData.ap >= apCost) {
             return {
                 type: 'ability',
                 abilityName: ability.getData().name,

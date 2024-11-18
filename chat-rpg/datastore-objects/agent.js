@@ -1,7 +1,7 @@
 /**
  * @import {ItemData} from './item'
  * @import {EffectData} from '../battle-system/effect'
- * @import {CollectionContainer} from './utilities'
+ * @import {CollectionContainer, Collection} from './utilities'
  * @import {DatastoreConstructor} from './datastore-object'
  * @import {WeaponData} from './weapon'
  * @import {AbilityData} from './ability'
@@ -17,50 +17,12 @@ const { gameColection } = require('./utilities');
 const { calcAgentGrowth } = require('../battle-system/utility');
 
 /**
- * Calculates how much exp is needed to reach a level
- * @param {number} level 
- * @returns {number} The amount of exp needed to reach that level
- */
-function expFunc(level) {
-    if (level == 1) {
-        return 0;
-    }
-    return Math.floor(level**3 * 5/4);
-}
-
-function getExpToNextLevel(level) {
-    return expFunc(level + 1) - expFunc(level);
-}
-
-function levelUpPlayer(player, growthObject) {
-    player.maxHealth += growthObject.maxHealth + 1;
-    player.health = player.maxHealth;
-    player.strength += growthObject.strength;
-    player.magic +=  growthObject.magic;
-    player.defense += growthObject.defense;
-    player.level += 1;
-    player.exp = 0;
-    player.expToNextLevel = getExpToNextLevel(player.level);
-}
-
-function addExpAndLevel(player, _exp, growthObject) {
-    let exp = _exp
-
-    while (exp > 0) {
-        let expToAdd = Math.min(exp, player.expToNextLevel - player.exp);
-        player.exp += expToAdd;
-        exp -= expToAdd;
-
-        if(player.exp == player.expToNextLevel) {
-            levelUpPlayer(player, growthObject);
-        }
-    }
-}
-
-/**
+ * 
  * @typedef {Object} BagHolderData
  * @property {Object} bag
- * @property {Object} lastDrops
+ * @property {{
+ * objects: Collection[]
+ * }} lastDrops
  * @property {number} coins
  */
 
@@ -229,6 +191,11 @@ function BagHolderMixin(Base) {
             return thisItem;
         }
 
+        /**
+         * 
+         * @param {number} coins
+         * @returns {void} 
+         */
         addCoins(coins) {
             this.datastoreObject.coins += coins;
         }
@@ -367,14 +334,6 @@ class Agent extends DatastoreObject {
                 elements = abilityData.elements;
             }
 
-            /**@type {(element: string) => boolean} */
-            const hasElement = (element) => {
-                if (elements.find((value) => value === element)) {
-                    return true;
-                }
-                return false;
-            }
-
             if (abilityData.type) {
                 if (abilityData.baseDamage && abilityData.baseDamage >= 50) {
                     growthObject[typeToStat(abilityData.type)] += multiplier;
@@ -432,7 +391,7 @@ class Agent extends DatastoreObject {
         agentData.defense += levelUpReport.defense;
         agentData.level = level;
         agentData.exp = 0;
-        agentData.expToNextLevel = getExpToNextLevel(agentData.level);
+        agentData.expToNextLevel = this.getExpToNextLevel(agentData.level);
 
         return levelUpReport;
     }
@@ -441,11 +400,44 @@ class Agent extends DatastoreObject {
         this.setStatsAtLevel(this.getData().level + 1);
     }
 
-    addExpAndLevel(_exp) {
-        const player = this.datastoreObject;
-        let exp = _exp;
+    /**
+     * Calculates how much exp is needed to reach a level
+     * @param {number} level 
+     * @returns {number} The amount of exp needed to reach that level
+     */
+    static expFunc(level) {
+        if (level == 1) {
+            return 0;
+        }
+        return Math.floor(level**3 * 5/4);
+    }
 
-        addExpAndLevel(player, exp, player.weapon.statGrowth);
+    /**
+     * 
+     * @param {number} level 
+     * @returns {number}
+     */
+    static getExpToNextLevel(level) {
+        return this.expFunc(level + 1) - this.expFunc(level);
+    }
+
+    /**
+     * 
+     * @param {number} exp 
+     */
+    addExpAndLevel(exp) {
+        let _exp = exp
+        const player = this.getData();
+
+        while (_exp > 0) {
+            let expToAdd = Math.min(_exp, player.expToNextLevel - player.exp);
+            player.exp += expToAdd;
+            _exp -= expToAdd;
+
+            if(player.exp >= player.expToNextLevel) {
+                this.levelUp();
+            }
+        }
     }
 
     isDefeated() {
