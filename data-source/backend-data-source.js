@@ -154,6 +154,7 @@ class IBackendDataSourceTransaction {
 
 class FieldValue {
     static Arraytype = "array";
+    static Timestamp = "$timestamp$";
     static UnionOp = "union";
     static RemoveOp = "remove";
     fieldType;

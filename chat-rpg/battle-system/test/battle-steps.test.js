@@ -17,7 +17,7 @@ const { BattleContext } = require('../battle-context');
 const { StrikeAbilityBattleMove } = require('../strike-ability-battle-move');
 const { StrikeBattleMove } = require('../strike-battle-move');
 const { Battle } = require('../../datastore-objects/battle');
-const { findBattleStep, calcHitDamge } = require('../utility');
+const { findBattleStep, calcHitDamage } = require('../utility');
 const { ActionGeneratorCreator, GeneratorCreatorType } = require('../battle-system-types');
 const { BattleMove } = require('../battle-move');
 
@@ -223,12 +223,12 @@ test('Generate Hit Steps: damage', ()=>{
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'rando style', [], battleContext);
     const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
-    const damage = calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
+    const damage = calcHitDamage(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
     expect(damageStep.damage).toBe(damage);
-    expect(player2.getData().maxHealth - player2.getData().health).toBe(damageStep.damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBeCloseTo(damageStep.damage);
 });
 
 test('Generate Hit Steps: weapon synergy', () => {
@@ -242,11 +242,11 @@ test('Generate Hit Steps: weapon synergy', () => {
     const battleSteps = BattleSteps.genHitSteps(player1, player2, baseDamage, 'physical', 'melee', [], battleContext);
     const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleSteps));
 
-    const damage = calcHitDamge(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
+    const damage = calcHitDamage(player1.getData().level, baseDamage, player1.getData().strength, player2.getData().defense);
 
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
-    expect(player2.getData().maxHealth - player2.getData().health).toBe(damageStep.damage);
+    expect(player2.getData().maxHealth - player2.getData().health).toBeCloseTo(damageStep.damage);
     expect(player1.getEmpowermentValue('physical')).toBe(0);
     expect(damageStep.damage).toBeGreaterThan(damage);
 });

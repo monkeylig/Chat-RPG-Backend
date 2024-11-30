@@ -50,6 +50,11 @@ describe.each([
 
         expect(strikeAction.action.playerAction?.baseDamage).toBe(20);
 
+        action = /**@type {Action}*/(actionGen.next().value);
+
+        if (!action.battleContextAction) {fail();}
+        expect(action.battleContextAction.removeEffect).toBe(empowermentEffect);
+
         let lastYield = actionGen.next();
 
         expect(lastYield.done).toBeTruthy();

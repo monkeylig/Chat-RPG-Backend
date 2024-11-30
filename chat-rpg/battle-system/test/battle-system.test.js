@@ -59,10 +59,10 @@ test("Strike abilities", () => {
     battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
     const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
 
-    expect(steps[0].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('strikeAbility');
-    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
-    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(steps[1].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[1]).action).toMatch('strikeAbility');
+    expect(/** @type {InfoBattleStep} */(steps[1]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[1]).actorId).toMatch('player');
     
 });
 
@@ -85,10 +85,10 @@ test("Abilities", () => {
     }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'ability', abilityName: 'testAbility', battleId: ""});
 
-    expect(steps[0].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[0]).action).toMatch('ability');
-    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
-    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(steps[1].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[1]).action).toMatch('ability');
+    expect(/** @type {InfoBattleStep} */(steps[1]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[1]).actorId).toMatch('player');
 
     expect(battleSystem.battleContext.player.getData().evasion).not.toBe(0);  
 });
@@ -113,9 +113,9 @@ test("Move Priority", () => {
     }).getData());
     const steps = battleSystem.singlePlayerBattleIteration({type: 'ability', abilityName: 'testAbility', battleId: ""});
 
-    expect(steps[0].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[0]).targetId).toMatch('monster');
-    expect(/** @type {InfoBattleStep} */(steps[0]).actorId).toMatch('player');
+    expect(steps[1].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[1]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[1]).actorId).toMatch('player');
 });
 
 test("Items", () => {

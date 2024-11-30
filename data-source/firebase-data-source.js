@@ -1,9 +1,35 @@
+/**
+ * @import {Firestore, DocumentData, DocumentReference, CollectionReference,
+ * WhereFilterOp, WithFieldValue} from 'firebase-admin/firestore'
+ */
+
 const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
-const { getFirestore, Timestamp, FieldValue } = require('firebase-admin/firestore');
-const BDS = require("./backend-data-source")
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const BDS = require("./backend-data-source");
+
+/**
+ * 
+ * @param {string} prop 
+ * @param {Object} object 
+ */
+function processObjectProp(prop, object) {
+    if (object[prop] === BDS.FieldValue.Timestamp) {
+        object[prop] = FieldValue.serverTimestamp();
+    }
+}
+
+/**
+ * 
+ * @param {Object} object 
+ */
+function processObjectWrite(object) {
+    for(const prop in object) {
+        processObjectProp(prop, object);
+    }
+}
 
 class FirebaseDataSource extends BDS.IBackendDataSource {
-    /**@type {FirebaseFirestore.Firestore|undefined} */
+    /**@type {Firestore|undefined} */
     #db;
     constructor() {
         super();
@@ -46,12 +72,21 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
 }
 
 class FirebaseDataSourceCollectionRef {
-
+    /**
+     * 
+     * @param {CollectionReference<DocumentData, DocumentData>} collectionRef 
+     */
     constructor(collectionRef) {
         this.collectionRef = collectionRef;
     }
 
+    /**
+     * 
+     * @param {Object} object 
+     * @returns {Promise<FirebaseDataSourceDocumentRef>}
+     */
     async add(object) {
+        processObjectWrite(object);
         let docRef = await this.collectionRef.add(object)
         return new FirebaseDataSourceDocumentRef(docRef);
     }
@@ -63,12 +98,23 @@ class FirebaseDataSourceCollectionRef {
         return new FirebaseDataSourceDocumentRef(this.collectionRef.doc());
     }
 
+    /**
+     * 
+     * @param {string} field 
+     * @param {WhereFilterOp} opStr 
+     * @param {any} value 
+     * @returns {FirebaseDataSourceQuery}
+     */
     where(field, opStr, value) {
         return new FirebaseDataSourceQuery(this.collectionRef.where(field, opStr, value));
     }
 }
 
 class FirebaseDataSourceDocumentRef {
+    /**
+     * 
+     * @param {DocumentReference<DocumentData, DocumentData>} docRef 
+     */
     constructor(docRef) {
         this.docRef = docRef;
         this.id = docRef.id;
@@ -79,12 +125,22 @@ class FirebaseDataSourceDocumentRef {
         return new FirebaseDataSourceDocumentSnapshot(doc, this);
     }
 
+    /**
+     * 
+     * @param {WithFieldValue<DocumentData>} object 
+     * @returns {Promise}
+     */
     async set(object) {
+        processObjectWrite(object);
         await this.docRef.set(object);
     }
 
+    /**
+     * 
+     * @param {Object} object 
+     */
     async update(object) {
-
+        processObjectWrite(object);
         await this.docRef.update(FirebaseDataSourceDocumentRef.convertUpdateObject(object));
     }
 
@@ -166,17 +222,38 @@ class FirebaseDataSourceTransaction {
         }
     }
 
+    /**
+     * 
+     * @param {FirebaseDataSourceDocumentRef} documentRef 
+     * @param {Object} data 
+     * @returns 
+     */
     create(documentRef, data) {
+        processObjectWrite(data);
         this.transaction.create(documentRef.docRef, data);
         return this;
     }
 
+    /**
+     * 
+     * @param {FirebaseDataSourceDocumentRef} documentRef 
+     * @param {Object} data 
+     * @returns {FirebaseDataSourceTransaction}
+     */
     set(documentRef, data) {
+        processObjectWrite(data)
         this.transaction.set(documentRef.docRef, data);
         return this;
     }
 
+    /**
+     * 
+     * @param {FirebaseDataSourceDocumentRef} documentRef 
+     * @param {Object} updateObject 
+     * @returns {FirebaseDataSourceTransaction}
+     */
     update(documentRef, updateObject) {
+        processObjectWrite(updateObject);
         this.transaction.update(documentRef.docRef, FirebaseDataSourceDocumentRef.convertUpdateObject(updateObject));
         return this;
     }

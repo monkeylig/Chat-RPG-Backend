@@ -1,6 +1,21 @@
+const { EXP_LEVEL_CAP } = require("../../battle-system/utility");
 const Ability = require("../ability");
 const { Player, Agent } = require("../agent");
 const { InventoryPage } = require("../inventory-page");
+
+test("Exp calculation", () => {
+    const expFunc = (level) => Math.floor(level**3 * 5/4);
+    expect(Agent.getExpToNextLevel(-2)).toBe(0);
+    expect(Agent.getExpToNextLevel(-1)).toBe(0);
+    expect(Agent.getExpToNextLevel(0)).toBe(0);
+    expect(Agent.getExpToNextLevel(1)).toBe(expFunc(2));
+    expect(Agent.getExpToNextLevel(10)).toBe(expFunc(11) - expFunc(10));
+    expect(Agent.getExpToNextLevel(20)).toBe(expFunc(21) - expFunc(20));
+    expect(Agent.getExpToNextLevel(30)).toBe(expFunc(31) - expFunc(30));
+    expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP-1)).toBe(expFunc(EXP_LEVEL_CAP) - expFunc(EXP_LEVEL_CAP - 1));
+    expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1) - Agent.getExpToNextLevel(EXP_LEVEL_CAP)).toBe(
+        Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1000) - Agent.getExpToNextLevel(EXP_LEVEL_CAP + 999));
+});
 
 test('Changing levels', () => {
     const startingStats = {
@@ -184,4 +199,19 @@ test('Add and remove abilities', () => {
     expect(abilities.length).toBe(2);
     expect(abilities[0].name).toBe("ability1");
     expect(abilities[1].name).toBe("ability3");
+});
+
+test('Prevent duplicate abilities', () => {
+    const player = new Player();
+    const ability1 = new Ability({name: "ability1"});
+    const ability2 = new Ability({name: "ability2"});
+    const ability3 = new Ability({name: "ability3"});
+
+    player.addAbility(ability1.getData());
+    player.addAbility(ability2.getData());
+    player.addAbility(ability3.getData());
+    const abilities = player.getData().abilities;
+
+    expect(player.addAbility(new Ability({name: "ability1"}).getData())).toBe(false);
+    expect(abilities.length).toBe(3);
 });

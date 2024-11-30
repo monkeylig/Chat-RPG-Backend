@@ -6,7 +6,6 @@ const Ability = require("../../../datastore-objects/ability");
 const { BattleContext } = require("../../battle-context");
 const { generateActions } = require("../restore-ap");
 const utilities = require("../../ability-utility");
-const { maxApChange } = require("../../battle-steps");
 const { ActionExecutor } = require("../../action-executor");
 
 test('Restore AP', () => {
@@ -19,12 +18,20 @@ test('Restore AP', () => {
 
     const actions = generateActions(battleContext.player, ability.getData(), {}, battleContext, utilities);
 
-    const action = /**@type {Action}*/(actions.next().value);
+    let action = /**@type {Action}*/(actions.next().value);
     if (!action.playerAction || !action.playerAction.baseDamage) {
         fail();
     }
 
     expect(action.playerAction.baseDamage).toBe(50);
+    expect(action.playerAction.targetPlayer).toBe(battleContext.player);
+
+    action = /**@type {Action}*/(actions.next().value);
+
+    if (!action.playerAction) {
+        fail();
+    }
+
     expect(action.playerAction.apChange).toBe(3);
     expect(action.playerAction.targetPlayer).toBe(battleContext.player);
 });
@@ -89,12 +96,12 @@ test('Deplete AP', () => {
 
     const actions = generateActions(battleContext.player, ability.getData(), {deplete: true}, battleContext, utilities);
 
+    actions.next();
     const action = /**@type {Action}*/(actions.next().value);
-    if (!action.playerAction || !action.playerAction.baseDamage) {
+    if (!action.playerAction) {
         fail();
     }
 
-    expect(action.playerAction.baseDamage).toBe(50);
     expect(action.playerAction.apChange).toBe(-3);
     expect(action.playerAction.targetPlayer).toBe(battleContext.player);
 });

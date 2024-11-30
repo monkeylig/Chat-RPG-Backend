@@ -114,7 +114,7 @@ test('Testing getting avatars with none available (legacy)', async () => {
 test('Testing getting avatars (legacy)', async () => {
     
     // Test datasource
-    goldAvatars = {
+    const goldAvatars = {
         starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
     }
 
@@ -204,7 +204,7 @@ test('Testing getting empty collection', async () => {
 test('Testing getting populated collection', async () => {
     
     // Test datasource
-    goldAvatars = {
+    const goldAvatars = {
         starting_avatars: ['dolfin.png', 'eric.png', 'kris.png', 'jhard.png']
     }
 
@@ -295,6 +295,7 @@ test('Testing updating documents in a collection', async () => {
     await dataSource.addDocumentToCollection(user2, 'accounts');
     await dataSource.addDocumentToCollection(user3, 'accounts');
 
+    /**@type {{level?: number, name?: string}} */
     let filter = {
         level: 13
     };
@@ -348,7 +349,7 @@ test('Testing adding a new document and retrieving it', async () => {
     expect(playerPacket.exists).toBeTruthy();
     expect(playerPacket.ref).toBe(newPlayer);
 
-    player = playerPacket.data();
+    const player = playerPacket.data();
 
     expect(player).toStrictEqual(user);
 });
@@ -438,8 +439,8 @@ test('Testing updating a document that does not exist', async () => {
 
     await dataSource.collection('players').doc('newPlayer').set(user);
 
-    playerPacket = await dataSource.collection('players').doc('newPlayer').get();
-    player = playerPacket.data();
+    const playerPacket = await dataSource.collection('players').doc('newPlayer').get();
+    const player = playerPacket.data();
 
     expect(player).toStrictEqual(user);
 });
@@ -457,8 +458,8 @@ test('Testing adding a new document by future refrence', async () => {
 
     await newPlayerRef.set(user);
 
-    playerPacket = await newPlayerRef.get();
-    player = playerPacket.data();
+    const playerPacket = await newPlayerRef.get();
+    const player = playerPacket.data();
 
     expect(player).toStrictEqual(user);
 });

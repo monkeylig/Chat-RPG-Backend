@@ -9,6 +9,7 @@ const {Agent} = require('./agent');
 const utility = require("../../utility");
 const { Weapon } = require('./weapon');
 const chatRPGUtility = require('../utility');
+const { EXP_LEVEL_CAP } = require('../battle-system/utility');
 
 /** 
  * @typedef {Object} MonsterClassData
@@ -121,8 +122,9 @@ class Monster extends Agent {
     }
 
     getExpGain() {
-        const monster = this.datastoreObject;
-        return Math.round(monster.expYield * monster.level/7 * Monster.EXP_MODIFIER);
+        const monster = this.getData();
+        const restrictedLevel = Math.min(monster.level, EXP_LEVEL_CAP);
+        return Math.round(monster.expYield * restrictedLevel/7 * Monster.EXP_MODIFIER);
     }
 
     setStatsAtLevel(level) {

@@ -7,6 +7,7 @@ const utility = require("../../utility");
 
 /** 
  * @typedef {GConstructor<DatastoreObject>} DatastoreConstructor
+ * @typedef {Object} DatastoreObjectData
  */
 
 /** A class representing an object that is stored in a datastore. */
@@ -29,7 +30,7 @@ class DatastoreObject {
             objectData = utility.deepCopy(objectData);
             this.constructNewObject(this.datastoreObject);
             for(const property in this.datastoreObject) {
-                if(objectData.hasOwnProperty(property)) {
+                if(objectData[property] !== undefined) {
                     this.datastoreObject[property] = objectData[property];
                 }
             }

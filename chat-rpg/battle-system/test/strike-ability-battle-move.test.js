@@ -12,6 +12,7 @@ test("Damage strike ability", () => {
         animation: {}
     });
     battleContext.player.getData().weapon.strikeAbility = ability.getData();
+    battleContext.player.getData().strikeLevel = 2;
 
     const strikeAbilityMove = new StrikeAbilityBattleMove(battleContext.player);
     const actionGenerator = strikeAbilityMove.onActivate(battleContext);
@@ -20,6 +21,16 @@ test("Damage strike ability", () => {
     expect(firstYield).toBe(true);
 
     let actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+
+    if (!actionObject.playerAction) {
+        fail();
+    }
+
+    expect(actionObject.playerAction.strikeLevelChange).toBe(-2);
+    expect(actionObject.playerAction.targetPlayer).toBe(battleContext.player);
+    expect(actionObject.playerAction.srcPlayer).toBe(battleContext.player);
+
+    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
 
     expect(actionObject.infoAction).toBeDefined();
     expect(actionObject.infoAction?.action).toMatch("strikeAbility");
@@ -37,11 +48,7 @@ test("Damage strike ability", () => {
     expect(actionObject.playerAction?.baseDamage).toBe(20);
     expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.monster);
 
-    actionObject = /**@type {ActionTypes.Action}*/(actionGenerator.next().value);
+    const lastYield = actionGenerator.next();
 
-    expect(actionObject.playerAction).toBeDefined();
-    expect(actionObject.playerAction?.strikeLevelChange).toBe(-battleContext.player.getData().strikeLevel);
-    expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.player);
-
-    expect(actionGenerator.next().value).toBeUndefined();
+    expect(lastYield.done).toBe(true);
 });

@@ -108,8 +108,6 @@ test('Triggering damage', () => {
     expect(action.playerAction.targetPlayer).toBe(battleContext.player);
     expect(action.playerAction.type).toMatch(PlayerActionType.Natural);
 
-    action = /**@type {Action}*/(surgedGen.next().value);
-
     if(!action.infoAction) {fail();}
     expect(action.infoAction.action).toMatch('surgeDamage');
 

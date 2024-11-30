@@ -8,6 +8,8 @@
 
 const { GeneratorCreatorType } = require("./battle-system-types");
 
+const EXP_LEVEL_CAP = 100;
+
 /**
  * 
  * @param {number} level
@@ -240,5 +242,6 @@ module.exports = {
     agentGrowthAtLevel,
     calcTrueDamage,
     dodgedSteps,
-    findBattleSteps
+    findBattleSteps,
+    EXP_LEVEL_CAP
 }

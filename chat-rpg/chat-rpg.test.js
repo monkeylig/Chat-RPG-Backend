@@ -18,6 +18,7 @@ const { BookRequirement, Book } = require('./datastore-objects/book');
 const gameplayObjects = require('./gameplay-objects');
 const Ability = require('./datastore-objects/ability');
 const { findBattleStep } = require('./battle-system/utility');
+const { BattleMonster } = require('./datastore-objects/battle-agent');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -402,7 +403,7 @@ test('Battle Actions: Strike Ability', async () => {
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
     battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
 
-    expect(battleUpdate.steps[0].description).toMatch(/X ray/);
+    expect(battleUpdate.steps[1].description).toMatch(/X ray/);
 });
 
 
@@ -664,7 +665,7 @@ test('Defeating a monster', async () => {
 
     expect(battleUpdate.result.winner).toMatch(battleState.player.id);
     expect(battleUpdate.result.expAward).toBeDefined();
-    expect(battleUpdate.result.expAward).toBe(chatRPGUtility.getMonsterExpGain(battleUpdate.monster));
+    expect(battleUpdate.result.expAward).toBe(new BattleMonster(battleUpdate.monster).getExpGain());
     expect(battleUpdate.player.level).toBe(2);
 
     const gameUpdate = await chatrpg.getGame('new game');
@@ -828,10 +829,19 @@ test('Unlocking abilities after battle', async () => {
 });
 
 test('Monster Drops', async () => {
-    chatRPGUtility.random = seedrandom('0');
     let playerId = 'pid';
     const dataSource = new MemoryBackedDataSource();
     //Add monsters so that new games can be properly created
+    const monsterWeapon = new Weapon({
+        baseDamage: 10,
+        name: "Cornia",
+        type: 'physical',
+        speed: 1,
+        strikeAbility: {
+            baseDamage: 20,
+            name: "X ray"
+        }
+    }).getData();
     await dataSource.initializeDataSource({
         monsters: {
             eye_sack: {
@@ -843,16 +853,14 @@ test('Monster Drops', async () => {
                 weaponDropRate: 1,
                 expYield: 36,
                 name: "Eye Sack",
-                weapon: new Weapon({
-                    baseDamage: 10,
-                    name: "Cornia",
-                    type: 'physical',
-                    speed: 1,
-                    strikeAbility: {
-                        baseDamage: 20,
-                        name: "X ray"
+                weapon: monsterWeapon,
+                drops: [
+                    {
+                        type: 'weapon',
+                        content: monsterWeapon,
+                        dropRate: 1
                     }
-                }).getData()
+                ]
             }
         },
         [Schema.Collections.Accounts]: {
@@ -956,7 +964,6 @@ test('Low level monster coin drop rate', async () => {
 });
 
 test('Monster Drops with bag full', async () => {
-    chatRPGUtility.random = seedrandom('5');
     const defaultPlayer = new Player({
         name: 'jhard',
         avatar: 'big-bad.png',
@@ -974,6 +981,17 @@ test('Monster Drops with bag full', async () => {
             name: "swing"
         }
     });
+
+    const monsterWeapon = new Weapon({
+        baseDamage: 10,
+        name: "Cornia",
+        type: 'physical',
+        speed: 1,
+        strikeAbility: {
+            baseDamage: 20,
+            name: "X ray"
+        }
+    }).getData();
 
     while(defaultPlayer.addWeaponToBag(fillerWeapon)){}
 
@@ -993,16 +1011,14 @@ test('Monster Drops with bag full', async () => {
                 expYield: 36,
                 weaponDropRate: 1,
                 name: "Eye Sack",
-                weapon: new Weapon({
-                    baseDamage: 10,
-                    name: "Cornia",
-                    type: 'physical',
-                    speed: 1,
-                    strikeAbility: {
-                        baseDamage: 20,
-                        name: "X ray"
+                drops: [
+                    {
+                        type: 'weapon',
+                        content: monsterWeapon,
+                        dropRate: 1
                     }
-                }).getData()
+                ],
+                weapon: monsterWeapon
             }
         }
     });

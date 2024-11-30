@@ -3,6 +3,7 @@
  * @import {EffectData} from "../battle-system/effect"
  */
 
+const { FieldValue } = require("../../data-source/backend-data-source");
 const DatastoreObject = require("./datastore-object");
 
 /**
@@ -26,6 +27,7 @@ const DatastoreObject = require("./datastore-object");
  * levelGain: number,
  * drops: DropItem[]
  * }} [result]
+ * @property {any} created
  */
 
 class Battle extends DatastoreObject {
@@ -50,6 +52,7 @@ class Battle extends DatastoreObject {
         battle.round = 0;
         battle.active = true;
         battle.effects = [];
+        battle.created = FieldValue.Timestamp;
     }
 
     /**

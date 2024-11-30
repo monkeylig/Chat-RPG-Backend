@@ -1,5 +1,6 @@
 const DatastoreObject = require('./datastore-object');
 const chatRPGUtility = require('../utility');
+const { FieldValue } = require('../../data-source/backend-data-source');
 
 class Game extends DatastoreObject {
     constructor(objectData) {
@@ -19,6 +20,8 @@ class Game extends DatastoreObject {
             maxLevel: 0,
             minLevel: 0
         };
+        game.created = FieldValue.Timestamp
+
     }
 
     findMonsterById(id, flatten=true) {

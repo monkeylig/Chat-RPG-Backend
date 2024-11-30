@@ -17,7 +17,7 @@ describe.each([
     ['waterResist', 'getModifiedWaterResist', 'waterResistAmp'],
     ['iceResist', 'getModifiedIceResist', 'iceResistAmp'],
 ])('%s mod test', (stat, modFunctionName, ampFunctionName) => {
-    test.only('Basic mod test', () => {
+    test('Basic mod test', () => {
         const startingStat = 50;
         const player = new BattlePlayer({[stat]: startingStat});
 
@@ -168,13 +168,13 @@ test('Evasive Speed', () => {
 
     player.setEvasiveSpeed(5);
 
-    expect(player.getData().evasion).toBe(0.15);
+    expect(player.getData().evasion).toBe(0.20);
 
     player.setEvasiveSpeed(10);
 
-    expect(player.getData().evasion).toBe(0.3);
+    expect(player.getData().evasion).toBe(0.4);
 
     player.setEvasiveSpeed(20);
 
-    expect(player.getData().evasion).toBe(0.3);
+    expect(player.getData().evasion).toBe(0.8);
 });

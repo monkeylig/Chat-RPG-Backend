@@ -14,7 +14,8 @@ const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
 const { gameColection } = require('./utilities');
-const { calcAgentGrowth } = require('../battle-system/utility');
+const { calcAgentGrowth, EXP_LEVEL_CAP } = require('../battle-system/utility');
+const { FieldValue } = require('../../data-source/backend-data-source');
 
 /**
  * 
@@ -229,7 +230,7 @@ function BagHolderMixin(Base) {
  * @property {string} name
  * @property {string} avatar
  * @property {WeaponData} weapon
- * @property {Object[]} abilities
+ * @property {AbilityData[]} abilities
  * @property {number} autoRevive
  * @property {number} maxHealth
  * @property {number} health
@@ -240,6 +241,7 @@ function BagHolderMixin(Base) {
  * @property {number} exp
  * @property {number} expToNextLevel
  * @property {Object.<string, EffectData>} effectsMap
+ * @property {any} created
  */
 
 class Agent extends DatastoreObject {
@@ -263,6 +265,8 @@ class Agent extends DatastoreObject {
         agent.exp = 0;
         agent.expToNextLevel = 0;
         agent.effectsMap = {};
+        agent.created = FieldValue.Timestamp
+
 
         this.setStatsAtLevel(1);
     }
@@ -401,15 +405,27 @@ class Agent extends DatastoreObject {
     }
 
     /**
+     * 
+     * @param {number} level 
+     */
+    static expEquation(level) {
+        return Math.floor(level**3 * 5/4);
+    }
+    /**
      * Calculates how much exp is needed to reach a level
      * @param {number} level 
      * @returns {number} The amount of exp needed to reach that level
      */
     static expFunc(level) {
-        if (level == 1) {
+        if (level <= 1) {
             return 0;
         }
-        return Math.floor(level**3 * 5/4);
+
+        if (level > EXP_LEVEL_CAP) {
+            const expCap = this.expEquation(EXP_LEVEL_CAP);
+            return expCap + (level - EXP_LEVEL_CAP) * (expCap - this.expEquation(EXP_LEVEL_CAP - 1));
+        }
+        return this.expEquation(level);
     }
 
     /**
@@ -470,8 +486,18 @@ class Agent extends DatastoreObject {
         return chatRPGUtility.findInObjectArray(this.datastoreObject.abilities, 'name', name);
     }
 
+    /**
+     * 
+     * @param {AbilityData} abilityData
+     * @returns {boolean} 
+     */
     addAbility(abilityData) {
+        const datastoreObject = this.getData();
+        if (datastoreObject.abilities.find((ability) => ability.name === abilityData.name)) {
+            return false;
+        }
         this.datastoreObject.abilities.push(abilityData);
+        return true;
     }
 
     equipAbility(abilityData, replacedAbilityName)

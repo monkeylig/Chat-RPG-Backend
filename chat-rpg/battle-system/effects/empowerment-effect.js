@@ -12,8 +12,6 @@ const { Effect } = require("../effect");
 const { matchAttackAction } = require("../utility");
 
 class EmpowermentEffect extends Effect {
-    /**@type {boolean} */
-    #isActivated;
 
     /**
      * @typedef {Object} EmpowermentEffectData
@@ -35,8 +33,6 @@ class EmpowermentEffect extends Effect {
             this._inputData.type = PlayerActionType.Physical;
         }
 
-        //Private data
-        this.#isActivated = false;
     }
 
     /**
@@ -57,7 +53,6 @@ class EmpowermentEffect extends Effect {
             return;
         }
 
-        this.#isActivated = true;
         /**@type {(data: Action) => void} */
         const modFunction = (data) => {
             if (!data.playerAction || !data.playerAction.baseDamage) {
@@ -75,6 +70,8 @@ class EmpowermentEffect extends Effect {
                 targetId: this.targetPlayer.getData().id
             }
         };
+        
+        yield this.endEffectAction();
     }
 
     /**
@@ -98,21 +95,6 @@ class EmpowermentEffect extends Effect {
                 action: 'empowerment',
             }
         };
-    }
-
-    /**
-     * Called at the end of a round of battle round
-     * @param {BattleContext} battleContext 
-     * @returns {ActionGeneratorObject}
-     */
-    *battleRoundEndEvent(battleContext) {
-        if (!this.#isActivated) {
-            return;
-        }
-
-        yield true;
-
-        yield this.endEffectAction();
     }
 }
 

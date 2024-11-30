@@ -667,7 +667,8 @@ function setCounterStep(targetAgent, counterAbility, counterType) {
 /**
  * @typedef {BattleStep & {
  * ability: AbilityData,
- * targetId: string
+ * targetId: string,
+ * successful: boolean
  * }} AddAbilityStep
  * 
  * @param {BattleAgent} targetAgent 
@@ -675,19 +676,21 @@ function setCounterStep(targetAgent, counterAbility, counterType) {
  * @returns {AddAbilityStep}
  */
 function addAbility(targetAgent, ability) {
-    targetAgent.addAbility(ability);
+    const successful = targetAgent.addAbility(ability);
 
     return {
         type: 'addAbility',
         ability: ability,
         targetId: targetAgent.getData().id,
+        successful
     };
 }
 
 /**
  * @typedef {BattleStep & {
  * targetId: string,
- * ability?: AbilityData
+ * ability?: AbilityData,
+ * successful: boolean
  * }} RemoveAbilityStep
  * 
  * @param {BattleAgent} targetAgent 
@@ -700,7 +703,8 @@ function removeAbility(targetAgent, abilityName) {
     return {
         type: 'removeAbility',
         targetId: targetAgent.getData().id,
-        ability: abilityData
+        ability: abilityData,
+        successful: abilityData !== undefined
     };
 }
 
