@@ -73,6 +73,7 @@ class MultiTriggerEffect extends Effect {
         const inputData = /**@type {MultiTriggerEffectData}*/(yield true);
         
         if (inputData.triggerTimes > 0) {
+            this.getInputData().triggerTimes -= 1;
             const abilityData = /**@type {AbilityData}*/(actionGenerator.generator.inputData);
             yield {
                 battleContextAction: {
@@ -83,7 +84,6 @@ class MultiTriggerEffect extends Effect {
                 }
             };
 
-            this.getInputData().triggerTimes -= 1;
         }
         else {
             yield this.endEffectAction();

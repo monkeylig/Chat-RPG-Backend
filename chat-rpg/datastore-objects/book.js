@@ -1,4 +1,22 @@
+/**
+ * @import {BattleAgent} from './battle-agent'
+ * @import {BattleData} from './battle'
+ * @import {AbilityData} from './ability'
+ */
+
 const DatastoreObject = require('./datastore-object');
+
+/**
+ * @typedef {Object} BookRequirementData
+ * @property {string} description
+ * @property {number} requiredCount
+ * @property {number} count
+ * @property {{
+ * type: string,
+ * value: string,
+ * level: number
+ * }} tracker
+ */
 
 class BookRequirement extends DatastoreObject {
     constructor(objectData) {
@@ -6,7 +24,7 @@ class BookRequirement extends DatastoreObject {
     }
 
     constructNewObject(requirement) {
-        requirement.description = 'Fullfill this requirement to unlock this ability.';
+        requirement.description = 'Fulfill this requirement to unlock this ability.';
         requirement.requiredCount = 0;
         requirement.count = 0;
         requirement.tracker = {type: '', value: ''};
@@ -17,11 +35,21 @@ class BookRequirement extends DatastoreObject {
     }
 
     updateAbilityRequirement(owner, battleUpdate) {
-        return BookRequirement.updateAbilityRequirement(this.datastoreObject, owner, battleUpdate);
+        return BookRequirement.updateAbilityRequirement(this.getData(), owner, battleUpdate);
     }
 
-    //returns true if the ability has just become unlocked
+    /**
+     * returns true if the ability has just become unlocked
+     * @param {BookRequirementData} datastoreObject 
+     * @param {BattleAgent} owner 
+     * @param {BattleData} battleUpdate 
+     * @returns 
+     */
     static updateAbilityRequirement(datastoreObject, owner, battleUpdate) {
+        if (!battleUpdate.result) {
+            return false;
+        }
+
         if(BookRequirement.isMet(datastoreObject)) {
             return false;
         }
@@ -48,7 +76,27 @@ class BookRequirement extends DatastoreObject {
     static isMet(datastoreObject) {
         return datastoreObject.count >= datastoreObject.requiredCount;
     }
+
+    /**
+     * @override
+     * @returns {BookRequirementData}
+     */
+    getData() {
+        return /**@type {BookRequirementData}*/(this.datastoreObject);
+    }
 }
+
+/**
+ * @typedef {Object} BookData
+ * @property {string} name
+ * @property {number} instanceNumber
+ * @property {string} icon
+ * @property {string} description
+ * @property {{
+ * requirements: BookRequirementData[],
+ * ability: AbilityData
+ * }[]} abilities
+ */
 
 class Book extends DatastoreObject {
     constructor(objectData) {
@@ -115,6 +163,14 @@ class Book extends DatastoreObject {
         }
 
         return isMet;
+    }
+
+    /**
+     * @override
+     * @returns {BookData}
+     */
+    getData() {
+        return /**@type {BookData}*/(this.datastoreObject);
     }
 }
 

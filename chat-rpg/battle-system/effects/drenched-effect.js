@@ -121,6 +121,17 @@ class DrenchedEffect extends Effect {
             };
             return;
         }
+
+        if (this.isEffectEndEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is no longer ${this.name}.`,
+                    action: 'drenched-recovery',
+                    targetAgentId: this.targetPlayer.getData().id
+                }
+            };
+        }
     }
 }
 

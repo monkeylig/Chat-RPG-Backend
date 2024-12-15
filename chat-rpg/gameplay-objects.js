@@ -41,7 +41,8 @@ const gameplayObjects = {
             warriorMasteryI: content.books.warriorMasteryI,
             wizardMasteryI: content.books.wizardMasteryI
         }
-    }
+    },
+    content
 };
 
 module.exports = gameplayObjects;

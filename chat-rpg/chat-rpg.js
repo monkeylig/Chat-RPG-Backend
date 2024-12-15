@@ -6,6 +6,7 @@
  * @import {TransactionFunction} from "../data-source/backend-data-source"
  * @import {InventoryPageData} from "./datastore-objects/inventory-page"
  * @import {ConsumeItemStep} from "./battle-system/battle-steps"
+ * @import {BookData} from "./datastore-objects/book"
  */
 
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
@@ -34,7 +35,7 @@ class ChatRPG {
      * @typedef {PlayerData & {id: string}} UserPlayerData
      */
     /** @member {IBackendDataSource} */
-    #datasource;
+    #dataSource;
     
     static Platforms = {
         Twitch: 'twitch'
@@ -42,14 +43,26 @@ class ChatRPG {
 
     /**
      * Initialize an instance of the Web RPG Game
-     * @param {IBackendDataSource} datasource 
+     * @param {IBackendDataSource} dataSource 
      */
-    constructor(datasource) {
-        this.#datasource = datasource;
+    constructor(dataSource) {
+        this.#dataSource = dataSource;
+    }
+
+    /**
+     * 
+     * @param {string} id 
+     * @returns 
+     */
+    async resetAccount(id) {
+        const playerSnap = await this.#findPlayer(id);
+
+        await playerSnap.ref.delete();
+        return {message: "OK"};
     }
 
     async getStartingAvatars() {
-        const avatars = await this.#datasource.collection(Schema.Collections.Avatars).doc(Schema.AvatarDocuments.StartingAvatars).get();
+        const avatars = await this.#dataSource.collection(Schema.Collections.Avatars).doc(Schema.AvatarDocuments.StartingAvatars).get();
         const avatarData = avatars.data();
 
         if (avatarData) {
@@ -60,7 +73,7 @@ class ChatRPG {
     }
 
     async getGameInfo() {
-        const gameInfoSnap = await this.#datasource.collection(Schema.Collections.Configs).doc('gameInfo').get();
+        const gameInfoSnap = await this.#dataSource.collection(Schema.Collections.Configs).doc('gameInfo').get();
         const gameInfo = gameInfoSnap.data();
 
         if(gameInfo) {
@@ -74,7 +87,7 @@ class ChatRPG {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
 
-        const playersRef = this.#datasource.collection(Schema.Collections.Accounts);
+        const playersRef = this.#dataSource.collection(Schema.Collections.Accounts);
         const querySnap = await playersRef.where(platformIdProperty, '==', platformId).get();
 
         if(!querySnap.empty) {
@@ -103,6 +116,33 @@ class ChatRPG {
         player.addAbility(gameplayObjects.startingItems.books.warriorMasteryI.abilities[0].ability);
         player.addAbility(gameplayObjects.startingItems.books.wizardMasteryI.abilities[0].ability);
 
+        if (name === "Twitch Reviewer 8634") {
+            /**@type {(book: BookData) => BookData} */
+            const unlockBook = (book) => {
+                for(const ability of book.abilities) {
+                    for(const req of ability.requirements) {
+                        req.count = req.requiredCount;
+                    }
+                }
+                return book;
+            }
+            player.setStatsAtLevel(1000);
+            player.addCoins(100000000);
+
+            let book = Object.assign({}, gameplayObjects.content.books.fireBlade);
+            player.addBookToBag(unlockBook(book));
+            book = Object.assign({}, gameplayObjects.content.books.fireMagic);
+            player.addBookToBag(unlockBook(book));
+            book = Object.assign({}, gameplayObjects.content.books.lightningBlade);
+            player.addBookToBag(unlockBook(book));
+            book = Object.assign({}, gameplayObjects.content.books.lightningMagic);
+            player.addBookToBag(unlockBook(book));
+            book = Object.assign({}, gameplayObjects.content.books.waterBlade);
+            player.addBookToBag(unlockBook(book));
+            book = Object.assign({}, gameplayObjects.content.books.waterMagic);
+            player.addBookToBag(unlockBook(book));
+        }
+
         const playerRef = playersRef.doc();
         await playerRef.set(player.getData());
 
@@ -127,15 +167,15 @@ class ChatRPG {
         const playerSnap = await this.#findPlayer(playerId);
         const player = new Player(playerSnap.data());
 
-        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
+        const gameRef = this.#dataSource.collection(Schema.Collections.Games).doc(gameId);
     
         let game;
         try {
-            game = await this.#datasource.runTransaction(async (transaction) => {
+            game = await this.#dataSource.runTransaction(async (transaction) => {
                 const transGameSnap = await transaction.get(gameRef);
                 if(!transGameSnap.exists) {
                     //TODO Use the host's game mode from the config
-                    const game = await GameModes.auto.createGame(this.#datasource);
+                    const game = await GameModes.auto.createGame(this.#dataSource);
                     game.onPlayerJoin(player);
                     transaction.create(gameRef, game.getData());
                     return game;
@@ -143,7 +183,7 @@ class ChatRPG {
 
                 const game = new Game(transGameSnap.data());
                 game.onPlayerJoin(player);
-                await GameModes[game.getData().mode].onPlayerJoin(this.#datasource, game, player);
+                await GameModes[game.getData().mode].onPlayerJoin(this.#dataSource, game, player);
                 transaction.update(gameRef, {trackers: game.getData().trackers})
                 return game;
             });
@@ -154,7 +194,7 @@ class ChatRPG {
         await playerSnap.ref.update({ currentGameId: gameId });
         player.datastoreObject.currentGameId = gameId;
 
-        await GameModes[game.getData().mode].postProcessGameState(this.#datasource, game, player);
+        await GameModes[game.getData().mode].postProcessGameState(this.#dataSource, game, player);
         const gameData = game.getData();
         gameData.id = gameId;
 
@@ -184,7 +224,7 @@ class ChatRPG {
         let targetMonsterData = game.findMonsterById(monsterId, false);
         if(!targetMonsterData) {
             if(fallbackMonster) {
-                const monsterRef = await this.#datasource.collection('monsters').doc(fallbackMonster.monsterClass).get();
+                const monsterRef = await this.#dataSource.collection('monsters').doc(fallbackMonster.monsterClass).get();
                 const monsterClass = new MonsterClass(monsterRef.data());
                 targetMonsterData = monsterClass.createMonsterInstance(fallbackMonster.level).datastoreObject;
                 targetMonsterData.id = monsterId;
@@ -199,7 +239,7 @@ class ChatRPG {
         const battlePlayer = new BattlePlayer(player.datastoreObject);
         const battleMonster = new BattleMonster(targetMonsterData);
 
-        const battleRef = this.#datasource.collection(Schema.Collections.Battles).doc();
+        const battleRef = this.#dataSource.collection(Schema.Collections.Battles).doc();
         const battle = new Battle({
             player: battlePlayer.getData(),
             monster: battleMonster.getData(),
@@ -220,7 +260,7 @@ class ChatRPG {
     }
 
     async battleAction(battleId, actionRequest) {
-        const battleSnap = await this.#datasource.collection(Schema.Collections.Battles).doc(battleId).get();
+        const battleSnap = await this.#dataSource.collection(Schema.Collections.Battles).doc(battleId).get();
 
         if(!battleSnap.exists) {
             throw new Error(ChatRPGErrors.battleNotFound);
@@ -236,7 +276,7 @@ class ChatRPG {
         const monsterData = monster.getData();
 
         if(!battle.active) {
-            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
+            const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(battlePlayerData.id);
             const player = new Player((await playerRef.get()).data());
            if(battlePlayer.isDefeated()) {
                 player.onPlayerDefeated();
@@ -247,7 +287,7 @@ class ChatRPG {
                 player.onMonsterDefeated();
                 
                 try {
-                    await this.#datasource.runTransaction(async (transaction) => {
+                    await this.#dataSource.runTransaction(async (transaction) => {
 
                         const transGameSnap = await this.#findGameT(transaction, battle.gameId);
                         
@@ -258,7 +298,7 @@ class ChatRPG {
                             return;
                         }
 
-                        await GameModes[game.getData().mode].onMonsterDefeated(this.#datasource, game, battlePlayer, monster);
+                        await GameModes[game.getData().mode].onMonsterDefeated(this.#dataSource, game, battlePlayer, monster);
                         transaction.update(transGameSnap.ref, {trackers: game.getData().trackers, monsters: game.getMonsters()});
                     });
                 } catch(error) {
@@ -291,8 +331,8 @@ class ChatRPG {
     }
 
     async equipWeapon(playerId, weaponId) {
-        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
-        const player = await this.#datasource.runTransaction(async (transaction) => {
+        const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(playerId);
+        const player = await this.#dataSource.runTransaction(async (transaction) => {
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
@@ -312,8 +352,8 @@ class ChatRPG {
     }
 
     async dropObjectFromBag(playerId, objectId) {
-        const player = await this.#datasource.runTransaction(async (transaction) => {
-            const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
+        const player = await this.#dataSource.runTransaction(async (transaction) => {
+            const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(playerId);
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
@@ -372,7 +412,7 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.abilitiesFull);
         }
 
-        await this.#datasource.runTransaction(async (transaction) => {
+        await this.#dataSource.runTransaction(async (transaction) => {
 
             if(replacedAbility) {
                 transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(replacedAbility)});
@@ -405,8 +445,8 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.productNotFound);
         }
 
-        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
-        const player = await this.#datasource.runTransaction(async (transaction) => {
+        const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(playerId);
+        const player = await this.#dataSource.runTransaction(async (transaction) => {
             const playerSnap = await transaction.get(playerRef);
 
             if(!playerSnap.exists) {
@@ -448,7 +488,7 @@ class ChatRPG {
 
     async moveObjectFromBagToInventory(playerId, objectId) {
 
-        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+        const responceObject = await this.#dataSource.runTransaction(async (transaction) => {
 
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
@@ -458,17 +498,20 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.objectNotInBag);
             }
             
-            await this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
+            const pageData = await this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
             transaction.set(playerSnap.ref, player.getData());
 
-            return {...player.getData(), id: playerSnap.ref.id};
+            return {
+                player: {...player.getData(), id: playerSnap.ref.id},
+                page: pageData
+            };
         });
 
         return responceObject;
     }
 
     async moveObjectFromInventoryToBag(playerId, pageId, objectId) {
-        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+        const responceObject = await this.#dataSource.runTransaction(async (transaction) => {
 
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
@@ -477,7 +520,7 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.inventoryPageNotFound);
             }
 
-            const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+            const pageRef = this.#dataSource.collection(Schema.Collections.InventoryPages).doc(pageId);
             const pageSnap = await transaction.get(pageRef);
 
             if(!pageSnap.exists) {
@@ -511,7 +554,7 @@ class ChatRPG {
     }
 
     async dropObjectFromInventory(playerId, pageId, objectId) {
-        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+        const responceObject = await this.#dataSource.runTransaction(async (transaction) => {
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
 
@@ -519,7 +562,7 @@ class ChatRPG {
                 throw new Error(ChatRPGErrors.inventoryPageNotFound);
             }
 
-            const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+            const pageRef = this.#dataSource.collection(Schema.Collections.InventoryPages).doc(pageId);
             const pageSnap = await transaction.get(pageRef);
 
             if(!pageSnap.exists) {
@@ -547,7 +590,7 @@ class ChatRPG {
     }
 
     async claimObject(playerId, objectId) {
-        const responceObject = await this.#datasource.runTransaction(async (transaction) => {
+        const responceObject = await this.#dataSource.runTransaction(async (transaction) => {
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
 
@@ -577,7 +620,7 @@ class ChatRPG {
             throw new Error(ChatRPGErrors.inventoryPageNotFound);
         }
 
-        const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+        const pageRef = this.#dataSource.collection(Schema.Collections.InventoryPages).doc(pageId);
         const pageSnap = await pageRef.get();
 
         if(!pageSnap.exists) {
@@ -590,7 +633,7 @@ class ChatRPG {
     }
 
     async productPurchase(playerId, productSku) {
-        const productSnap = await this.#datasource.collection(Schema.Collections.Products).doc(productSku).get();
+        const productSnap = await this.#dataSource.collection(Schema.Collections.Products).doc(productSku).get();
 
         if (!productSnap.exists) {
             throw new Error(ChatRPGErrors.productSkuNotFound);
@@ -598,7 +641,7 @@ class ChatRPG {
 
         const productData = productSnap.data();
 
-        const playerData = await this.#datasource.runTransaction(async (transaction) =>{
+        const playerData = await this.#dataSource.runTransaction(async (transaction) =>{
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
 
@@ -619,9 +662,9 @@ class ChatRPG {
     }
 
     async updateGame(gameId, mode) {
-        const game = await GameModes[mode].createGame(this.#datasource);
+        const game = await GameModes[mode].createGame(this.#dataSource);
 
-        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(gameId);
+        const gameRef = this.#dataSource.collection(Schema.Collections.Games).doc(gameId);
         await gameRef.set(game.getData());
 
         return game.getData();
@@ -747,7 +790,7 @@ class ChatRPG {
      * @param {TransactionFunction} transactionFunction 
      */
     #runTransaction(transactionFunction) {
-        return this.#datasource.runTransaction(transactionFunction);
+        return this.#dataSource.runTransaction(transactionFunction);
     }
 
     /**
@@ -761,7 +804,7 @@ class ChatRPG {
      * @returns {Promise<*>}
      */
     async #withObjectTransaction(objectConstrunctor, logicFunc, transaction, collection, documentId, notFoundError = ChatRPGErrors.objectNotFound) {
-        const documentRef = this.#datasource.collection(collection).doc(documentId);
+        const documentRef = this.#dataSource.collection(collection).doc(documentId);
         const documentSnap = await transaction.get(documentRef);
 
         if (!documentSnap.exists) {
@@ -780,7 +823,7 @@ class ChatRPG {
         return {...player.getData(), id};
     }
     async #findPlayer(id) {
-        const playerSnapShot = await this.#datasource.collection(Schema.Collections.Accounts).doc(id).get();
+        const playerSnapShot = await this.#dataSource.collection(Schema.Collections.Accounts).doc(id).get();
         
         if(!playerSnapShot.exists) {
             throw new Error(ChatRPGErrors.playerNotFound);
@@ -791,7 +834,7 @@ class ChatRPG {
 
     // T means transaction
     async #findPlayerT(transaction, playerId) {
-        const playerRef = this.#datasource.collection(Schema.Collections.Accounts).doc(playerId);
+        const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(playerId);
         const playerSnap = await transaction.get(playerRef);
 
         if(!playerSnap.exists) {
@@ -802,7 +845,7 @@ class ChatRPG {
     }
 
     async #findShop(shopId) {
-        const shopSnapshot = await this.#datasource.collection(Schema.Collections.Shops).doc(shopId).get();
+        const shopSnapshot = await this.#dataSource.collection(Schema.Collections.Shops).doc(shopId).get();
         if(!shopSnapshot.exists) {
             throw new Error(ChatRPGErrors.shopNotFound);
         }
@@ -811,7 +854,7 @@ class ChatRPG {
     }
 
     async #findGame(id) {
-        const gameSnapshot = await this.#datasource.collection(Schema.Collections.Games).doc(id).get();
+        const gameSnapshot = await this.#dataSource.collection(Schema.Collections.Games).doc(id).get();
 
         if(!gameSnapshot.exists) {
             throw new Error(ChatRPGErrors.gameNotFound);
@@ -821,7 +864,7 @@ class ChatRPG {
     }
 
     async #findGameT(transaction, id) {
-        const gameRef = this.#datasource.collection(Schema.Collections.Games).doc(id);
+        const gameRef = this.#dataSource.collection(Schema.Collections.Games).doc(id);
         const gameSnapshot = await transaction.get(gameRef);
 
         if(!gameSnapshot.exists) {
@@ -834,7 +877,7 @@ class ChatRPG {
     async #findPlayerbyPlatformId(platformId, platform) {
         const idProperty = this.#getPlatformIdProperty(platform);
         
-        const playerQuerySnapShot = await this.#datasource.collection(Schema.Collections.Accounts).where(idProperty, '==', platformId).get();
+        const playerQuerySnapShot = await this.#dataSource.collection(Schema.Collections.Accounts).where(idProperty, '==', platformId).get();
         
         if(playerQuerySnapShot.empty) {
             throw new Error(ChatRPGErrors.playerNotFound);
@@ -855,13 +898,14 @@ class ChatRPG {
     // WARNING: This function reads first then writes. Remember not to do a transaction write before calling this function 
     async #addObjectToPlayerInventoryT(player, object, type, transaction) {
         let pageId = player.getNextAvailableInventoryPageId();
-        const pageRef = this.#datasource.collection(Schema.Collections.InventoryPages).doc(pageId);
+        const pageRef = this.#dataSource.collection(Schema.Collections.InventoryPages).doc(pageId);
         if (!pageId) {
             const page = new InventoryPage();
             page.addObjectToInventory(object, type);
             pageId = pageRef.id;
             player.onObjectAddedToInventory(pageId);
             transaction.set(pageRef, page.getData());
+            return {...page.getData(), id: pageRef.id};
         }
         else {
             const pageSnap = await transaction.get(pageRef)
@@ -877,6 +921,8 @@ class ChatRPG {
             if(oldSize != newSize) {
                 player.onObjectAddedToInventory(pageId);
             }
+
+            return {...page.getData(), id: pageRef.id};
         }
     }
 

@@ -88,6 +88,7 @@ function startServer(dataSource) {
     app.post('/claim_object', (req, res) => endpoints.claim_object(req, res, chatrpg));
     app.post('/updateGame', (req, res) => endpoints.updateGame(req, res, chatrpg));
     app.post('/useItem', (req, res) => endpoints.useItem(req, res, chatrpg));
+    app.post('/reset_account', (req, res) => endpoints.resetAccount(req, res, chatrpg));
     
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {

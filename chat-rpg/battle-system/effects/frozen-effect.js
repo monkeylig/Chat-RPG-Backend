@@ -77,6 +77,17 @@ class FrozenEffect extends Effect {
                 }
             };
         }
+
+        if (this.isEffectEndEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is no longer ${this.name}.`,
+                    action: 'frozen-recovery',
+                    targetAgentId: this.targetPlayer.getData().id
+                }
+            };
+        }
     }
 }
 

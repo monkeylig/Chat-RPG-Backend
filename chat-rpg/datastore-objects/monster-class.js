@@ -51,9 +51,9 @@ class MonsterClass extends DatastoreObject {
         monster.abilities = [];
         monster.nature = {
             maxHealth: 12,
-            strength: 1,
-            magic: 1,
-            defense: 1,
+            strength: 12,
+            magic: 12,
+            defense: 12,
         };
         monster.talent = {
             maxHealth: 1,

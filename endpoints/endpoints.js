@@ -633,6 +633,30 @@ function useItem(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatrpg 
+ */
+function resetAccount(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if (!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'}
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    // @ts-ignore
+    chatrpg.resetAccount(req.query.playerId)
+    .then(update => {
+        sendResponceObject(res, update);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -661,5 +685,6 @@ module.exports = {
     product_purchase,
     claim_object,
     updateGame,
-    useItem
+    useItem,
+    resetAccount
 };

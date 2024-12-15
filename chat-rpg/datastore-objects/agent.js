@@ -258,9 +258,9 @@ class Agent extends DatastoreObject {
         agent.autoRevive = 0;
         agent.maxHealth = 12;
         agent.health = 12;
-        agent.strength = 1;
-        agent.magic = 1;
-        agent.defense = 1;
+        agent.strength = 12;
+        agent.magic = 12;
+        agent.defense = 12;
         agent.level = 0;
         agent.exp = 0;
         agent.expToNextLevel = 0;
@@ -333,14 +333,30 @@ class Agent extends DatastoreObject {
 
         /**@type {(abilityData: AbilityData, multiplier?: number) => void} */
         const addAbilityGrowth = (abilityData, multiplier = 1) => {
-            let elements = [];
-            if (abilityData.elements) {
-                elements = abilityData.elements;
+            if (abilityData.type) {
+                if (abilityData.baseDamage && abilityData.baseDamage) {
+                    growthObject[typeToStat(abilityData.type)] += multiplier;
+                }
             }
 
-            if (abilityData.type) {
-                if (abilityData.baseDamage && abilityData.baseDamage >= 50) {
-                    growthObject[typeToStat(abilityData.type)] += multiplier;
+            if (hasAbilityStat(abilityData, 'strengthAmp') ||
+                hasAbilityStat(abilityData, 'magicAmp')) {
+                growthObject.defense += multiplier;
+                if (hasAbilityStat(abilityData, 'strengthAmp')) {
+                    growthObject.strength += multiplier;
+                }
+                if (hasAbilityStat(abilityData, 'strengthAmp')) {
+                    growthObject.magic += multiplier;
+                }
+            }
+
+            if (hasAbilityStat(abilityData, 'empowerment')) {
+                growthObject.maxHealth += multiplier;
+                if (abilityData.empowerment?.physical) {
+                    growthObject.strength += multiplier;
+                }
+                if (abilityData.empowerment?.magical) {
+                    growthObject.magic += multiplier;
                 }
             }
 

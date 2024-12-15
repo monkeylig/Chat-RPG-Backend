@@ -125,6 +125,8 @@ class IBackendDataSourceDocumentRef {
 
 class IBackendDataSourceDocumentSnapshot {
     exists;
+    /**@type {IBackendDataSourceDocumentRef} */
+    // @ts-ignore
     ref;
     /**
      * @returns {Object | undefined} The data that was retrieved from the datastore. 

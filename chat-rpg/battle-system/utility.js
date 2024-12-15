@@ -54,7 +54,7 @@ function calcAgentGrowth(level, fromLevel = 1) {
  * @returns {number}
  */
 function calcAgentBaselineHealth(level) {
-    return calcAgentGrowth(level) / 4 * 0.8;
+    return calcAgentGrowth(level) / 4 * 0.9;
 }
 
 /**
@@ -64,7 +64,7 @@ function calcAgentBaselineHealth(level) {
  * @returns {number} 
  */
 function calcTrueDamage(trueDamage, targetLevel) {
-    return calcAgentBaselineHealth(targetLevel) * (trueDamage/100);
+    return (calcAgentBaselineHealth(targetLevel) + 10) * (trueDamage/100);
 }
 
 
@@ -77,8 +77,8 @@ function calcTrueDamage(trueDamage, targetLevel) {
  * @returns {number}
  */
 function calcHitDamage(attackerLevel, baseDamage, attack, defense) {
-    const hpBaseline = calcAgentBaselineHealth(attackerLevel);
-    return ((hpBaseline * 0.2 + 2) * baseDamage * attack / defense) / 50 + 2;
+    const hpBaseline = calcAgentBaselineHealth(attackerLevel) + 12;
+    return ((hpBaseline * 0.2) * baseDamage * attack / defense) / 50;
 }
 
 /**

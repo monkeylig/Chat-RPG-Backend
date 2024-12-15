@@ -155,7 +155,7 @@ class BattleSystem {
     
             //Check for coin drops
             let shouldDropCoin = oldLevel <= battleMonster.getData().level || chatRPGUtility.chance(LOW_LEVEL_COIN_DROP_RATE);
-            const coinBonus = Math.max((battleMonster.getData().level - oldLevel) * Math.floor(battleMonster.getData().coinDrop/2), 0);
+            const coinBonus = Math.max((battleMonster.getData().level - oldLevel) * Math.floor(battleMonster.getData().coinDrop), 0);
             if(battleMonster.getData().coinDrop > 0 && shouldDropCoin) {
                 const coinReward = battleMonster.getData().coinDrop + coinBonus;
                 const drop = {

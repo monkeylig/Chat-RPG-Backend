@@ -68,13 +68,24 @@ class SurgedEffect extends Effect{
                 },
                 infoAction: {
                     animation: animations.electric,
-                    description: `${this.targetPlayer.getData().name} was discarged.`,
+                    description: `${this.targetPlayer.getData().name} was discharged.`,
                     targetAgentId: this.targetPlayer.getData().id,
                     action: 'surgeDamage'
                 }
             };
 
             yield this.endEffectAction();
+        }
+        
+        if (this.isEffectEndEvent(activeAction, battleSteps)) {
+            yield true;
+            yield {
+                infoAction: {
+                    description: `${this.targetPlayer.getData().name} is no longer ${this.name}.`,
+                    action: 'surged-recovery',
+                    targetAgentId: this.targetPlayer.getData().id
+                }
+            };
         }
     }
 };

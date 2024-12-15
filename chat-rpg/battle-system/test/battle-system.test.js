@@ -157,7 +157,7 @@ test("Escaping", () => {
 });
 
 test("Losing Battles", () => {
-    const monster = new BattleMonster({id: 'monster'});
+    const monster = new BattleMonster({id: 'monster', strength: 1000});
     monster.getData().weapon.speed = 100;
 
     const battleSystem = new BattleSystem(new Battle({
@@ -180,7 +180,7 @@ test("Losing Battles", () => {
 
 test("Winning Battles", () => {
     chatRPGUtility.random = seedrandom('5');
-    const player = new BattlePlayer({id: 'player'});
+    const player = new BattlePlayer({id: 'player', strength: 1000});
     const monster = new BattleMonster({
         id: 'monster',
         health: 1,
@@ -221,7 +221,7 @@ test('Monster Weapon Drop rate', () => {
     const weaponDropRate = 0.2;
     const weapon = new BattleWeapon({name: 'monster weapon'}).getData();
     const dropRate = testSuccessRate(() => {
-        const player = new BattlePlayer({id: 'player'});
+        const player = new BattlePlayer({id: 'player', strength: 1000});
         const monster = new BattleMonster({
             id: 'monster',
             health: 1,
@@ -271,7 +271,7 @@ describe.each([
     test('Coin drop amount', () => {
         chatRPGUtility.random = seedrandom('1');
         const playerLevel = 5;
-        const player = new BattlePlayer({id: 'player', level: playerLevel, coins: 0});
+        const player = new BattlePlayer({id: 'player', level: playerLevel, coins: 0, strength: 1000});
         player.getData().weapon.speed = 100;
         const monster = new BattleMonster({
             id: 'monster',
@@ -307,7 +307,7 @@ test('Monster Coin Drop rate', () => {
 
     const coinDropRate = 1;
     const dropRate = testSuccessRate(() => {
-        const player = new BattlePlayer({id: 'player'});
+        const player = new BattlePlayer({id: 'player', strength: 1000});
         player.getData().weapon.speed = 100;
         const monster = new BattleMonster({
             id: 'monster',

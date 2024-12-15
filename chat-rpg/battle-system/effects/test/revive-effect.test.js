@@ -48,6 +48,7 @@ test('Resolving', () => {
     const battleContext = new BattleContext();
     const reviveEffect = new ReviveEffect(battleContext.player, {healthRecoverPercent: 0.2});
     battleContext.addEffect(reviveEffect);
+    battleContext.monster.getData().strength = 10000;
     battleContext.player.getData().health = 1;
 
     battleContext.activateBattleMove(new StrikeBattleMove(battleContext.monster));

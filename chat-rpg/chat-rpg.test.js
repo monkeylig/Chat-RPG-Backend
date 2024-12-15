@@ -465,7 +465,7 @@ test('Magic Strike', async () => {
 
     const damageStep = /**@type {DamageStep}*/(findBattleStep('damage', battleUpdate.steps));
     if (!damageStep) {fail();}
-    expect(damageStep.damage).toBeGreaterThan(2);
+    expect(damageStep.damage).toBeGreaterThan(0.2);
 
 });
 
@@ -697,7 +697,7 @@ test('Player being defeated', async () => {
                 expYield: 36,
                 name: "Eye Sack",
                 weapon: new Weapon ({
-                    baseDamage: 1000,
+                    baseDamage: 100000,
                     name: "Cornia",
                     type: 'physical',
                     speed: 1,
@@ -1875,4 +1875,21 @@ test('Use Item from inventory', async () => {
 
     await expect(chatrpg.useItem('player1', inventoryObject.id, {itemLocation: {type: 'inventory', source: {pageId: page1Id}}})).rejects.toThrow(ChatRPGErrors.objectNotInInventory);
     await expect(chatrpg.useItem('player0', inventoryObject.id, {itemLocation: {type: 'inventory', source: {pageId: page1Id}}})).rejects.toThrow(ChatRPGErrors.playerNotFound);
+});
+
+test('Deleting Account', async () => {
+    let playerId = 'pid';
+
+    const dataSource = new MemoryBackedDataSource();
+    //Add monsters so that new games can be properly created
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            [playerId]: new Player()
+        },
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+    await chatrpg.resetAccount(playerId);
+
+    await expect(chatrpg.findPlayerById(playerId)).rejects.toThrow(ChatRPGErrors.playerNotFound);
 });

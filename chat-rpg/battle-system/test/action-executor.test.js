@@ -340,7 +340,7 @@ describe.each([
     });
 });
 
-test('Defence Penetration', () => {
+test('Defense Penetration', () => {
     const battleContext = new BattleContext();
     battleContext.player.setStatsAtLevel(100);
     /** @type {Action} */

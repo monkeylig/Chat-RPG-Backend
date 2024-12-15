@@ -316,4 +316,29 @@ test('Buying stuff', async () => {
     expect(newItem.content.count).toBe(1);
 });
 
+test.only("Resetting Account", async () => {
+    let player = new Player({coins: 20});
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        accounts: {
+            player1: player.getData()
+        }
+    });
+
+    let chatrpg = new ChatRPG(dataSource);
+
+    let res = new Res();
+    let req = {
+        query: {
+            playerId: 'player1',
+        }
+    };
+
+    endpoints.resetAccount(req, res, chatrpg);
+    let playerData = await res.waitForMessage();
+
+    expect(playerData.message).toMatch("OK");
+});
+
 //TODO: Make equip weapon test

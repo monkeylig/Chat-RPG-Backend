@@ -65,6 +65,7 @@ function *generateStandardActions(user, actionData, battleContext, options = {})
             protection: actionData.protection,
             defenseAmp: actionData.defenseAmp,
             strengthAmp: actionData.strengthAmp,
+            magicAmp: actionData.magicAmp,
             weaponSpeedAmp:actionData.weaponSpeedAmp,
             lightningResistAmp: actionData.lightningResistAmp,
             fireResistAmp: actionData.fireResistAmp,

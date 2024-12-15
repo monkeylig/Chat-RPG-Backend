@@ -154,6 +154,7 @@ test('Adding Effects: Default inputData', () => {
 describe.each([
     ['defenseAmp'],
     ['strengthAmp'],
+    ['magicAmp'],
     ['lightningResistAmp'],
     ['fireResistAmp'],
     ['waterResistAmp'],

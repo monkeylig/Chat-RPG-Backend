@@ -6,6 +6,7 @@ const { BattleMonster } = require('../datastore-objects/battle-agent');
 test('Generic Monster AI', () => {
     chatRPGUtility.random = seedrandom('monsters!');
     const monster = new BattleMonster({
+        level: 50,
         abilities: [
             {
                 name: 'ability1',

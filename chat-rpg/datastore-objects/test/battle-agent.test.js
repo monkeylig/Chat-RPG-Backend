@@ -168,13 +168,13 @@ test('Evasive Speed', () => {
 
     player.setEvasiveSpeed(5);
 
-    expect(player.getData().evasion).toBe(0.20);
+    expect(player.getData().evasion).toBe(0.15);
 
     player.setEvasiveSpeed(10);
 
-    expect(player.getData().evasion).toBe(0.4);
+    expect(player.getData().evasion).toBe(0.3);
 
     player.setEvasiveSpeed(20);
 
-    expect(player.getData().evasion).toBe(0.8);
+    expect(player.getData().evasion).toBe(0.6);
 });

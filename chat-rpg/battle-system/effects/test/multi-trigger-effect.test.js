@@ -50,3 +50,5 @@ test('Double trigger ability', () => {
     if (!action.battleContextAction) {fail();}
     expect(action.battleContextAction.removeEffect).toBe(triggerEffect);
 });
+
+//TODO: Add test for resolving in battle system

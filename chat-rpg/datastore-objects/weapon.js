@@ -13,6 +13,7 @@ const DatastoreObject = require('./datastore-object');
  * @property {Object} statGrowth
  * @property {string} description
  * @property {string} icon
+ * @property {number} stars
  */
 
 /**
@@ -49,7 +50,8 @@ class Weapon extends DatastoreObject {
                 defense: 1
             },
             description: 'Unknown',
-            icon: 'sword-icon.png'
+            icon: 'sword-icon.png',
+            stars: 0
         };
         Object.assign(weapon, weaponData);
     }

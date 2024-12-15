@@ -398,7 +398,7 @@ function BattleAgentMixin(Base) {
          * @param {number} speed 
          */
         setEvasiveSpeed(speed) {
-            const maxEvasion = 0.4;
+            const maxEvasion = 0.3;
             this.getData().evasion = Math.max(0, speed/10 * maxEvasion);
         }
 

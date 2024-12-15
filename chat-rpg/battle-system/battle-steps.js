@@ -111,7 +111,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
             const inflictEffect = new InflictEffect(targetPlayer, inputData);
             steps.push(addEffect(battleContext, inflictEffect));
         };
-        if(searchElements(ElementsEnum.Fire) && !battleContext.getEffectCount('DrenchedEffect', targetPlayer)) {
+        if(searchElements(ElementsEnum.Fire) && !searchElements(ElementsEnum.Water) && !battleContext.getEffectCount('DrenchedEffect', targetPlayer)) {
             if(chatRPGUtility.chance(ablazed.inflictChance)) {
                 inflict(AblazedEffect, {trueDamage: ablazed.trueDamage, roundsLeft: ablazed.roundsLeft});
             }
@@ -121,7 +121,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
                 inflict(SurgedEffect, {trueDamage: surged.trueDamage, roundsLeft: surged.roundsLeft});
             }
         }
-        else if(searchElements(ElementsEnum.Water) && !battleContext.getEffectCount('AblazedEffect', targetPlayer)) {
+        else if(searchElements(ElementsEnum.Water) && !searchElements(ElementsEnum.Fire) && !battleContext.getEffectCount('AblazedEffect', targetPlayer)) {
             if (damage >= targetPlayer.getData().maxHealth * drenched.healthThreshold) {
                 inflict(DrenchedEffect, {trueDamage: drenched.trueDamage, roundsLeft: drenched.roundsLeft});
             }
@@ -305,7 +305,7 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
             return {
                 type: ampFunctionName,
                 targetId: battlePlayer.getData().id,
-                description: `${descBeginning} rose suddenly!`,
+                description: `${descBeginning} rose greatly!`,
                 ampAmount
             };
         }
@@ -313,7 +313,7 @@ function statAmpStep(battlePlayer, stat, ampFunctionName, stages, prefix) {
             return {
                 type: ampFunctionName,
                 targetId: battlePlayer.getData().id,
-                description: `${descBeginning} fell suddenly!`,
+                description: `${descBeginning} fell greatly!`,
                 ampAmount
             };
         }
@@ -548,14 +548,14 @@ function apChange(battleAgent, value) {
 
 /**
  * @typedef {BattleStep & {
-* targetId: string,
-* netChange: number
-* }} MaxApChangeStep
-* 
-* @param {BattleAgent} battleAgent 
-* @param {number} value 
-* @returns {MaxApChangeStep}
-*/
+ * targetId: string,
+ * netChange: number
+ * }} MaxApChangeStep
+ * 
+ * @param {BattleAgent} battleAgent 
+ * @param {number} value 
+ * @returns {MaxApChangeStep}
+ */
 function maxApChange(battleAgent, value) {
     const battlePlayerData = battleAgent.getData();
     const netChange =  Math.max(value, -battlePlayerData.maxAp);
