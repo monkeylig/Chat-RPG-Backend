@@ -7,6 +7,7 @@
  * @import {InventoryPageData} from "./datastore-objects/inventory-page"
  * @import {ConsumeItemStep} from "./battle-system/battle-steps"
  * @import {BookData} from "./datastore-objects/book"
+ * @import {WeaponData} from "./datastore-objects/weapon"
  */
 
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
@@ -19,7 +20,7 @@ const { BattlePlayer, BattleMonster } = require("./datastore-objects/battle-agen
 const Item = require('./datastore-objects/item');
 const {MonsterClass} = require("./datastore-objects/monster-class");
 const {Weapon} = require("./datastore-objects/weapon");
-const { Shop } = require("./datastore-objects/shop");
+const { Shop, ShopItem } = require("./datastore-objects/shop");
 const ChatRPGErrors = require('./errors');
 const { InventoryPage } = require("./datastore-objects/inventory-page");
 const { Book } = require("./datastore-objects/book");
@@ -29,6 +30,16 @@ const { Battle } = require("./datastore-objects/battle");
 const { BattleContext } = require("./battle-system/battle-context");
 const DatastoreObject = require("./datastore-objects/datastore-object");
 const { ItemBattleMove } = require("./battle-system/item-battle-move");
+const BattleSteps = require("./battle-system/battle-steps");
+
+const PLAYER_STARTING_COINS = 2000;
+const WEAPON_COUNT = 40;
+const WEAPONS_IN_SHOP_ROTATION = 10;
+const WeaponPriceByStar = {
+    1: 110,
+    2: 620,
+    3: 2000
+};
 
 class ChatRPG {
     /**
@@ -96,6 +107,7 @@ class ChatRPG {
 
         const player = new Player({name, avatar, [platformIdProperty]: platformId});
 
+        player.addCoins(PLAYER_STARTING_COINS);
         if(weaponType) {
             player.getData().weapon = gameplayObjects.startingWeapons[weaponType];    
         }
@@ -431,8 +443,7 @@ class ChatRPG {
         const shop = new Shop(shopSnapshot.data());
 
         const shopData = shop.getData();
-        shopData.id = shopId;
-        return shopData;
+        return {...shopData, id: shopId};
     }
 
     async buy(playerId, shopId, productId, amount=1) {
@@ -488,7 +499,7 @@ class ChatRPG {
 
     async moveObjectFromBagToInventory(playerId, objectId) {
 
-        const responceObject = await this.#dataSource.runTransaction(async (transaction) => {
+        const responseObject = await this.#dataSource.runTransaction(async (transaction) => {
 
             const playerSnap = await this.#findPlayerT(transaction, playerId);
             const player = new Player(playerSnap.data());
@@ -507,7 +518,7 @@ class ChatRPG {
             };
         });
 
-        return responceObject;
+        return responseObject;
     }
 
     async moveObjectFromInventoryToBag(playerId, pageId, objectId) {
@@ -768,6 +779,53 @@ class ChatRPG {
         }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
     }
     
+    async refreshDailyShop() {
+        const shopSnapshot = await this.#findShop('daily');
+        const shop = new Shop(shopSnapshot.data());
+
+        //Filter out all weapons because these will be rotated
+        shop.getData().products = shop.getData().products.filter((shopItem) => {
+            return shopItem.type !== 'weapon';
+        });
+
+        const weaponsRef = this.#dataSource.collection('weapons');
+        const weaponsNumbersForSale = [];
+        const weaponRequests = [];
+        //TODO: Get count of total weapons
+        for (let i = 0; i < WEAPON_COUNT; i++) {
+            weaponsNumbersForSale.push(i);
+        }
+
+        for(let i = 0; i < WEAPONS_IN_SHOP_ROTATION; i++) {
+            const instanceNumber = weaponsNumbersForSale[Math.floor(Math.random() * weaponsNumbersForSale.length)];
+            weaponRequests.push(weaponsRef.where("instanceNumber", "==", instanceNumber).get());
+            weaponsNumbersForSale.splice(instanceNumber, 1);
+        }
+
+        const weaponSnapshots = await Promise.all(weaponRequests);
+
+        for(const weaponSnap of weaponSnapshots) {
+            if (weaponSnap.empty) {
+                continue;
+            }
+            const weapon = new Weapon(weaponSnap.docs[0].data());
+            const price = WeaponPriceByStar[weapon.getData().stars];
+            shop.addShopItem(new ShopItem({price, type: 'weapon', product: weapon.getData()}));
+        }
+
+        shop.getData().products.sort((left, right) => {
+            const order = {
+                'weapon': 1,
+                'book': 2,
+                'item': 3,
+            };
+
+            return order[left.type] - order[right.type];
+
+        })
+
+        await shopSnapshot.ref.set(shop.getData());
+    }
     /**
      * 
      * @param {Player} player 
@@ -775,6 +833,10 @@ class ChatRPG {
      * @returns {{player: PlayerData, steps: BattleStep[]}}
      */
     #useItemOutOfBattle(player, item) {
+        if (!item.getData().outOfBattle) {
+            const infoStep = BattleSteps.info("Can't use this item out of battle.");
+            return {player: {...player.getData()}, steps: [infoStep]};
+        }
         const battleContext = new BattleContext(new Battle({player: player.getData()}).getData());
 
         battleContext.activateBattleMove(new ItemBattleMove(battleContext.player, item));

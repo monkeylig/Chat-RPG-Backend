@@ -1,6 +1,5 @@
 const LOCAL_TEST_PORT = 4000;
 
-const fs = require('fs');
 const express = require('express');
 
 const ChatRPG = require('./chat-rpg/chat-rpg');
@@ -8,7 +7,8 @@ const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const endpoints = require('./endpoints/endpoints');
 const utility = require('./utility');
-const { type } = require('os');
+var cron = require('node-cron');
+
 let twitchExtentionSecret;
 
 function twitchJWTValidation(req, res, next) {
@@ -92,7 +92,16 @@ function startServer(dataSource) {
     
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {
+        
+        cron.schedule('0 0 * * *', (date) => {
+            console.log(`Shop updated on ${date}`);
+            chatrpg.refreshDailyShop();
+        }, {
+            timezone: 'America/Los_Angeles'
+        });
+        console.log(`Automated services started`);
         console.log(`Server running at port ${PORT}`);
+
     });
 }
 

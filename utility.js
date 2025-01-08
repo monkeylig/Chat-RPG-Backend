@@ -1,5 +1,4 @@
 const { v4: uuidv4 } = require('uuid');
-const Buffer = require('buffer/').Buffer
 const jwt = require('jsonwebtoken');
 
 const utility = {
@@ -13,6 +12,12 @@ const utility = {
     deepCopy(object) {
         return JSON.parse(JSON.stringify(object));
     },
+    /**
+     * 
+     * @param {string} token 
+     * @param {string} secret 
+     * @returns 
+     */
     verifyJWT(token, secret) {
         return jwt.verify(token, Buffer.from(secret, 'base64'));
     }

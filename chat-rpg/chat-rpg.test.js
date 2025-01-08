@@ -19,6 +19,7 @@ const gameplayObjects = require('./gameplay-objects');
 const Ability = require('./datastore-objects/ability');
 const { findBattleStep } = require('./battle-system/utility');
 const { BattleMonster } = require('./datastore-objects/battle-agent');
+const { weapons } = require('../sandbox/contentObjects');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -1508,6 +1509,51 @@ test('Buying Weapons', async () => {
 
 });
 
+test('Rotating products in the shop.', async () => {
+    const weapons = {};
+    for (let i = 0; i < 40; i++) {
+        weapons[`weapon${i}`] = new Weapon({name: `weapon ${i}`, instanceNumber: i}).getData()
+    }
+    const shopItem = new ShopItem(
+        {
+            type: 'weapon',
+            price: 10,
+            product: new Weapon({name: 'Test Product'}).getData()
+        });
+
+    const shop = new Shop({
+        title: 'Test Shop',
+        description: 'Testing the shop'
+    });
+
+    shop.addShopItem(shopItem);
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        shops: {
+            daily: {
+                ...shop.getData()
+            }
+        },
+        weapons
+    });
+
+    let chatRPG = new ChatRPG(dataSource);
+    await chatRPG.refreshDailyShop();
+    const shopData = await chatRPG.getShop('daily');
+
+    expect(shopData.products.length).toBe(10);
+
+    let foundOldProduct = false;
+    for(const product of shopData.products) {
+        if(product.product.name === 'Test Product') {
+            foundOldProduct = true;
+        }
+    }
+
+    expect(foundOldProduct).toBe(false);
+});
+
 test('Buying Books', async () => {
     let player = new Player({coins: 20});
     const shopItem = new ShopItem(
@@ -1585,7 +1631,7 @@ test('Moving objects from bag to inventory', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
 
-    let playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
+    let playerData = (await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id)).player;
 
     expect(playerData).toBeDefined();
     expect(playerData.bag.objects.length).toBe(1);
@@ -1596,7 +1642,7 @@ test('Moving objects from bag to inventory', async () => {
 
     expect(playerData).toStrictEqual(dataSource.dataSource[Schema.Collections.Accounts][playerId]);
 
-    playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[1].id);
+    playerData = (await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[1].id)).player;
     
     expect(playerData.bag.objects.length).toBe(0);
 
@@ -1632,7 +1678,7 @@ test('Moving objects from bag to inventory: Create new page', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
 
-    const playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
+    const playerData = (await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id)).player;
 
     let count = 0;
     for(const pageEntry in dataSource.dataSource[Schema.Collections.InventoryPages]) {
@@ -1694,7 +1740,7 @@ test('Move to inventory then to bag bug', async () => {
 
     const chatrpg = new ChatRPG(dataSource);
     const playerData = await chatrpg.moveObjectFromBagToInventory('player1', player.getData().bag.objects[0].id);
-    let pageData = await chatrpg.getInventoryPage('player1', playerData.inventory.leger[0].id);
+    let pageData = await chatrpg.getInventoryPage('player1', playerData.player.inventory.leger[0].id);
     const collection = await chatrpg.moveObjectFromInventoryToBag('player1', pageData.id, pageData.objects[0].id);
     pageData = await chatrpg.getInventoryPage('player1', pageData.id);
     expect(pageData).toBeDefined();
@@ -1809,7 +1855,8 @@ test('Use Item from bag', async () => {
     const bagItem = player.addItemToBag(new Item({
         name: 'Potion',
         heal: 5,
-        target: 'self'
+        target: 'self',
+        outOfBattle: true
     }));
 
     if (!bagItem) {fail();}
@@ -1844,7 +1891,8 @@ test('Use Item from inventory', async () => {
     const inventoryObject = page.addObjectToInventory(new Item({
         name: 'Potion',
         heal: 5,
-        target: 'self'
+        target: 'self',
+        outOfBattle: true
     }).getData(), 'item');
     const page1Id = 'page1';
     player.onObjectAddedToInventory(page1Id);

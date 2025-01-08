@@ -1,6 +1,15 @@
+
 const DatastoreObject = require('./datastore-object');
 const utility = require('../../utility');
 const chatRPGUtility = require('../utility');
+
+/**
+ * @typedef {Object} ShopData
+ * @property {string} title 
+ * @property {string} description 
+ * @property {string} coinIcon 
+ * @property {ShopItemData[]} products 
+ */
 
 class Shop extends DatastoreObject {
     constructor(objectData) {
@@ -29,7 +38,23 @@ class Shop extends DatastoreObject {
 
         return new ShopItem(productData);
     }
+
+    /**
+     * @override
+     * @returns {ShopData}
+     */
+    getData() {
+        return /** @type {ShopData} */ (this.datastoreObject);
+    }
 }
+
+/**
+ * @typedef {Object} ShopItemData
+ * @property {string} id
+ * @property {number} price
+ * @property {string} type
+ * @property {Object} product
+ */
 
 class ShopItem extends DatastoreObject {
     constructor(objectData) {
@@ -41,6 +66,14 @@ class ShopItem extends DatastoreObject {
         shopItem.price = 0;
         shopItem.type = 'empty';
         shopItem.product = {};
+    }
+
+    /**
+     * @override
+     * @returns {ShopItemData}
+     */
+    getData() {
+        return /** @type {ShopItemData} */ (this.datastoreObject);
     }
 }
 

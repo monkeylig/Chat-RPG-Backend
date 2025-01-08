@@ -123,8 +123,9 @@ class Monster extends Agent {
 
     getExpGain() {
         const monster = this.getData();
-        const restrictedLevel = Math.min(monster.level, EXP_LEVEL_CAP);
-        return Math.round(monster.expYield * restrictedLevel/7 * Monster.EXP_MODIFIER);
+        // May not need to cap the difficulty of leveling up. We'll see.
+        //const restrictedLevel = Math.min(monster.level, EXP_LEVEL_CAP);
+        return Math.round(monster.expYield * monster.level/7 * Monster.EXP_MODIFIER);
     }
 
     setStatsAtLevel(level) {

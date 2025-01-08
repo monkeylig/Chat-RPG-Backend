@@ -183,8 +183,8 @@ test('Move object from bag to inventory', async () => {
     endpoints.move_object_from_bag_to_inventory(req, res, chatrpg);
     let playerData = await res.waitForMessage();
 
-    expect(playerData.id).toBe('player1');
-    expect(playerData.bag.objects.length).toBe(1);
+    expect(playerData.player.id).toBe('player1');
+    expect(playerData.player.bag.objects.length).toBe(1);
 });
 
 test('Get inventory page', async () => {
@@ -316,7 +316,7 @@ test('Buying stuff', async () => {
     expect(newItem.content.count).toBe(1);
 });
 
-test.only("Resetting Account", async () => {
+test("Resetting Account", async () => {
     let player = new Player({coins: 20});
 
     const dataSource = new MemoryBackedDataSource();

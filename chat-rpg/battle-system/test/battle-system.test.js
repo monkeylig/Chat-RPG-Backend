@@ -263,11 +263,11 @@ test('Monster Weapon Drop rate', () => {
 describe.each([
     [-1, 10],
     [0, 10],
-    [1, 15],
-    [2, 20],
-    [3, 25],
-    [4, 30],
-])('', (levelDiff, coins) => {
+    [1, 20],
+    [2, 30],
+    [3, 40],
+    [4, 50],
+])('Coin drop test, %s levels above player', (levelDiff, coins) => {
     test('Coin drop amount', () => {
         chatRPGUtility.random = seedrandom('1');
         const playerLevel = 5;

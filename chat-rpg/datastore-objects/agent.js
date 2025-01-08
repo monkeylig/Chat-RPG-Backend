@@ -345,7 +345,7 @@ class Agent extends DatastoreObject {
                 if (hasAbilityStat(abilityData, 'strengthAmp')) {
                     growthObject.strength += multiplier;
                 }
-                if (hasAbilityStat(abilityData, 'strengthAmp')) {
+                if (hasAbilityStat(abilityData, 'magicAmp')) {
                     growthObject.magic += multiplier;
                 }
             }
@@ -437,10 +437,11 @@ class Agent extends DatastoreObject {
             return 0;
         }
 
-        if (level > EXP_LEVEL_CAP) {
-            const expCap = this.expEquation(EXP_LEVEL_CAP);
-            return expCap + (level - EXP_LEVEL_CAP) * (expCap - this.expEquation(EXP_LEVEL_CAP - 1));
-        }
+        // May not need to cap the difficulty of leveling up. We'll see.
+        // if (level > EXP_LEVEL_CAP) {
+        //     const expCap = this.expEquation(EXP_LEVEL_CAP);
+        //     return expCap + (level - EXP_LEVEL_CAP) * (expCap - this.expEquation(EXP_LEVEL_CAP - 1));
+        // }
         return this.expEquation(level);
     }
 
