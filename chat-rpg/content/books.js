@@ -6,10 +6,11 @@
 const { TargetEnum, PlayerActionType, PlayerActionStyle, ElementsEnum } = require('../battle-system/action');
 const animations = require('./animations');
 
+/**@type {AbilityBook} */
 const warriorMasteryI = {
     name: 'Warrior Mastery',
     icon: 'warrior_mastery_1.webp',
-    description: 'Every new warrior must begin somewhere. This book will introduce you to the play style of the warrior class. Pick up a sword and start unlocking these sleights!',
+    description: 'Every new warrior must begin somewhere. This book will introduce you to the play style of the warrior class. Pick up a sword and start unlocking these abilities!',
     abilities: [
         {
             requirements: [
@@ -31,7 +32,7 @@ const warriorMasteryI = {
                 speed: 4,
                 baseDamage: 30,
                 apCost: 1,
-                description: "A very fast attack dealing modest damage. Slightly increase your weapon speed. Follow up your next 2 strikes with a 10 base damage attack that slightly increases your weapon speed.",
+                description: "A very fast attack dealing modest damage. Slightly increase your weapon speed. Follow up your next 2 strikes with a 10 base damage attack.",
                 animation: animations.orangeStab1,
                 postActions: [
                     {
@@ -55,14 +56,6 @@ const warriorMasteryI = {
                                     style: PlayerActionStyle.Sword,
                                     target: TargetEnum.Opponent,
                                     baseDamage: 10,
-                                    postActions: [
-                                        {
-                                            type: PlayerActionType.Physical,
-                                            style: PlayerActionStyle.Sword,
-                                            target: TargetEnum.Self,
-                                            weaponSpeedAmp: 1
-                                        }
-                                    ]
                                 }
                             }
                         }
@@ -73,7 +66,7 @@ const warriorMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 10 monsters with a sword style weapon.',
+                    description: 'Slay 10 monsters with a sword-style weapon.',
                     requiredCount: 10,
                     count: 0,
                     tracker: {
@@ -116,7 +109,7 @@ const warriorMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 20 monsters with a sword style weapon.',
+                    description: 'Slay 20 monsters with a sword-style weapon.',
                     requiredCount: 20,
                     count: 0,
                     tracker: {
@@ -127,7 +120,7 @@ const warriorMasteryI = {
             ],
             ability: {
                 name: 'Sentinel',
-                description: "Gain 14% physical protection and 35 physical empowerment.",
+                description: "Gain 12% physical protection and 30 physical empowerment.",
                 animation: animations.swordBuff1,
                 type: 'physical',
                 style: 'sword',
@@ -135,17 +128,17 @@ const warriorMasteryI = {
                 speed: 3,
                 apCost: 1,
                 protection: {
-                    physical: 14
+                    physical: 12
                 },
                 empowerment: {
-                    physical: 35
+                    physical: 30
                 }
             }
         },
         {
             requirements: [
                 {
-                    description: 'Slay 30 monsters with a sword style weapon.',
+                    description: 'Slay 30 monsters with a sword-style weapon.',
                     requiredCount: 30,
                     count: 0,
                     tracker: {
@@ -156,7 +149,7 @@ const warriorMasteryI = {
             ],
             ability: {
                 name: 'Parry',
-                description: "Counter the target's strike with a 50 base damage attack.",
+                description: "Slightly increase your strength. Counter the target's strike with a 40 base damage attack.",
                 animation: animations.swordBuff1,
                 type: 'physical',
                 style: 'staff',
@@ -164,6 +157,7 @@ const warriorMasteryI = {
                 speed: 0,
                 priority: 10,
                 apCost: 1,
+                strengthAmp: 1,
                 addEffect: {
                     class: 'CounterEffect',
                     inputData: {
@@ -176,7 +170,7 @@ const warriorMasteryI = {
                             target: 'opponent',
                             type: 'physical',
                             style: 'sword',
-                            baseDamage: 50,
+                            baseDamage: 40,
                             animation: animations.impact7
                         }
                     }
@@ -186,7 +180,7 @@ const warriorMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 40 monsters with a sword style weapon.',
+                    description: 'Slay 40 monsters with a sword-style weapon.',
                     requiredCount: 40,
                     count: 0,
                     tracker: {
@@ -203,13 +197,14 @@ const warriorMasteryI = {
                 baseDamage: 75,
                 speed: 3,
                 apCost: 2,
-                description: "A mighty feat of strength doing great damage.",
+                description: "Slash the target with devastating force.",
                 animation: animations.purpleImpact
             }
         }
     ]
 };
 
+/**@type {AbilityBook} */
 const wizardMasteryI = {
     name: 'Wizard Mastery',
     icon: 'wizard_mastery_1.webp',
@@ -242,7 +237,7 @@ const wizardMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 10 monsters with a staff style weapon.',
+                    description: 'Slay 10 monsters with a staff-style weapon.',
                     requiredCount: 10,
                     count: 0,
                     tracker: {
@@ -267,9 +262,9 @@ const wizardMasteryI = {
                     style: 'staff',
                     target: 'opponent',
                     charges: 1,
-                    baseDamage: 70,
+                    baseDamage: 35,
                     speed: 3,
-                    description: 'The user summons a surplus of magical energy and releases it in a one burst.',
+                    description: 'Summon a surplus of magical energy and releases it in one burst.',
                     animation: animations.impact7
                 }
             }
@@ -277,7 +272,7 @@ const wizardMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 20 monsters with a staff style weapon.',
+                    description: 'Slay 20 monsters with a staff-style weapon.',
                     requiredCount: 20,
                     count: 0,
                     tracker: {
@@ -300,7 +295,7 @@ const wizardMasteryI = {
                 apCost: 1,
                 addAbility: {
                     name: 'Repel',
-                    description: "Counter the target's strike with a 60 base damage attack.",
+                    description: "Counter the target's strike with a 40 base damage attack.",
                     animation: animations.magicBuff1,
                     type: 'magical',
                     style: 'staff',
@@ -318,7 +313,7 @@ const wizardMasteryI = {
                             ability: {
                                 name: 'Repel',
                                 target: 'opponent',
-                                baseDamage: 50,
+                                baseDamage: 40,
                                 type: 'magical',
                                 style: 'staff',
                                 animation: animations.impact7
@@ -331,7 +326,7 @@ const wizardMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 30 monsters with a staff style weapon.',
+                    description: 'Slay 30 monsters with a staff-style weapon.',
                     requiredCount: 30,
                     count: 0,
                     tracker: {
@@ -349,7 +344,7 @@ const wizardMasteryI = {
                 target: 'self',
                 speed: 3,
                 empowerment: {
-                    magical: 65
+                    magical: 60
                 },
                 apCost: 1,
             }
@@ -357,7 +352,7 @@ const wizardMasteryI = {
         {
             requirements: [
                 {
-                    description: 'Slay 40 monsters with a staff style weapon.',
+                    description: 'Slay 40 monsters with a staff-style weapon.',
                     requiredCount: 40,
                     count: 0,
                     tracker: {

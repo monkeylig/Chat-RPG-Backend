@@ -117,7 +117,7 @@ class ChatRPG {
             player.getData().health += 2;
         }
         else if(vitalityBonus === 'defense') {
-            player.getData().defense += 1;
+            player.getData().defense += 2;
         }
 
         player.addItemToBag(gameplayObjects.startingItems.items.potion);
