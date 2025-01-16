@@ -64,7 +64,7 @@ describe.each([
         expect(newPlayer.weapon).toStrictEqual(gameplayObjects.startingWeapons[weaponType]);
 
         if(vitalityBonus === 'defense') {
-            expect(newPlayer.defense).toBe(defaultPlayer.getData().defense + 1);
+            expect(newPlayer.defense).toBe(defaultPlayer.getData().defense + 2);
         }
 
         if(vitalityBonus === 'health') {
@@ -1511,8 +1511,8 @@ test('Buying Weapons', async () => {
 
 test('Rotating products in the shop.', async () => {
     const weapons = {};
-    for (let i = 0; i < 40; i++) {
-        weapons[`weapon${i}`] = new Weapon({name: `weapon ${i}`, instanceNumber: i}).getData()
+    for (let i = 0; i < 5; i++) {
+        weapons[`weapon${i}`] = new Weapon({name: `weapon ${i}`, instanceNumber: i, stars: i}).getData()
     }
     const shopItem = new ShopItem(
         {
@@ -1542,7 +1542,7 @@ test('Rotating products in the shop.', async () => {
     await chatRPG.refreshDailyShop();
     const shopData = await chatRPG.getShop('daily');
 
-    expect(shopData.products.length).toBe(10);
+    expect(shopData.products.length).toBe(5);
 
     let foundOldProduct = false;
     for(const product of shopData.products) {

@@ -1,3 +1,6 @@
+/**
+ * @import {Request, Response} from 'express'
+ */
 const LOCAL_TEST_PORT = 4000;
 
 const express = require('express');
@@ -11,12 +14,24 @@ var cron = require('node-cron');
 
 let twitchExtentionSecret;
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {() => void} next 
+ * @returns 
+ */
 function twitchJWTValidation(req, res, next) {
     
     if(req.method === 'OPTIONS') {
         next();
         return;
     }
+    else if(req.path === "/refresh_daily_shop") {
+        next();
+        return;
+    }
+
     const rejectRequest = (message) => {
         res.status(401);
         res.set('Access-Control-Allow-Origin', '*');
@@ -89,19 +104,11 @@ function startServer(dataSource) {
     app.post('/updateGame', (req, res) => endpoints.updateGame(req, res, chatrpg));
     app.post('/useItem', (req, res) => endpoints.useItem(req, res, chatrpg));
     app.post('/reset_account', (req, res) => endpoints.resetAccount(req, res, chatrpg));
+    app.post('/refresh_daily_shop', (req, res) => endpoints.refreshDailyShop(req, res, chatrpg));
     
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {
-        
-        cron.schedule('0 0 * * *', (date) => {
-            console.log(`Shop updated on ${date}`);
-            chatrpg.refreshDailyShop();
-        }, {
-            timezone: 'America/Los_Angeles'
-        });
-        console.log(`Automated services started`);
         console.log(`Server running at port ${PORT}`);
-
     });
 }
 

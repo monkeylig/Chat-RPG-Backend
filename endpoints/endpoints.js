@@ -657,6 +657,34 @@ function resetAccount(req, res, chatrpg) {
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatrpg 
+ */
+function refreshDailyShop(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if (!validatePayloadParameters(req.query, [
+        {name: 'pwd', type: 'string'}
+    ])) {
+        sendError(res, "Missing Password");
+        return;
+    }
+
+    if (req.query.pwd != "change_me") {
+        sendError(res, "Wrong password");
+        return;
+    }
+
+    chatrpg.refreshDailyShop()
+    .then(update => {
+        sendResponceObject(res, {message: 'success!'})
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
 //#endregion
 
 module.exports = {
@@ -686,5 +714,6 @@ module.exports = {
     claim_object,
     updateGame,
     useItem,
-    resetAccount
+    resetAccount,
+    refreshDailyShop
 };

@@ -20,7 +20,7 @@ const { AbilityBattleMove } = require('./ability-battle-move');
 const { calcHitDamage } = require('./utility');
 
 const WEAPON_SYNERGY_BONUS = 1.2;
-const ELEMENTAL_BURST_BONUS = 1.5;
+const ELEMENTAL_BURST_BONUS = 1.2;
 
 /**
  * @typedef {Object} BattleStep

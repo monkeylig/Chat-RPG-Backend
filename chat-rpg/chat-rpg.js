@@ -33,8 +33,7 @@ const { ItemBattleMove } = require("./battle-system/item-battle-move");
 const BattleSteps = require("./battle-system/battle-steps");
 
 const PLAYER_STARTING_COINS = 2000;
-const WEAPON_COUNT = 40;
-const WEAPONS_IN_SHOP_ROTATION = 10;
+const WEAPONS_IN_SHOP_ROTATION = 20;
 const WeaponPriceByStar = {
     1: 110,
     2: 620,
@@ -789,26 +788,34 @@ class ChatRPG {
         });
 
         const weaponsRef = this.#dataSource.collection('weapons');
+        const weaponCount = (await weaponsRef.count().get()).data().count;
         const weaponsNumbersForSale = [];
         const weaponRequests = [];
-        //TODO: Get count of total weapons
-        for (let i = 0; i < WEAPON_COUNT; i++) {
+        for (let i = 0; i < weaponCount; i++) {
             weaponsNumbersForSale.push(i);
         }
 
-        for(let i = 0; i < WEAPONS_IN_SHOP_ROTATION; i++) {
-            const instanceNumber = weaponsNumbersForSale[Math.floor(Math.random() * weaponsNumbersForSale.length)];
+        for(let i = 0; i < Math.min(weaponCount, WEAPONS_IN_SHOP_ROTATION); i++) {
+            const index = Math.floor(Math.random() * weaponsNumbersForSale.length);
+            const instanceNumber = weaponsNumbersForSale[index];
             weaponRequests.push(weaponsRef.where("instanceNumber", "==", instanceNumber).get());
-            weaponsNumbersForSale.splice(instanceNumber, 1);
+            weaponsNumbersForSale.splice(index, 1);
         }
 
         const weaponSnapshots = await Promise.all(weaponRequests);
+        const weapons = [];
 
         for(const weaponSnap of weaponSnapshots) {
             if (weaponSnap.empty) {
                 continue;
             }
             const weapon = new Weapon(weaponSnap.docs[0].data());
+            weapons.push(weapon);
+        }
+        
+        weapons.sort((a, b) => {return a.getData().stars - b.getData().stars});
+
+        for(const weapon of weapons) {
             const price = WeaponPriceByStar[weapon.getData().stars];
             shop.addShopItem(new ShopItem({price, type: 'weapon', product: weapon.getData()}));
         }

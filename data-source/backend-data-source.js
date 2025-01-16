@@ -101,6 +101,13 @@ class IBackendDataSourceCollectionRef {
     where(field, opStr, value) {
         return new IBackendDataSourceQuery();
     }
+
+    /**
+     * @returns {IBackendDataSourceAggregateQuery}
+     */
+    count() {
+        return new IBackendDataSourceAggregateQuery();
+    }
 }
 
 class IBackendDataSourceDocumentRef {
@@ -147,6 +154,28 @@ class IBackendDataSourceQuerySnapShot {
     forEach(callback){}
 }
 
+class IBackendDataSourceAggregateQuery {
+    /**
+     * 
+     * @returns {Promise<IBackendDataSourceAggregateQuerySnapShot>}
+     */
+    async get() {
+        console.log("backend query get()");
+        return new IBackendDataSourceAggregateQuerySnapShot();
+    }
+}
+
+class IBackendDataSourceAggregateQuerySnapShot {
+    /**
+     * @returns {{count: number}}
+     */
+    data(){
+        return {
+            count: 0
+        };
+    }
+}
+
 class IBackendDataSourceTransaction {
     async get(refOrQuery){}
     create(documentRef, data){}
@@ -184,5 +213,7 @@ module.exports = {
     IBackendDataSource,
     IBackendDataSourceCollectionRef,
     IBackendDataSourceDocumentRef,
+    IBackendDataSourceAggregateQuery,
+    IBackendDataSourceAggregateQuerySnapShot,
     FieldValue
 };

@@ -1,6 +1,7 @@
 /**
  * @import {Firestore, DocumentData, DocumentReference, CollectionReference,
- * WhereFilterOp, WithFieldValue} from 'firebase-admin/firestore'
+ * WhereFilterOp, WithFieldValue,
+ AggregateQuerySnapshot} from 'firebase-admin/firestore'
  */
 
 const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
@@ -71,6 +72,9 @@ class FirebaseDataSource extends BDS.IBackendDataSource {
     }
 }
 
+/**
+ * @extends {BDS.IBackendDataSourceCollectionRef}
+ */
 class FirebaseDataSourceCollectionRef {
     /**
      * 
@@ -107,6 +111,49 @@ class FirebaseDataSourceCollectionRef {
      */
     where(field, opStr, value) {
         return new FirebaseDataSourceQuery(this.collectionRef.where(field, opStr, value));
+    }
+
+    count() {
+        return new FirebaseDataSourceAggregateQuery(this.collectionRef.count());
+    }
+}
+
+class FirebaseDataSourceAggregateQuery extends BDS.IBackendDataSourceAggregateQuery {
+    /**
+     * @typedef {FirebaseFirestore.AggregateQuery<{count: FirebaseFirestore.AggregateField<number>;}, DocumentData, DocumentData>} AgQuery
+     * 
+     * @param {} agQuery 
+     */
+    constructor (agQuery) {
+        super();
+        /**@type {AgQuery} */
+        this.query = agQuery;
+    }
+    /**
+     * 
+     * @returns {Promise<FirebaseDataSourceAggregateQuerySnapShot>}
+     */
+    async get() {
+        return new FirebaseDataSourceAggregateQuerySnapShot(await this.query.get());
+    }
+}
+
+class FirebaseDataSourceAggregateQuerySnapShot extends  BDS.IBackendDataSourceAggregateQuerySnapShot{
+    /**
+     * @typedef {AggregateQuerySnapshot<{count: FirebaseFirestore.AggregateField<number>;}, DocumentData, DocumentData>} AgQuerySnapshot
+     * 
+     * @param {AgQuerySnapshot} agQuery 
+     */
+    constructor (agQuery) {
+        super();
+        /**@type {AgQuerySnapshot} */
+        this.query = agQuery;
+    }
+    /**
+     * @returns {{count: number}}
+     */
+    data(){
+        return {count: this.query.data().count};
     }
 }
 

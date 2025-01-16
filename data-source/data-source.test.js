@@ -241,6 +241,28 @@ describe.each([
     
         expect(playerSnap.exists).toBeFalsy();
     });
+
+    test('Count collections', async () => {
+        const user = {
+            name: 'gerr'
+        }; 
+        const zim = {
+            name: 'zim'
+        }
+    
+        const playersRef = dataSource.collection(`players-${Math.random()}`);
+        await playersRef.add(user);
+        await playersRef.add(zim);
+        let countQuery = await playersRef.count().get();
+
+        expect(countQuery.data().count).toBe(2);
+
+        await playersRef.add({name: 'zach'});
+        countQuery = await playersRef.count().get();
+
+        expect(countQuery.data().count).toBe(3);
+
+    });
 });
 
 /*

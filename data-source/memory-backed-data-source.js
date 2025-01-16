@@ -1,4 +1,4 @@
-const {IBackendDataSource, FieldValue} = require("./backend-data-source")
+const {IBackendDataSource, FieldValue, IBackendDataSourceAggregateQuery, IBackendDataSourceAggregateQuerySnapShot} = require("./backend-data-source")
 
 const utility = require("../utility");
 
@@ -164,6 +164,49 @@ class MemoryDataSourceCollectionRef {
 
     collectionExists() {
         return this.dataSource.hasOwnProperty(this.collectionName);
+    }
+
+    count() {
+        return new MemoryDataSourceAggregateQuery(this);
+    }
+}
+
+class MemoryDataSourceAggregateQuery extends IBackendDataSourceAggregateQuery {
+    /**
+     * 
+     * @param {MemoryDataSourceCollectionRef} ref 
+     */
+    constructor(ref) {
+        super();
+        this.ref = ref;
+    }
+    /**
+     * 
+     * @returns {Promise<MemoryDataSourceAggregateQuerySnapShot>}
+     */
+    async get() {
+        let count = 0;
+        for (const doc in this.ref.dataSource[this.ref.collectionName]) {
+            count += 1;
+        }
+        return new MemoryDataSourceAggregateQuerySnapShot({count});
+    }
+}
+
+class MemoryDataSourceAggregateQuerySnapShot extends IBackendDataSourceAggregateQuerySnapShot {
+    /**
+     * 
+     * @param {{count: number}} results 
+     */
+    constructor(results) {
+        super();
+        this.results = results;
+    }
+    /**
+     * @returns {{count: number}}
+     */
+    data(){
+        return this.results;
     }
 }
 
