@@ -55,7 +55,6 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
 
     /** @type {Array<BattleStep>} */
     const steps = [];
-    baseDamage += srcPlayer.consumeEmpowermentValue(type);
 
     let power = type === 'magical' ? srcPlayer.getModifiedMagic() : srcPlayer.getModifiedStrength();
     if(options.overrideDamageModifier) {
@@ -88,7 +87,7 @@ function genHitSteps(srcPlayer, targetPlayer, baseDamage, type, style, elements,
 
     let searchElements = elements ? element => elements.find(e => e === element) : (elements) => undefined;
     if(elements) {
-        // Elemental burst
+        // Elemental fusion
         if(elements.length > 1) {
             baseDamageChange *= ELEMENTAL_BURST_BONUS * (elements.length - 1);
         }
