@@ -35,9 +35,9 @@ const BattleSteps = require("./battle-system/battle-steps");
 const PLAYER_STARTING_COINS = 2000;
 const WEAPONS_IN_SHOP_ROTATION = 20;
 const WeaponPriceByStar = {
-    1: 110,
-    2: 620,
-    3: 2000
+    1: 25,
+    2: 150,
+    3: 500
 };
 
 class ChatRPG {
