@@ -1,25 +1,25 @@
 /**
- * @import {DamageStep, InfoBattleStep} from './battle-system/battle-steps'
+ * @import {DamageStep, InfoBattleStep} from '../battle-system/battle-steps'
  */
 
-const ChatRPG = require('./chat-rpg');
-const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
-const chatRPGUtility = require('./utility');
-const Schema = require("./datasource-schema");
-const {Player} = require('./datastore-objects/agent');
+const ChatRPG = require('../chat-rpg');
+const MemoryBackedDataSource = require('../../data-source/memory-backed-data-source');
+const chatRPGUtility = require('../utility');
+const Schema = require("../datasource-schema");
+const {Player} = require('../datastore-objects/agent');
 const seedrandom = require('seedrandom');
-const { Shop, ShopItem } = require('./datastore-objects/shop');
-const GameModes = require('./game-modes');
-const { Weapon } = require('./datastore-objects/weapon');
-const ChatRPGErrors = require('./errors');
-const Item = require('./datastore-objects/item');
-const { InventoryPage } = require('./datastore-objects/inventory-page');
-const { BookRequirement, Book } = require('./datastore-objects/book');
-const gameplayObjects = require('./gameplay-objects');
-const Ability = require('./datastore-objects/ability');
-const { findBattleStep } = require('./battle-system/utility');
-const { BattleMonster } = require('./datastore-objects/battle-agent');
-const { weapons } = require('../sandbox/contentObjects');
+const { Shop, ShopItem } = require('../datastore-objects/shop');
+const GameModes = require('../game-modes');
+const { Weapon } = require('../datastore-objects/weapon');
+const ChatRPGErrors = require('../errors');
+const Item = require('../datastore-objects/item');
+const { InventoryPage } = require('../datastore-objects/inventory-page');
+const { BookRequirement, Book } = require('../datastore-objects/book');
+const gameplayObjects = require('../gameplay-objects');
+const Ability = require('../datastore-objects/ability');
+const { findBattleStep } = require('../battle-system/utility');
+const { BattleMonster } = require('../datastore-objects/battle-agent');
+const { weapons } = require('../../sandbox/contentObjects');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;

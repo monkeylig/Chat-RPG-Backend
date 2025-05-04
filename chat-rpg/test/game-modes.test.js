@@ -1,8 +1,8 @@
 // @ts-nocheck
-const GameModes = require("./game-modes");
-const MemoryBackedDataSource = require("../data-source/memory-backed-data-source");
-const { Player } = require("./datastore-objects/agent");
-const { MonsterClass } = require("./datastore-objects/monster-class");
+const GameModes = require("../game-modes");
+const MemoryBackedDataSource = require("../../data-source/memory-backed-data-source");
+const { Player } = require("../datastore-objects/agent");
+const { MonsterClass } = require("../datastore-objects/monster-class");
 
 beforeAll(() => {
     GameModes.numberOfMonsters = 1;
