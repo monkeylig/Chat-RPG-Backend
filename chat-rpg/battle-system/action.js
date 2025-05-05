@@ -61,6 +61,7 @@ const ElementsEnum = {
  * @property {number} [maxApChange]
  * @property {number} [apChange]
  * @property {string} [consumeItem]
+ * @property {'bag'|'inventory'} [consumeItemLocation]
  * @property {number} [heal]
  * @property {number} [healPercent]
  * @property {number} [absorb]

@@ -9,9 +9,14 @@ function getRandomIntInclusive(min, max) {
     return Math.floor(chatRPGUtility.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
 }
 
+/**
+ * Has a chance of returning true or false depending on the chance value given.
+ * @param {number} chanceValue 
+ * @returns {boolean}
+ */
 function chance(chanceValue) {
     if (chanceValue == 0) {
-        return 0;
+        return false;
     }
 
     return chatRPGUtility.random() < chanceValue;

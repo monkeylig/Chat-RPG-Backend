@@ -14,10 +14,12 @@ class ItemBattleMove extends BattleMove{
      * 
      * @param {BattleAgent} srcPlayer 
      * @param {Item} item 
+     * @param {'bag'|'inventory'} location
      */
-    constructor(srcPlayer, item) {
+    constructor(srcPlayer, item, location='bag') {
         super(srcPlayer);
         this.#item = item;
+        this.location = location;
     }
 
     get creatorType() {
@@ -68,7 +70,8 @@ class ItemBattleMove extends BattleMove{
                 playerAction: {
                     targetPlayer: this.owner,
                     srcPlayer: this.owner,
-                    consumeItem: inputData.name
+                    consumeItem: inputData.name,
+                    consumeItemLocation: this.location
                 }
             };
         }

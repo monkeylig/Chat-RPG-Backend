@@ -10,13 +10,7 @@ const AbilityTypes = require("../datastore-objects/ability");
 const { BattleAgent } = require("../datastore-objects/battle-agent");
 const customActions = require("./custom-actions/custom-actions");
 const { getTarget } = require("./utility");
-/**
- * 
- * @param {BattleAgent} user 
- * @param {AbilityActionData} actionData 
- * @param {BattleContext} battleContext 
- * @returns {Generator<Action, void, any>}
- */
+
 /**
  * @typedef {Object} AbilityGenUtility
  * @property {(
