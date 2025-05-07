@@ -742,21 +742,24 @@ function strikeLevelChangeStep(targetAgent, strikeLevelChange) {
  * @typedef {BattleStep & {
  * targetId: string,
  * itemName: string,
+ * location: 'bag'|'inventory',
  * successful: boolean,
  * itemDepleted: boolean,
  * }} ConsumeItemStep
  * 
  * @param {BattlePlayer} targetAgent 
  * @param {string} itemName 
+ * @param {'bag'|'inventory'} location
  * @returns {ConsumeItemStep}
  */
-function consumeItem(targetAgent, itemName) {
+function consumeItem(targetAgent, itemName, location='bag') {
     const item = targetAgent.consumeItem(itemName);
     return {
         type: 'consumeItem',
         targetId: targetAgent.getData().id,
         itemName: itemName,
-        successful: item !== undefined,
+        location,
+        successful: item !== undefined || location === 'inventory',
         itemDepleted: (item !== undefined && item.isDepleted())
     };
 }

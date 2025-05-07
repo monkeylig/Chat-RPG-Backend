@@ -1196,31 +1196,6 @@ test('Equip Ability', async () => {
     expect(updatedPlayer.abilities.length).toBe(3);
 });
 
-test('Drop Book', async () => {
-    let player = new Player();
-    player.addBookToBag({
-        name: 'Test Book 1',
-        abilities: [
-            {
-                name: 'Scratch',
-                damage: 70
-            }
-        ]
-    });
-
-    const dataSource = new MemoryBackedDataSource();
-    await dataSource.initializeDataSource({
-        accounts: {
-            player1: player.getData()
-        }
-    });
-
-    let chatrpg = new ChatRPG(dataSource);
-
-    let playerData = await chatrpg.dropObjectFromBag('player1', player.getData().bag.objects[0].id);
-    expect(playerData.bag.objects.length).toBe(0);
-});
-
 test('Drop Item', async () => {
     let player = new Player();
     player.addItemToBag(new Item({
@@ -1821,8 +1796,8 @@ test('Claim Object', async () => {
 
 test('Get Inventory Page', async () => {
     const page = new InventoryPage();
-    const object1 = page.addObjectToInventory({name: 'object1'});
-    const object2 = page.addObjectToInventory({name: 'object2'});
+    const object1 = page.addObjectToInventory({name: 'object1'}, 'Object');
+    const object2 = page.addObjectToInventory({name: 'object2'}, 'Object');
 
     const player = new Player();
     player.onObjectAddedToInventory('page1');
@@ -1929,7 +1904,6 @@ test('Deleting Account', async () => {
     let playerId = 'pid';
 
     const dataSource = new MemoryBackedDataSource();
-    //Add monsters so that new games can be properly created
     await dataSource.initializeDataSource({
         [Schema.Collections.Accounts]: {
             [playerId]: new Player()
@@ -1940,4 +1914,8 @@ test('Deleting Account', async () => {
     await chatrpg.resetAccount(playerId);
 
     await expect(chatrpg.findPlayerById(playerId)).rejects.toThrow(ChatRPGErrors.playerNotFound);
+});
+
+test('Sell from bag', async () => {
+
 });

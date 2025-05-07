@@ -65,12 +65,15 @@ class ItemBattleMove extends BattleMove{
             yield action;
         }
 
-        if(itemUsed) {
+        if(itemUsed && inputData.name) {
             yield {
                 playerAction: {
                     targetPlayer: this.owner,
                     srcPlayer: this.owner,
-                    consumeItem: inputData.name,
+                    consumeItem: {
+                        name: inputData.name,
+                        location: this.location
+                    },
                     consumeItemLocation: this.location
                 }
             };

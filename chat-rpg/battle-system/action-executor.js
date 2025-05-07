@@ -107,7 +107,7 @@ function executeAction(action, battleContext) {
         }
 
         if(playerAction.consumeItem) {
-            const consumeItemStep = BattleSteps.consumeItem(/** @type {BattlePlayer} */(playerAction.targetPlayer), playerAction.consumeItem);
+            const consumeItemStep = BattleSteps.consumeItem(/** @type {BattlePlayer} */(playerAction.targetPlayer), playerAction.consumeItem.name, playerAction.consumeItem.location);
             steps.push(consumeItemStep);
         }
 

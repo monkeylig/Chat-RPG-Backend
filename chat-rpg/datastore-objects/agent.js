@@ -13,7 +13,7 @@ const chatRPGUtility = require('../utility');
 const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
-const { gameColection } = require('./utilities');
+const { addObjectToCollection, findObjectInCollection, dropObjectFromCollection } = require('./utilities');
 const { calcAgentGrowth, EXP_LEVEL_CAP } = require('../battle-system/utility');
 const { FieldValue } = require('../../data-source/backend-data-source');
 
@@ -62,7 +62,7 @@ function BagHolderMixin(Base) {
          */
         addObjectToBag(object, type) {
             const bag = this.datastoreObject.bag;
-            return gameColection.addObjectToCollection(bag.objects, object, type, bag.capacity);
+            return addObjectToCollection(bag.objects, object, type, bag.capacity);
         }
 
         /**
@@ -71,7 +71,7 @@ function BagHolderMixin(Base) {
          * @returns {CollectionContainer | undefined}
          */
         findObjectInBag(id) {
-            return gameColection.findObjectInCollection(this.datastoreObject.bag.objects, id);
+            return findObjectInCollection(this.datastoreObject.bag.objects, id);
         }
 
         /**
@@ -93,7 +93,7 @@ function BagHolderMixin(Base) {
          * @returns {CollectionContainer | undefined}
          */
         dropObjectFromBag(id) {
-            return gameColection.dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+            return dropObjectFromCollection(this.datastoreObject.bag.objects, id);
         }
 
         /**
@@ -134,11 +134,11 @@ function BagHolderMixin(Base) {
          */
         addObjectToLastDrops(object, type) {
             const lastDrops = this.datastoreObject.lastDrops;
-            return gameColection.addObjectToCollection(lastDrops.objects, object, type);
+            return addObjectToCollection(lastDrops.objects, object, type);
         }
 
         removeLastDrop(id) {
-            return gameColection.dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+            return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
         }
 
         clearLastDrops() {
@@ -171,9 +171,14 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {string} name 
+         * @param {'bag'|'inventory'} [location] 
          * @returns {Item | undefined}
          */
-        consumeItem(name) {
+        consumeItem(name, location) {
+            if (location === 'inventory') {
+                return;
+            }
+
             const bag = this.datastoreObject.bag;
             const itemIndex = bag.objects.findIndex(element => element.content.name === name);
             if(itemIndex === -1) {

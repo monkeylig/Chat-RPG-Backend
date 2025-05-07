@@ -1,10 +1,10 @@
 /**
  * @import {CollectionContainer} from './utilities'
+ * @import {Player} from './agent'
  */
 
 const DatastoreObject = require('./datastore-object');
-const utility = require("../../utility");
-const { gameColection } = require('./utilities');
+const { addObjectToCollection, dropObjectFromCollection, findObjectInCollection} = require('./utilities');
 
 /**
  * @typedef {Object} InventoryPageData
@@ -14,8 +14,16 @@ const { gameColection } = require('./utilities');
 class InventoryPage extends DatastoreObject {
     static PAGE_CAPACITY = 25;
 
-    constructor(objectData) {
+    /**
+     * 
+     * @param {Object} [objectData] 
+     * @param {string} [pageId] 
+     * @param {Player} [player] 
+     */
+    constructor(objectData, pageId, player) {
         super(objectData);
+        this.pageId = pageId;
+        this.player = player;
     }
 
     constructNewObject(page) {
@@ -34,13 +42,39 @@ class InventoryPage extends DatastoreObject {
         return this.datastoreObject.objects.length >= InventoryPage.PAGE_CAPACITY;
     }
 
+    /**
+     * 
+     * @param {Object} object 
+     * @param {string} type 
+     * @returns {CollectionContainer | undefined}
+     */
     addObjectToInventory(object, type) {
-        return gameColection.addObjectToCollection(this.datastoreObject.objects, object, type, InventoryPage.PAGE_CAPACITY);
+        const inventoryObjects = this.getData().objects;
+        const oldLength = inventoryObjects.length;
+        const container = addObjectToCollection(inventoryObjects, object, type, InventoryPage.PAGE_CAPACITY);
+
+        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
+            this.player.onObjectAddedToInventory(this.pageId);
+        }
+
+        return container
     }
 
+    /**
+     * 
+     * @param {string} objectId 
+     * @returns {CollectionContainer | undefined}
+     */
     dropObjectFromInventory(objectId) {
-        const objects = this.datastoreObject.objects;
-        return gameColection.dropObjectFromCollection(objects, objectId);
+        const inventoryObjects = this.getData().objects;
+        const oldLength = inventoryObjects.length;
+        const container = dropObjectFromCollection(inventoryObjects, objectId);
+
+        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
+            this.player.onObjectRemovedFromInventory(this.pageId);
+        }
+
+        return container;
     }
 
     /**
@@ -49,7 +83,7 @@ class InventoryPage extends DatastoreObject {
      * @returns {CollectionContainer | undefined}
      */
     findObjectById(objectId) {
-        return gameColection.findObjectInCollection(this.datastoreObject.objects, objectId);
+        return findObjectInCollection(this.datastoreObject.objects, objectId);
     }
 }
 
