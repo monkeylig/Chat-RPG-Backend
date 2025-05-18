@@ -465,6 +465,14 @@ class ChatRPG {
         return {...shopData, id: shopId};
     }
 
+    /**
+     * 
+     * @param {string} playerId 
+     * @param {string} shopId 
+     * @param {string} productId 
+     * @param {number} amount 
+     * @returns {Promise<UserPlayerData>}
+     */
     async buy(playerId, shopId, productId, amount=1) {
         amount = Math.floor(amount);
         const shopSnapshot = await this.#findShop(shopId);
