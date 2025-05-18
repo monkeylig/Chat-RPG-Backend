@@ -1,3 +1,7 @@
+/**
+ * @import {ObjectMapper} from '../chat-rpg/object-mapping'
+ */
+
 const ChatRPG = require('../chat-rpg/chat-rpg');
 const Schema = require('../chat-rpg/datasource-schema');
 const { Player } = require('../chat-rpg/datastore-objects/agent');
@@ -339,6 +343,145 @@ test("Resetting Account", async () => {
     let playerData = await res.waitForMessage();
 
     expect(playerData.message).toMatch("OK");
+});
+
+test("/sell", async () => {
+    let player = new Player();
+    const objectToSell = player.addObjectToBag(new Weapon({stars: 3}).getData(), 'weapon');
+    if (!objectToSell) {fail();}
+
+    const shop = new Shop({
+        /**@type {ObjectMapper} */
+        resellListing: {
+            keyFields: [
+                {
+                    key: {
+                        mapFields: [
+                            {
+                                fieldName: 'stars',
+                                value: 3
+                            }
+                        ]
+                    },
+                    value: 20
+                }
+            ],
+            default: 10
+        }
+    });
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            ['player']: player.getData()
+        },
+        [Schema.Collections.Shops]: {
+            ['shop']: shop.getData()
+        }
+    });
+
+    const chatRPG = new ChatRPG(dataSource);
+
+    let res = new Res();
+    let req = {
+        query: {
+            playerId: 'player',
+            objectId: objectToSell.id,
+            shopId: 'shop'
+        }
+    };
+
+    // @ts-ignore
+    endpoints.sell(req, res, chatRPG);
+    const response = await res.waitForMessage();
+
+    expect(response.player).toBeDefined();
+    expect(response.player.id).toMatch('player');
+    expect(response.inventoryPage).toBeUndefined();
+
+    player = new Player(response.player);
+    
+    expect(player.getData().coins).toBe(20);
+    expect(player.findObjectInBag(objectToSell.id)).toBeUndefined();
+});
+
+test("/sell inventory", async () => {
+    let player = new Player();
+
+    let page = new InventoryPage({}, 'page', player);
+    let objectToSell = page.addObjectToInventory({stars: 3, count: 3}, 'weapon')
+    if (!objectToSell) {fail();}
+
+    const shop = new Shop({
+        /**@type {ObjectMapper} */
+        resellListing: {
+            keyFields: [
+                {
+                    key: {
+                        mapFields: [
+                            {
+                                fieldName: 'stars',
+                                value: 3
+                            }
+                        ]
+                    },
+                    value: 20
+                }
+            ],
+            default: 10
+        }
+    });
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            ['player']: player.getData()
+        },
+        [Schema.Collections.Shops]: {
+            ['shop']: shop.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            ['page']: page.getData()
+        }
+    });
+
+    const chatRPG = new ChatRPG(dataSource);
+
+    let res = new Res();
+    let req = {
+        query: {
+            playerId: 'player',
+            objectId: objectToSell.id,
+            shopId: 'shop'
+        },
+        body: {
+            itemLocation: {
+                inventory: {
+                    pageId:'page'
+                }
+            }
+        }
+    };
+
+    // @ts-ignore
+    endpoints.sell(req, res, chatRPG);
+    const response = await res.waitForMessage();
+
+    expect(response.player).toBeDefined();
+    expect(response.player.id).toMatch('player');
+    expect(response.inventoryPage).toBeDefined();
+    expect(response.inventoryPage.id).toMatch('page');
+
+    player = new Player(response.player);
+    page = new InventoryPage(response.inventoryPage);
+    
+    expect(player.getData().coins).toBe(20);
+
+    const newObject = page.findObjectById(objectToSell.id);
+
+    if (!newObject) {fail();}
+    expect(newObject).toBeDefined();
+    expect(newObject.content.count).toBe(2);
 });
 
 //TODO: Make equip weapon test

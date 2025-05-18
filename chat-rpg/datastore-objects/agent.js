@@ -13,16 +13,19 @@ const chatRPGUtility = require('../utility');
 const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
-const { gameColection } = require('./utilities');
+const { addObjectToCollection, findObjectInCollection, dropObjectFromCollection, GameCollection } = require('./utilities');
 const { calcAgentGrowth, EXP_LEVEL_CAP } = require('../battle-system/utility');
 const { FieldValue } = require('../../data-source/backend-data-source');
 
 /**
  * 
  * @typedef {Object} BagHolderData
- * @property {Object} bag
  * @property {{
- * objects: Collection[]
+ * capacity: number,
+ * objects: Collection
+* }} bag
+ * @property {{
+ * objects: Collection
  * }} lastDrops
  * @property {number} coins
  */
@@ -41,6 +44,7 @@ function BagHolderMixin(Base) {
          */
         constructor(...objectData) {
             super(...objectData);
+            this.bagCollection = new GameCollection(this.getData().bag.objects);
         }
 
         constructNewObject(bagHolder) {
@@ -54,6 +58,19 @@ function BagHolderMixin(Base) {
             };
             bagHolder.coins = 0;
         }
+
+        /**
+         * @override
+         * @returns {BagHolderData}
+         */
+        getData() {
+            return /** @type {BagHolderData} */ (this.datastoreObject);
+        }
+
+        getBag() {
+            return this.bagCollection;
+        }
+
         /**
          * 
          * @param {Object} object 
@@ -62,7 +79,7 @@ function BagHolderMixin(Base) {
          */
         addObjectToBag(object, type) {
             const bag = this.datastoreObject.bag;
-            return gameColection.addObjectToCollection(bag.objects, object, type, bag.capacity);
+            return addObjectToCollection(bag.objects, object, type, bag.capacity);
         }
 
         /**
@@ -71,7 +88,7 @@ function BagHolderMixin(Base) {
          * @returns {CollectionContainer | undefined}
          */
         findObjectInBag(id) {
-            return gameColection.findObjectInCollection(this.datastoreObject.bag.objects, id);
+            return findObjectInCollection(this.datastoreObject.bag.objects, id);
         }
 
         /**
@@ -93,7 +110,7 @@ function BagHolderMixin(Base) {
          * @returns {CollectionContainer | undefined}
          */
         dropObjectFromBag(id) {
-            return gameColection.dropObjectFromCollection(this.datastoreObject.bag.objects, id);
+            return dropObjectFromCollection(this.datastoreObject.bag.objects, id);
         }
 
         /**
@@ -134,11 +151,11 @@ function BagHolderMixin(Base) {
          */
         addObjectToLastDrops(object, type) {
             const lastDrops = this.datastoreObject.lastDrops;
-            return gameColection.addObjectToCollection(lastDrops.objects, object, type);
+            return addObjectToCollection(lastDrops.objects, object, type);
         }
 
         removeLastDrop(id) {
-            return gameColection.dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
+            return dropObjectFromCollection(this.datastoreObject.lastDrops.objects, id);
         }
 
         clearLastDrops() {
@@ -171,9 +188,14 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {string} name 
+         * @param {'bag'|'inventory'} [location] 
          * @returns {Item | undefined}
          */
-        consumeItem(name) {
+        consumeItem(name, location) {
+            if (location === 'inventory') {
+                return;
+            }
+
             const bag = this.datastoreObject.bag;
             const itemIndex = bag.objects.findIndex(element => element.content.name === name);
             if(itemIndex === -1) {
@@ -613,7 +635,7 @@ class Agent extends DatastoreObject {
  * @typedef {AgentData & BagHolderData & {
  * currentGameId: string,
  * twitchId: string,
- * inventory: object,
+ * inventory: {leger: {id: string, count: number}[]},
  * trackers: object
  * }} PlayerData
  */
@@ -671,7 +693,6 @@ class Player extends BagHolderMixin(Agent) {
         thisPlayerData.level = battlePlayerData.level;
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
-        thisPlayerData.bag.items = battlePlayerData.bag.items;
         thisPlayerData.autoRevive = battlePlayerData.autoRevive;
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
@@ -694,7 +715,7 @@ class Player extends BagHolderMixin(Agent) {
     }
 
     getNextAvailableInventoryPageId() {
-        const leger = this.datastoreObject.inventory.leger;
+        const leger = this.getData().inventory.leger;
         // Has the inventory been created yet?
         if (leger.length === 0) {
             return;
@@ -712,7 +733,7 @@ class Player extends BagHolderMixin(Agent) {
     }
 
     onObjectAddedToInventory(pageId) {
-        const leger = this.datastoreObject.inventory.leger;
+        const leger = this.getData().inventory.leger;
         const pageIndex = leger.findIndex(element => element.id === pageId);
 
         if (pageIndex === -1) {

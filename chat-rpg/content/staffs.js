@@ -2,6 +2,7 @@ const animations = require('./animations');
 
 const duelistsBane = {
     name: 'Duelist\'s Bane',
+    stars: 1,
     type: 'magical',
     style: 'staff',
     baseDamage: 10,
@@ -19,7 +20,7 @@ const duelistsBane = {
                 magicAmp: 1,
             }
         ],
-        description: "Slightly increases the user's magic.",
+        description: "Slightly increase your magic.",
         animation: animations.impact2
     },
     

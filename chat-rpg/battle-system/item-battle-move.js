@@ -14,10 +14,12 @@ class ItemBattleMove extends BattleMove{
      * 
      * @param {BattleAgent} srcPlayer 
      * @param {Item} item 
+     * @param {'bag'|'inventory'} location
      */
-    constructor(srcPlayer, item) {
+    constructor(srcPlayer, item, location='bag') {
         super(srcPlayer);
         this.#item = item;
+        this.location = location;
     }
 
     get creatorType() {
@@ -63,14 +65,20 @@ class ItemBattleMove extends BattleMove{
             yield action;
         }
 
-        if(itemUsed) {
+        if(itemUsed && inputData.name) {
             yield {
                 playerAction: {
                     targetPlayer: this.owner,
                     srcPlayer: this.owner,
-                    consumeItem: inputData.name
+                    consumeItem: {
+                        name: inputData.name,
+                        location: this.location
+                    },
+                    consumeItemLocation: this.location
                 }
             };
+            // TODO: Make sure the consume item action was successful
+            this.#item.getData().count -= 1;
         }
     }
 }

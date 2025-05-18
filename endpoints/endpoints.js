@@ -681,7 +681,33 @@ function refreshDailyShop(req, res, chatrpg) {
 
     chatrpg.refreshDailyShop()
     .then(update => {
-        sendResponceObject(res, {message: 'success!'})
+        sendResponceObject(res, {message: 'success!'});
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatrpg 
+ */
+function sell(req, res, chatrpg) {
+    setStandardHeaders(res);
+
+    if (!validatePayloadParameters(req.query, [
+        {name: 'playerId', type: 'string'},
+        {name: 'objectId', type: 'string'},
+        {name: 'shopId', type: 'string'},
+    ])) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    // @ts-ignore
+    chatrpg.sell(req.query.playerId, req.query.objectId, req.query.shopId, req.body)
+    .then(update => {
+        sendResponceObject(res, update);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -715,5 +741,6 @@ module.exports = {
     updateGame,
     useItem,
     resetAccount,
-    refreshDailyShop
+    refreshDailyShop,
+    sell
 };

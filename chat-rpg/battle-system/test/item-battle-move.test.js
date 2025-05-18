@@ -36,9 +36,12 @@ test("Increase AP Item", () => {
 
     actionObject = /**@type {Action}*/(actionGenerator.next().value);
 
+    if (!actionObject.playerAction) {fail();}
+    if (!actionObject.playerAction.consumeItem) {fail();}
+
     expect(actionObject.playerAction).toBeDefined();
-    expect(actionObject.playerAction?.consumeItem).toMatch('testItem');
-    expect(actionObject.playerAction?.targetPlayer).toBe(battleContext.player);
+    expect(actionObject.playerAction.consumeItem.name).toMatch('testItem');
+    expect(actionObject.playerAction.targetPlayer).toBe(battleContext.player);
 
     const lastYield = actionGenerator.next();
 

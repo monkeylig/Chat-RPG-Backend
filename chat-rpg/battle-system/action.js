@@ -60,7 +60,10 @@ const ElementsEnum = {
  * @property {number} [strikeLevelChange]
  * @property {number} [maxApChange]
  * @property {number} [apChange]
- * @property {string} [consumeItem]
+ * @property {{
+ * name: string,
+ * location?: 'bag'|'inventory'}} [consumeItem]
+ * @property {'bag'|'inventory'} [consumeItemLocation]
  * @property {number} [heal]
  * @property {number} [healPercent]
  * @property {number} [absorb]

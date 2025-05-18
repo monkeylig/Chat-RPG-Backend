@@ -25,7 +25,9 @@ const Errors = {
     unrecognizedItemType: 'Unrecognized item type',
     productSkuNotFound: 'Product SKU not found',
     bagFull: 'The player\'s bag is full',
-    objectNotFound: 'Object not found'
+    objectNotFound: 'Object not found',
+    insufficientObjectStackSize: 'Not enough copies of the object are owned',
+    invalidParams: 'The parameter passed were invalid'
 }
 
 module.exports = Errors;

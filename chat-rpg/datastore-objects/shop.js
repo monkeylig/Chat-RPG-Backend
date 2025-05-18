@@ -1,7 +1,11 @@
+/**
+ * @import {ObjectMapper} from '../object-mapping'
+ */
 
 const DatastoreObject = require('./datastore-object');
 const utility = require('../../utility');
 const chatRPGUtility = require('../utility');
+const {getObjectMapValue} = require('../object-mapping');
 
 /**
  * @typedef {Object} ShopData
@@ -9,6 +13,8 @@ const chatRPGUtility = require('../utility');
  * @property {string} description 
  * @property {string} coinIcon 
  * @property {ShopItemData[]} products 
+ * @property {ObjectMapper} priceListing
+ * @property {ObjectMapper} resellListing
  */
 
 class Shop extends DatastoreObject {
@@ -16,11 +22,23 @@ class Shop extends DatastoreObject {
         super(objectData);
     }
 
+    /**
+     * 
+     * @param {ShopData} shop 
+     */
     constructNewObject(shop) {
         shop.title = 'Shop';
         shop.description = 'A place to buy cool new things!';
         shop.coinIcon = 'coin.webp';
         shop.products = [];
+        shop.priceListing = {
+            keyFields: [],
+            default: 0
+        };
+        shop.resellListing = {
+            keyFields: [],
+            default: 0
+        };
     }
 
     addShopItem(shopItem) {
@@ -37,6 +55,26 @@ class Shop extends DatastoreObject {
         }
 
         return new ShopItem(productData);
+    }
+
+    /**
+     * 
+     * @param {Object} product 
+     * @returns {number}
+     */
+    lookUpPrice(product) {
+        const shop = this.getData();
+        return getObjectMapValue(product, shop.priceListing);
+    }
+
+    /**
+     * 
+     * @param {Object} product 
+     * @returns {number}
+     */
+    lookUpResellValue(product) {
+        const shop = this.getData();
+        return getObjectMapValue(product, shop.resellListing);
     }
 
     /**
