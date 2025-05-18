@@ -63,7 +63,6 @@ const ElementsEnum = {
  * @property {{
  * name: string,
  * location?: 'bag'|'inventory'}} [consumeItem]
- * @property {'bag'|'inventory'} [consumeItemLocation]
  * @property {number} [heal]
  * @property {number} [healPercent]
  * @property {number} [absorb]

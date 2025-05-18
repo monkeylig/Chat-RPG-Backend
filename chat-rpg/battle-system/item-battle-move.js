@@ -73,8 +73,7 @@ class ItemBattleMove extends BattleMove{
                     consumeItem: {
                         name: inputData.name,
                         location: this.location
-                    },
-                    consumeItemLocation: this.location
+                    }
                 }
             };
             // TODO: Make sure the consume item action was successful
