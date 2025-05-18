@@ -105,6 +105,7 @@ function startServer(dataSource) {
     app.post('/useItem', (req, res) => endpoints.useItem(req, res, chatrpg));
     app.post('/reset_account', (req, res) => endpoints.resetAccount(req, res, chatrpg));
     app.post('/refresh_daily_shop', (req, res) => endpoints.refreshDailyShop(req, res, chatrpg));
+    app.post('/sell', (req, res) => endpoints.sell(req, res, chatrpg));
     
     const PORT = process.env.PORT || LOCAL_TEST_PORT;
     app.listen(PORT, () => {

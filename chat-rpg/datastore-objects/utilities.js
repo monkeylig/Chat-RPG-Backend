@@ -111,6 +111,49 @@ function findObjectInCollectionByName(collection, name) {
     return collection.find((object) => object.content.name === name);
 }
 
+class GameCollection {
+    /**
+     * 
+     * @param {Collection} collection 
+     */
+    constructor(collection) {
+        this.collection = collection;
+    }
+
+    /**
+     * Find an object inside the container
+     * 
+     * @param {string} id - The id of the object
+     * @returns {CollectionContainer | undefined} The found object or undefined
+     */
+    findObjectById(id) {
+        return findObjectInCollection(this.collection, id);
+    }
+    
+    /**
+     * Adds an object to the container.
+     * 
+     * @param {Object} object - The object to be stored.
+     * @param {string} type - The label of this object.
+     * @param {number} [limit] - The number of objects this collection can hold.
+     * @returns {CollectionContainer | undefined} The new object that was added.
+     */
+    addObject(object, type, limit) {
+        return addObjectToCollection(this.collection, object, type, limit);
+    }
+
+    /**
+     * Removes an Object from the container.
+     * 
+     * @param {string} id - The id of the object
+     * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
+     * @returns {CollectionContainer | undefined} - The object that was removed
+     */
+    dropObject(id, options={}) {
+        return dropObjectFromCollection(this.collection, id, options);
+    }
+}
+
 /**
  * @module chat-rpg/datastore-objects/utilities
  */
@@ -118,5 +161,6 @@ module.exports = {
     addObjectToCollection,
     dropObjectFromCollection,
     findObjectInCollection,
-    findObjectInCollectionByName
+    findObjectInCollectionByName,
+    GameCollection
 };

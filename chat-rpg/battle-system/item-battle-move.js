@@ -77,6 +77,8 @@ class ItemBattleMove extends BattleMove{
                     consumeItemLocation: this.location
                 }
             };
+            // TODO: Make sure the consume item action was successful
+            this.#item.getData().count -= 1;
         }
     }
 }

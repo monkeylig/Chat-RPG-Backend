@@ -2,6 +2,7 @@ const animations = require('./animations');
 
 const braveCutlass = {
     name: 'Brave Cutlass',
+    stars: 1,
     type: 'physical',
     style: 'sword',
     baseDamage: 10,
@@ -13,7 +14,7 @@ const braveCutlass = {
         baseDamage: 30,
         target: 'opponent',
         speed: 2,
-        description: 'Slightly increases the users defense.',
+        description: 'Slightly increase your defense.',
         animation: animations.blueStab1,
         postActions: [
             {

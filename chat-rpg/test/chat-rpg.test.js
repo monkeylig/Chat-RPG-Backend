@@ -1,5 +1,6 @@
 /**
  * @import {DamageStep, InfoBattleStep} from '../battle-system/battle-steps'
+ * @import {ObjectMapper} from '../object-mapping'
  */
 
 const ChatRPG = require('../chat-rpg');
@@ -1906,7 +1907,7 @@ test('Deleting Account', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
         [Schema.Collections.Accounts]: {
-            [playerId]: new Player()
+            [playerId]: new Player().getData()
         },
     });
 
@@ -1917,5 +1918,203 @@ test('Deleting Account', async () => {
 });
 
 test('Sell from bag', async () => {
+    const playerId = 'pid';
+    const player = new Player({coins: 0});
+    const weaponSlot = player.addObjectToBag({stars: 1}, 'weapon');
+    if(!weaponSlot) {fail();}
+
+    const shopId = 'shopId'
+    const shop = new Shop({
+        /**@type {ObjectMapper} */
+        resellListing: {
+            keyFields: [
+                {
+                    key: {
+                        mapFields: [
+                            {
+                                fieldName: 'stars',
+                                value: 1
+                            }
+                        ]
+                    },
+                    value: 20
+                }
+            ],
+            default: 10
+        }
+    });
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            [playerId]: player.getData()
+        },
+        [Schema.Collections.Shops]: {
+            [shopId]: shop.getData()
+        }
+    });
+    const chatrpg = new ChatRPG(dataSource);
+    let response = await chatrpg.sell(playerId, weaponSlot.id, shopId);
+    let responsePlayer = new Player(response.player);
+
+    expect(response.player.coins).toBe(20);
+    expect(response.player.id).toBe(playerId);
+    expect(responsePlayer.findObjectInBag(weaponSlot.id)).toBeUndefined();
+
+    // Make Sure the database reflects the correct information
+    let response2 = await chatrpg.findPlayerById(playerId);
+    responsePlayer = new Player(response.player);
+
+    expect(response2.coins).toBe(20);
+    expect(response2.id).toBe(playerId);
+    expect(responsePlayer.findObjectInBag(weaponSlot.id)).toBeUndefined();
+});
+
+test('Sell from inventory', async () => {
+    const playerId = 'pid';
+    const player = new Player({coins: 0});
+
+    const pageId = 'pageId';
+    const page = new InventoryPage({}, pageId, player);
+    const weaponSlot = page.addObjectToInventory({stars: 1}, 'weapon')
+
+    expect(player.getData().inventory.leger.length).toBe(1);
+    expect(player.getData().inventory.leger[0].count).toBe(1);
+    expect(player.getData().inventory.leger[0].id).toMatch("pageId");
+
+    if(!weaponSlot) {fail();}
+
+    const shopId = 'shopId'
+    const shop = new Shop({
+        /**@type {ObjectMapper} */
+        resellListing: {
+            keyFields: [
+                {
+                    key: {
+                        mapFields: [
+                            {
+                                fieldName: 'stars',
+                                value: 1
+                            }
+                        ]
+                    },
+                    value: 20
+                }
+            ],
+            default: 10
+        }
+    });
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            [playerId]: player.getData()
+        },
+        [Schema.Collections.Shops]: {
+            [shopId]: shop.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [pageId]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+    let response = await chatrpg.sell(playerId, weaponSlot.id, shopId, {itemLocation: {'inventory': {pageId}}});
+
+    expect(response).toBeDefined();
+
+    let responsePage = new InventoryPage(response.inventoryPage);
+
+    expect(response.player.coins).toBe(20);
+    expect(response.player.id).toBe(playerId);
+    expect(responsePage.findObjectById(weaponSlot.id)).toBeUndefined();
+
+    expect(response.player.inventory.leger.length).toBe(1);
+    expect(response.player.inventory.leger[0].count).toBe(0);
+    expect(response.player.inventory.leger[0].id).toMatch("pageId");
+    // Make Sure the database reflects the correct information
+    let response2 = await chatrpg.getInventoryPage(playerId, pageId);
+    responsePage = new InventoryPage(response2);
+
+    expect(responsePage.findObjectById(weaponSlot.id)).toBeUndefined();
+
+    await expect(chatrpg.sell(playerId, weaponSlot.id, shopId, {itemLocation: {'inventory': {pageId}}})).rejects.toThrow(ChatRPGErrors.objectNotFound);
+
+});
+
+test('Sell Stackables', async () => {
+    const playerId = 'pid';
+    const player = new Player({coins: 0});
+
+    const pageId = 'pageId';
+    const page = new InventoryPage({}, pageId, player);
+    let weaponSlot = page.addObjectToInventory({stars: 1, count: 3}, 'weapon')
+
+    expect(player.getData().inventory.leger.length).toBe(1);
+    expect(player.getData().inventory.leger[0].count).toBe(1);
+    expect(player.getData().inventory.leger[0].id).toMatch("pageId");
+
+    if(!weaponSlot) {fail();}
+
+    const shopId = 'shopId'
+    const shop = new Shop({
+        /**@type {ObjectMapper} */
+        resellListing: {
+            keyFields: [
+                {
+                    key: {
+                        mapFields: [
+                            {
+                                fieldName: 'stars',
+                                value: 1
+                            }
+                        ]
+                    },
+                    value: 20
+                }
+            ],
+            default: 10
+        }
+    });
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            [playerId]: player.getData()
+        },
+        [Schema.Collections.Shops]: {
+            [shopId]: shop.getData()
+        },
+        [Schema.Collections.InventoryPages]: {
+            [pageId]: page.getData()
+        }
+    });
+
+    const chatrpg = new ChatRPG(dataSource);
+    let response = await chatrpg.sell(playerId, weaponSlot.id, shopId, {count: 2, itemLocation: {'inventory': {pageId}}});
+
+    expect(response).toBeDefined();
+
+    let responsePage = new InventoryPage(response.inventoryPage);
+
+    expect(response.player.coins).toBe(40);
+    expect(response.player.id).toBe(playerId);
+    expect(responsePage.findObjectById(weaponSlot.id)).toBeDefined();
+
+    expect(response.player.inventory.leger.length).toBe(1);
+    expect(response.player.inventory.leger[0].count).toBe(1);
+    expect(response.player.inventory.leger[0].id).toMatch("pageId");
+
+    // Make Sure the database reflects the correct information
+    let response2 = await chatrpg.getInventoryPage(playerId, pageId);
+    responsePage = new InventoryPage(response2);
+
+    weaponSlot = responsePage.findObjectById(weaponSlot.id);
+
+    if (!weaponSlot) {fail();}
+    expect(weaponSlot).toBeDefined();
+    expect(weaponSlot.content.count).toBe(1);
+
+    await expect(chatrpg.sell(playerId, weaponSlot.id, shopId, {count: 2, itemLocation: {'inventory': {pageId}}})).rejects.toThrow(ChatRPGErrors.insufficientObjectStackSize);
 
 });

@@ -1,10 +1,11 @@
 /**
  * @import {CollectionContainer} from './utilities'
  * @import {Player} from './agent'
+ * @import {Collection} from './utilities'
  */
 
 const DatastoreObject = require('./datastore-object');
-const { addObjectToCollection, dropObjectFromCollection, findObjectInCollection} = require('./utilities');
+const { GameCollection} = require('./utilities');
 
 /**
  * @typedef {Object} InventoryPageData
@@ -22,8 +23,7 @@ class InventoryPage extends DatastoreObject {
      */
     constructor(objectData, pageId, player) {
         super(objectData);
-        this.pageId = pageId;
-        this.player = player;
+        this.pageCollection = new PageCollection(this.getData().objects, pageId, player);
     }
 
     constructNewObject(page) {
@@ -38,43 +38,32 @@ class InventoryPage extends DatastoreObject {
         return /** @type {InventoryPageData} */ (this.datastoreObject);
     }
 
+    getPage() {
+        return this.pageCollection;
+    }
+
     isFull() {
         return this.datastoreObject.objects.length >= InventoryPage.PAGE_CAPACITY;
     }
 
     /**
      * 
-     * @param {Object} object 
-     * @param {string} type 
+     * @param {Object} object - The object to be stored.
+     * @param {string} type - The label of this object.
      * @returns {CollectionContainer | undefined}
      */
     addObjectToInventory(object, type) {
-        const inventoryObjects = this.getData().objects;
-        const oldLength = inventoryObjects.length;
-        const container = addObjectToCollection(inventoryObjects, object, type, InventoryPage.PAGE_CAPACITY);
-
-        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
-            this.player.onObjectAddedToInventory(this.pageId);
-        }
-
-        return container
+        return this.pageCollection.addObject(object, type, InventoryPage.PAGE_CAPACITY);
     }
 
     /**
      * 
-     * @param {string} objectId 
+     * @param {string} objectId - The id of the object
+     * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
      * @returns {CollectionContainer | undefined}
      */
-    dropObjectFromInventory(objectId) {
-        const inventoryObjects = this.getData().objects;
-        const oldLength = inventoryObjects.length;
-        const container = dropObjectFromCollection(inventoryObjects, objectId);
-
-        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
-            this.player.onObjectRemovedFromInventory(this.pageId);
-        }
-
-        return container;
+    dropObjectFromInventory(objectId, options) {
+        return this.pageCollection.dropObject(objectId, options);
     }
 
     /**
@@ -83,7 +72,60 @@ class InventoryPage extends DatastoreObject {
      * @returns {CollectionContainer | undefined}
      */
     findObjectById(objectId) {
-        return findObjectInCollection(this.datastoreObject.objects, objectId);
+        return this.pageCollection.findObjectById(objectId);
+    }
+}
+
+class PageCollection extends GameCollection {
+    /**
+     * 
+     * @param {Collection} collection
+     * @param {string} [pageId] 
+     * @param {Player} [player] 
+     */
+    constructor(collection, pageId, player) {
+        super(collection);
+        this.pageId = pageId;
+        this.player = player;
+    }
+
+    /**
+     * Adds an object to the container.
+     * 
+     * @override
+     * @param {Object} object - The object to be stored.
+     * @param {string} type - The label of this object.
+     * @param {number} [limit] - The number of objects this collection can hold.
+     * @returns {CollectionContainer | undefined} The new object that was added.
+     */
+    addObject(object, type, limit) {
+        const inventoryObjects = this.collection;
+        const oldLength = inventoryObjects.length;
+        const container = super.addObject(object, type, limit);
+
+        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
+            this.player.onObjectAddedToInventory(this.pageId);
+        }
+
+        return container;
+    }
+
+    /**
+     * @override
+     * @param {string} objectId - The id of the object
+     * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
+     * @returns {CollectionContainer | undefined}
+     */
+    dropObject(objectId, options={}) {
+        const inventoryObjects = this.collection;
+        const oldLength = inventoryObjects.length;
+        const container = super.dropObject(objectId, options);
+
+        if (oldLength != inventoryObjects.length && this.pageId && this.player) {
+            this.player.onObjectRemovedFromInventory(this.pageId);
+        }
+
+        return container;
     }
 }
 

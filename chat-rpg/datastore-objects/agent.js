@@ -13,16 +13,19 @@ const chatRPGUtility = require('../utility');
 const Item = require('./item');
 const { Weapon } = require('./weapon');
 const { InventoryPage } = require('./inventory-page');
-const { addObjectToCollection, findObjectInCollection, dropObjectFromCollection } = require('./utilities');
+const { addObjectToCollection, findObjectInCollection, dropObjectFromCollection, GameCollection } = require('./utilities');
 const { calcAgentGrowth, EXP_LEVEL_CAP } = require('../battle-system/utility');
 const { FieldValue } = require('../../data-source/backend-data-source');
 
 /**
  * 
  * @typedef {Object} BagHolderData
- * @property {Object} bag
  * @property {{
- * objects: Collection[]
+ * capacity: number,
+ * objects: Collection
+* }} bag
+ * @property {{
+ * objects: Collection
  * }} lastDrops
  * @property {number} coins
  */
@@ -41,6 +44,7 @@ function BagHolderMixin(Base) {
          */
         constructor(...objectData) {
             super(...objectData);
+            this.bagCollection = new GameCollection(this.getData().bag.objects);
         }
 
         constructNewObject(bagHolder) {
@@ -54,6 +58,19 @@ function BagHolderMixin(Base) {
             };
             bagHolder.coins = 0;
         }
+
+        /**
+         * @override
+         * @returns {BagHolderData}
+         */
+        getData() {
+            return /** @type {BagHolderData} */ (this.datastoreObject);
+        }
+
+        getBag() {
+            return this.bagCollection;
+        }
+
         /**
          * 
          * @param {Object} object 
@@ -618,7 +635,7 @@ class Agent extends DatastoreObject {
  * @typedef {AgentData & BagHolderData & {
  * currentGameId: string,
  * twitchId: string,
- * inventory: object,
+ * inventory: {leger: {id: string, count: number}[]},
  * trackers: object
  * }} PlayerData
  */
@@ -676,7 +693,6 @@ class Player extends BagHolderMixin(Agent) {
         thisPlayerData.level = battlePlayerData.level;
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
-        thisPlayerData.bag.items = battlePlayerData.bag.items;
         thisPlayerData.autoRevive = battlePlayerData.autoRevive;
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
@@ -699,7 +715,7 @@ class Player extends BagHolderMixin(Agent) {
     }
 
     getNextAvailableInventoryPageId() {
-        const leger = this.datastoreObject.inventory.leger;
+        const leger = this.getData().inventory.leger;
         // Has the inventory been created yet?
         if (leger.length === 0) {
             return;
@@ -717,7 +733,7 @@ class Player extends BagHolderMixin(Agent) {
     }
 
     onObjectAddedToInventory(pageId) {
-        const leger = this.datastoreObject.inventory.leger;
+        const leger = this.getData().inventory.leger;
         const pageIndex = leger.findIndex(element => element.id === pageId);
 
         if (pageIndex === -1) {

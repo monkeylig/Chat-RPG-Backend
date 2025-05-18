@@ -7,7 +7,9 @@
  * @import {InventoryPageData} from "./datastore-objects/inventory-page"
  * @import {ConsumeItemStep} from "./battle-system/battle-steps"
  * @import {BookData} from "./datastore-objects/book"
+ * @import {ItemData} from "./datastore-objects/item"
  * @import {WeaponData} from "./datastore-objects/weapon"
+ * @import {CollectionContainer} from "./datastore-objects/utilities"
  */
 
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
@@ -31,6 +33,7 @@ const { BattleContext } = require("./battle-system/battle-context");
 const DatastoreObject = require("./datastore-objects/datastore-object");
 const { ItemBattleMove } = require("./battle-system/item-battle-move");
 const BattleSteps = require("./battle-system/battle-steps");
+const { GameCollection } = require("./datastore-objects/utilities");
 
 const PLAYER_STARTING_COINS = 2000;
 const WEAPONS_IN_SHOP_ROTATION = 20;
@@ -165,6 +168,12 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerRef.id);
     }
 
+    /**
+     * 
+     * @param {string} id 
+     * @param {string} [platform] 
+     * @returns {Promise<UserPlayerData>}
+     */
     async findPlayerById(id, platform) {
         let playerSnap;
         if(platform) {
@@ -346,6 +355,12 @@ class ChatRPG {
             steps};
     }
 
+    /**
+     * 
+     * @param {string} playerId 
+     * @param {string} weaponId 
+     * @returns {Promise<UserPlayerData>}
+     */
     async equipWeapon(playerId, weaponId) {
         const playerRef = this.#dataSource.collection(Schema.Collections.Accounts).doc(playerId);
         const player = await this.#dataSource.runTransaction(async (transaction) => {
@@ -451,6 +466,7 @@ class ChatRPG {
     }
 
     async buy(playerId, shopId, productId, amount=1) {
+        amount = Math.floor(amount);
         const shopSnapshot = await this.#findShop(shopId);
 
         const shop = new Shop(shopSnapshot.data());
@@ -501,6 +517,15 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
+    /**
+     * 
+     * @param {string} playerId 
+     * @param {string} objectId 
+     * @returns {Promise<{
+     *     player: UserPlayerData,
+     *     page: UserInventoryPageData
+     * }>}
+     */
     async moveObjectFromBagToInventory(playerId, objectId) {
 
         const responseObject = await this.#dataSource.runTransaction(async (transaction) => {
@@ -525,6 +550,17 @@ class ChatRPG {
         return responseObject;
     }
 
+    /**
+     * 
+     * @param {string} playerId 
+     * @param {string} pageId 
+     * @param {string} objectId 
+     * @returns {Promise<{
+     *     player: UserPlayerData,
+     *     page: UserInventoryPageData,
+     *     objectInBag: CollectionContainer
+     * }>}
+     */
     async moveObjectFromInventoryToBag(playerId, pageId, objectId) {
         const responseObject = await this.#dataSource.runTransaction(async (transaction) => {
 
@@ -561,7 +597,8 @@ class ChatRPG {
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
-                page: {...page.getData(), id: pageRef.id}
+                page: {...page.getData(), id: pageRef.id},
+                objectInBag: addedObject
             };
         });
 
@@ -694,7 +731,8 @@ class ChatRPG {
      * }} [options]
      * @returns {Promise<{
      * player: UserPlayerData,
-     * inventoryPage?: InventoryPageData & {id: string}
+     * inventoryPage?: InventoryPageData & {id: string},
+     * usedItem: ItemData,
      * steps: BattleStep[]
      * }>}
      */
@@ -720,6 +758,7 @@ class ChatRPG {
      * @param {Transaction} transaction 
      * @returns {Promise<{
      * player: UserPlayerData,
+     * usedItem: ItemData,
      * steps: BattleStep[]
      * }>}
      */
@@ -731,10 +770,12 @@ class ChatRPG {
             }
 
             const item = new Item(bagItem.content);
-
             const result = this.#useItemOutOfBattle(player, item);
 
-            return {player: {...player.getData(), id: playerId}, steps: result.steps};
+            return {
+                player: {...player.getData(), id: playerId},
+                usedItem: item.getData(),
+                steps: result.steps};
         }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
     }
 
@@ -747,6 +788,7 @@ class ChatRPG {
      * @returns {Promise<{
      * player: UserPlayerData,
      * inventoryPage: InventoryPageData & {id: string}
+     * usedItem: ItemData,
      * steps: BattleStep[]
      * }>}
      */
@@ -759,57 +801,72 @@ class ChatRPG {
                 }
 
                 const item = new Item(inventoryItem.content);
-                
                 const result = this.#useItemOutOfBattle(player, item, 'inventory');
 
-                for (const step of result.steps) {
-                    if (step.type === 'consumeItem') {
-                        const consumeItem = /**@type {ConsumeItemStep}*/(step);
-                        if (consumeItem.itemName === item.getData().name && consumeItem.location === 'inventory') {
-                            item.getData().count -= 1;
-                            inventoryItem.content = item.getData();
-                            if (item.isDepleted()) {
-                                const droppedItem = page.dropObjectFromInventory(objectId);
-                                if (droppedItem) {
-                                    player.onObjectRemovedFromInventory(pageId);
-                                }
-                            }
-                        }
+                inventoryItem.content = item.getData();
+                if (item.isDepleted()) {
+                    const droppedItem = page.dropObjectFromInventory(objectId);
+                    if (droppedItem) {
+                        player.onObjectRemovedFromInventory(pageId);
                     }
-                }
+                }       
 
-                return {player: {...result.player, id: playerId}, inventoryPage: {...page.getData(), id: pageId}, steps: result.steps};
+                return {
+                    player: {...result.player, id: playerId},
+                    inventoryPage: {...page.getData(), id: pageId},
+                    usedItem: item.getData(),
+                    steps: result.steps};
             }, transaction, Schema.Collections.InventoryPages, pageId, ChatRPGErrors.inventoryPageNotFound);
         }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
     }
+
     
+    /**
+     * @typedef {Object} SellOptions
+     * @property {{
+     *     inventory?: {
+     *         pageId: string
+     *     }
+     * }} [itemLocation]
+     * @property {number} [count]
+     */
     /**
      * Sell an object. By default, the object will be sold from the bag.
      * Use the options parameter to sell from an inventory page instead.
      * @param {string} playerId - The player selling the object
      * @param {string} objectId - The object to be sold
      * @param {string} shopId - The shop to be sold from
-     * @param {{
-    * itemLocation?: {inventory?: {pageId: string}}
-    * }} [options] - Options to change the selling location
-    * @returns {Promise<{
-    * player: UserPlayerData,
-    * inventoryPage?: UserInventoryPageData
-    * }>}
-    */
+     * @param {SellOptions} [options] - Options to change the selling location
+     * @returns {Promise<{
+     *     player: UserPlayerData,
+     *     soldObject: Object
+     *     inventoryPage?: UserInventoryPageData
+     * }>}
+     */
     async sell(playerId, objectId, shopId, options) {
         const shopSnapshot = await this.#findShop(shopId);
 
+        if (!options) {
+            options = {};
+        }
+
         //Sanitize data from the datastore
         const shop = new Shop(shopSnapshot.data());
+        let count = 1;
+        if (options.count != undefined) {
+            if (options.count < 1) {
+                throw new Error(ChatRPGErrors.invalidParams);
+            }
+            count = Math.floor(options.count);
+        }
 
         return this.#runTransaction((transaction) => {
-            if (options && options.itemLocation && options.itemLocation.inventory) {
+            if (options.itemLocation && options.itemLocation.inventory) {
                 const pageId = options.itemLocation.inventory.pageId;
-                return this.sellFromInventory(playerId, pageId, objectId, shop, transaction);
+                return this.sellFromInventory(playerId, pageId, objectId, shop, count, transaction);
             }
             
-            return this.sellFromBag(playerId, objectId, shop, transaction);
+            return this.sellFromBag(playerId, objectId, shop, count, transaction);
         });
     }
 
@@ -818,25 +875,23 @@ class ChatRPG {
      * @param {string} playerId 
      * @param {string} objectId 
      * @param {Shop} shop 
+     * @param {number} count
      * @param {Transaction} transaction
      * @returns {Promise<{
      * player: UserPlayerData,
+     * soldObject: Object
      * }>}
      */
-    sellFromBag(playerId, objectId, shop, transaction) {
-        return this.#withObjectTransaction(Player, (player) => {
-            const objectContainer = player.findObjectInBag(objectId);
-            if (!objectContainer) {
-                throw new Error(ChatRPGErrors.objectNotInBag);
-            }
+    sellFromBag(playerId, objectId, shop, count, transaction) {
+        return this.#withPlayerTransaction((player) => {
 
-            const resellValue = shop.lookUpResellValue(objectContainer.content);
+            const soldObject = this.sellObject(player, objectId, player.getBag(), shop, count);
 
-            player.dropObjectFromBag(objectId);
-            player.addCoins(resellValue);
-
-            return {player: {...player.getData(), id: playerId}};
-        }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
+            return {
+                player: {...player.getData(), id: playerId},
+                soldObject: soldObject
+            };
+        }, transaction, playerId);
     }
 
     /**
@@ -845,26 +900,57 @@ class ChatRPG {
      * @param {string} pageId 
      * @param {string} objectId 
      * @param {Shop} shop 
+     * @param {number} count
      * @param {Transaction} transaction 
      * @returns {Promise<{
      * player: UserPlayerData,
-     * inventoryPage: UserInventoryPageData
+     * inventoryPage: UserInventoryPageData,
+     * soldObject: Object
      * }>}
      */
-    sellFromInventory(playerId, pageId, objectId, shop, transaction) {
+    sellFromInventory(playerId, pageId, objectId, shop, count, transaction) {
         return this.#withInventoryTransaction((player, page) => {
-            const objectContainer = page.findObjectById(objectId);
-            if (!objectContainer) {
-                throw new Error(ChatRPGErrors.objectNotInInventory);
+
+            const soldObject = this.sellObject(player, objectId, page.getPage(), shop, count);
+
+            return {
+                player: {...player.getData(), id: playerId},
+                inventoryPage: {...page.getData(), id: pageId},
+                soldObject: soldObject
             }
-
-            const resellValue = shop.lookUpResellValue(objectContainer.content);
-
-            page.dropObjectFromInventory(objectId);
-            player.addCoins(resellValue);
-
-            return {player: {...player.getData(), id: playerId}, inventoryPage: {...page.getData(), id: pageId}}
         }, transaction, playerId, pageId);
+    }
+
+    /**
+     * 
+     * @param {Player} player 
+     * @param {string} objectId 
+     * @param {GameCollection} gameCollection 
+     * @param {Shop} shop 
+     * @param {number} count - The number of copies in the stack to sell
+     * @returns {Object}
+     */
+    sellObject(player, objectId, gameCollection, shop, count) {
+        const objectContainer = gameCollection.findObjectById(objectId);
+        if (!objectContainer) {
+            throw new Error(ChatRPGErrors.objectNotFound);
+        }
+
+        let sellLimit = 1;
+        if (objectContainer.content.count && objectContainer.content.count > 0) {
+            sellLimit = objectContainer.content.count;
+        }
+
+        if (count > sellLimit) {
+            throw new Error(ChatRPGErrors.insufficientObjectStackSize);
+        }
+
+        const resellValue = shop.lookUpResellValue(objectContainer.content);
+
+        gameCollection.dropObject(objectId, {count: count});
+        player.addCoins(resellValue * count);
+
+        return objectContainer.content;
     }
 
     async refreshDailyShop() {
@@ -927,7 +1013,7 @@ class ChatRPG {
      * @param {Player} player 
      * @param {Item} item 
      * @param {StorageLocation} location 
-     * @returns {{player: PlayerData, steps: BattleStep[]}}
+     * @returns {{player: PlayerData, usedItem?: ItemData, steps: BattleStep[]}}
      */
     #useItemOutOfBattle(player, item, location='bag') {
         if (!item.getData().outOfBattle) {
@@ -941,7 +1027,7 @@ class ChatRPG {
 
         player.mergeBattlePlayer(battleContext.player);
 
-        return {player: {...player.getData()}, steps}
+        return {player: {...player.getData()}, usedItem: item.getData(), steps}
     }
 
     /**
@@ -960,9 +1046,11 @@ class ChatRPG {
      * @param {Transaction} transaction 
      * @param {string} collection 
      * @param {string} documentId 
+     * @param {string} [notFoundError] 
+     * @param {any[]} [extraConstructorArgs]
      * @returns {Promise<*>}
      */
-    async #withObjectTransaction(objectConstructor, logicFunc, transaction, collection, documentId, notFoundError = ChatRPGErrors.objectNotFound) {
+    async #withObjectTransaction(objectConstructor, logicFunc, transaction, collection, documentId, notFoundError = ChatRPGErrors.objectNotFound, extraConstructorArgs=[]) {
         const documentRef = this.#dataSource.collection(collection).doc(documentId);
         const documentSnap = await transaction.get(documentRef);
 
@@ -970,12 +1058,28 @@ class ChatRPG {
             throw new Error(notFoundError);
         }
 
-        const dataObject = new objectConstructor(documentSnap.data());
+        const dataObject = new objectConstructor(documentSnap.data(), ...extraConstructorArgs);
         const returnData = await Promise.resolve(logicFunc(dataObject));
 
         transaction.set(documentRef, dataObject.getData());
 
         return returnData;
+    }
+
+    /**
+     * 
+     * @param {(player: Player) => void} logicFunc 
+     * @param {Transaction} transaction 
+     * @param {string} playerId 
+     * @returns {Promise<*>}
+     */
+    #withPlayerTransaction(logicFunc, transaction, playerId) {
+        return this.#withObjectTransaction(Player, async (player) => {
+
+            const returnData = await Promise.resolve(logicFunc(player));                
+            return returnData;
+
+        }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
     }
 
     /**
@@ -989,17 +1093,24 @@ class ChatRPG {
     async #withInventoryTransaction(logicFunc, transaction, playerId, pageId) {
         return this.#withObjectTransaction(Player, (player) => {
             return this.#withObjectTransaction(InventoryPage, async (page) => {
-                page.player = player;
-                page.pageId = pageId;
-                const returnData = await Promise.resolve(logicFunc(player, page));
 
-            }, transaction, Schema.Collections.InventoryPages, pageId, ChatRPGErrors.inventoryPageNotFound);
+                const returnData = await Promise.resolve(logicFunc(player, page));                
+                return returnData;
+
+            }, transaction, Schema.Collections.InventoryPages, pageId, ChatRPGErrors.inventoryPageNotFound, [pageId, player]);
         }, transaction, Schema.Collections.Accounts, playerId, ChatRPGErrors.playerNotFound);
     }
 
+    /**
+     * 
+     * @param {Player} player 
+     * @param {string} id 
+     * @returns {UserPlayerData}
+     */
     #returnPlayerResponce(player, id) {
         return {...player.getData(), id};
     }
+
     async #findPlayer(id) {
         const playerSnapShot = await this.#dataSource.collection(Schema.Collections.Accounts).doc(id).get();
         
