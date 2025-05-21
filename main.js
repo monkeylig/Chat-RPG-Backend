@@ -143,7 +143,7 @@ async function initialization() {
         }
     }
 
-    if(!twitchExtentionSecret && process.env.NODE_ENV !== 'developement') {
+    if(!twitchExtentionSecret && process.env.NODE_ENV !== 'development') {
         console.warn("Unable to set extension secret.");
     }
 
