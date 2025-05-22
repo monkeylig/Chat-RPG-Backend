@@ -192,7 +192,7 @@ const GameModes = {
         description: "Fight hordes of endlessly spawning monsters!"
     },
     battleRoyal: {
-        name: 'Battle Royal',
+        name: 'Battle Royale',
         createGame: BattleRoyalCreateGame,
         onPlayerJoin: async()=>{},
         onMonsterDefeated: BattleRoyalOnMonsterDefeated,
