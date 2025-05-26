@@ -1,4 +1,5 @@
-const {FieldValue} = require("./backend-data-source");
+const { deepCopy } = require("../utility");
+const {FieldValue, BackendDatabaseProcessor, IBackendDataSourceCollectionRef, IBackendDataSourceDocumentRef, IBackendDataSourceDocumentSnapshot, IBackendDataSourceQuerySnapShot} = require("./backend-data-source");
 const FirebaseBackedDataSource = require('./firebase-data-source');
 const MemoryBackedDataSource = require('./memory-backed-data-source');
 
@@ -181,7 +182,9 @@ describe.each([
         await dataSource.runTransaction(async (transaction) => {
             const query = playersRef.where('name', '==', name);
             const querySnapshot = await transaction.get(query);
-    
+            
+            if(!(querySnapshot instanceof IBackendDataSourceQuerySnapShot)) {fail();}
+
             if(querySnapshot.empty) {
                 const newPlayer = playersRef.doc();
                 transaction.create(newPlayer, user);
@@ -210,6 +213,8 @@ describe.each([
         await dataSource.runTransaction(async (transaction) => {
             const playerSnap = await transaction.get(playerRef);
     
+            if(!(playerSnap instanceof IBackendDataSourceDocumentSnapshot)) {fail();}
+
             if(playerSnap.exists) {
                 await transaction.update(playerSnap.ref, {abilities: FieldValue.arrayRemove('block')});
             }
@@ -262,6 +267,270 @@ describe.each([
 
         expect(countQuery.data().count).toBe(3);
 
+    });
+
+    test('Count Query', async () => {
+        const user = {
+            name: 'gerr',
+            level: 22,
+        }; 
+        const zim = {
+            name: 'zim',
+            level: 22
+        }
+    
+        const playersRef = dataSource.collection(`players-${Math.random()}`);
+        await playersRef.add(user);
+        await playersRef.add(zim);
+        const query = playersRef.where('level', '==', 22);
+        const count = await query.count().get();
+
+        expect(count.data().count).toBe(2);
+    });
+
+/**
+ * @typedef {Object} TestProcessorData
+ * @property {IBackendDataSourceCollectionRef} collectionRef
+ * @property {IBackendDataSourceDocumentRef} [documentRef]
+ * @property {Object} data
+ * @property {string} method
+ */
+
+    test('Database Processor', async () => {
+        /**@type {TestProcessorData[]} */
+        const processorData = [];
+        class TestProcessor extends BackendDatabaseProcessor {
+            /**
+             * An event that is called when a document is read or written to the database. This is called before the data to returned to the user.
+             * @param {IBackendDataSourceCollectionRef} collectionRef 
+             * @param {IBackendDataSourceDocumentRef} documentRef 
+             * @param {Object} data 
+             * @param {string} method 
+             */
+            onRead(collectionRef, documentRef, data, method) {
+                processorData.push({
+                    collectionRef: collectionRef,
+                    documentRef: documentRef,
+                    data: data,
+                    method: method
+                });
+            }
+
+            /**
+             * An event that is called when a document is written to the database. This is called before the data is written to the document.
+             * @param {IBackendDataSourceCollectionRef} collectionRef 
+             * @param {IBackendDataSourceDocumentRef | undefined} documentRef 
+             * @param {Object} data 
+             * @param {string} method 
+             */
+            onWrite(collectionRef, documentRef, data, method) {
+                processorData.push({
+                    collectionRef: collectionRef,
+                    documentRef: documentRef,
+                    data: data,
+                    method: method
+                });
+            }
+        }
+
+        const user = {
+            name: 'gerr'
+        }; 
+        const zim = {
+            name: 'zim'
+        }
+    
+        dataSource.addProcessor(new TestProcessor());
+        const playersRef = dataSource.collection(`players-${Math.random()}`);
+        const doc1 = await playersRef.add(user);
+        const doc2 = await playersRef.add(zim);
+        const doc3 = playersRef.doc();
+        const doc4 = playersRef.doc();
+        await doc1.get();
+        await doc2.get();
+        
+        await doc3.get();
+
+        expect(processorData[0].collectionRef).toBe(playersRef);
+        expect(processorData[0].documentRef).toBeUndefined();
+        expect(processorData[0].data).toStrictEqual(user);
+        expect(processorData[0].method).toBe('add');
+
+        expect(processorData[1].collectionRef).toBe(playersRef);
+        expect(processorData[1].documentRef).toBeUndefined();
+        expect(processorData[1].data).toStrictEqual(zim);
+        expect(processorData[1].method).toBe('add');
+
+        expect(processorData[2].collectionRef).toBe(playersRef);
+        expect(processorData[2].documentRef).toBe(doc1);
+        expect(processorData[2].data).toStrictEqual(user);
+        expect(processorData[2].method).toBe('get');
+
+        expect(processorData[3].collectionRef).toBe(playersRef);
+        expect(processorData[3].documentRef).toBe(doc2);
+        expect(processorData[3].data).toStrictEqual(zim);
+        expect(processorData[3].method).toBe('get');
+
+        expect(processorData[4].collectionRef).toBe(playersRef);
+        expect(processorData[4].documentRef).toBe(doc3);
+        expect(processorData[4].data).toBeUndefined();
+        expect(processorData[4].method).toBe('get');
+
+        const updatedData = {
+            name: 'copilot'
+        }
+
+        await doc1.set(updatedData);
+        await doc2.update(updatedData);
+
+        expect(processorData[5].collectionRef).toBe(playersRef);
+        expect(processorData[5].documentRef).toBe(doc1);
+        expect(processorData[5].data).toStrictEqual(updatedData);
+        expect(processorData[5].method).toBe('set');
+
+        expect(processorData[6].collectionRef).toBe(playersRef);
+        expect(processorData[6].documentRef).toBe(doc2);
+        expect(processorData[6].data).toStrictEqual(updatedData);
+        expect(processorData[6].method).toBe('update');
+
+        await dataSource.runTransaction(async (transaction) => {
+            await transaction.get(doc1);
+
+            expect(processorData[7].collectionRef).toBe(playersRef);
+            expect(processorData[7].documentRef).toBe(doc1);
+            expect(processorData[7].data).toStrictEqual(updatedData);
+            expect(processorData[7].method).toBe('get');
+            
+            transaction.set(doc1, updatedData);
+            transaction.update(doc2, updatedData);
+            transaction.create(doc4, updatedData);
+        });
+
+        expect(processorData[8].collectionRef).toBe(playersRef);
+        expect(processorData[8].documentRef).toBe(doc1);
+        expect(processorData[8].data).toStrictEqual(updatedData);
+        expect(processorData[8].method).toBe('set');
+
+        expect(processorData[9].collectionRef).toBe(playersRef);
+        expect(processorData[9].documentRef).toBe(doc2);
+        expect(processorData[9].data).toStrictEqual(updatedData);
+        expect(processorData[9].method).toBe('update');
+
+        expect(processorData[10].collectionRef).toBe(playersRef);
+        expect(processorData[10].documentRef).toBe(doc4);
+        expect(processorData[10].data).toStrictEqual(updatedData);
+        expect(processorData[10].method).toBe('create');
+
+    });
+
+    test('database processor: Data manipulation', async () => {
+        /**@type {TestProcessorData[]} */
+        const processorData = [];
+        class TestProcessor extends BackendDatabaseProcessor {
+            /**
+             * An event that is called when a document is read or written to the database. This is called before the data to returned to the user.
+             * @param {IBackendDataSourceCollectionRef} collectionRef 
+             * @param {IBackendDataSourceDocumentRef} documentRef 
+             * @param {Object} data 
+             * @param {string} method 
+             */
+            onRead(collectionRef, documentRef, data, method) {
+                data.readOperations.push(method);
+                processorData.push({
+                    collectionRef: collectionRef,
+                    documentRef: documentRef,
+                    data: data,
+                    method: method
+                });
+            }
+
+            /**
+             * An event that is called when a document is written to the database. This is called before the data is written to the document.
+             * @param {IBackendDataSourceCollectionRef} collectionRef 
+             * @param {IBackendDataSourceDocumentRef | undefined} documentRef 
+             * @param {Object} data 
+             * @param {string} method 
+             */
+            onWrite(collectionRef, documentRef, data, method) {
+                data.writeOperations.push(method);
+                processorData.push({
+                    collectionRef: collectionRef,
+                    documentRef: documentRef,
+                    data: data,
+                    method: method
+                });
+            }
+        }
+
+        const user = {
+            name: 'gerr',
+            readOperations: [],
+            writeOperations: []
+        }; 
+    
+        dataSource.addProcessor(new TestProcessor());
+        const playersRef = dataSource.collection(`players-${Math.random()}`);
+        let doc = await playersRef.add(deepCopy(user));
+        let snap = await doc.get();
+
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['add']
+        });
+
+        await doc.set(deepCopy(user));
+        snap = await doc.get();
+
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['set']
+        });
+
+        await doc.update(deepCopy(user));
+        snap = await doc.get();
+
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['update']
+        });
+
+        let doc1 = playersRef.doc();
+        let doc2 = playersRef.doc();
+        await dataSource.runTransaction(async (transaction) => {
+            let tranSnap = await transaction.get(doc);
+
+            if(!(tranSnap instanceof IBackendDataSourceDocumentSnapshot)) {fail();}
+            
+            transaction.create(doc1, deepCopy(user));
+            transaction.set(doc2, deepCopy(user));
+        });
+
+        snap = await doc.get();
+
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['update']
+        });
+
+        snap = await doc1.get();
+
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['create']
+        });
+
+        snap = await doc2.get();
+        
+        expect(snap.data()).toStrictEqual({
+            name: 'gerr',
+            readOperations: ['get'],
+            writeOperations: ['set']
+        });
     });
 });
 

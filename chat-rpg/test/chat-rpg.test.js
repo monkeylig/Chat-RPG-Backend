@@ -21,6 +21,7 @@ const Ability = require('../datastore-objects/ability');
 const { findBattleStep } = require('../battle-system/utility');
 const { BattleMonster } = require('../datastore-objects/battle-agent');
 const { weapons } = require('../../sandbox/contentObjects');
+const { deepCopy } = require('../../utility');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {
     let passes = 0;
@@ -1601,7 +1602,7 @@ test('Moving objects from bag to inventory', async () => {
     const dataSource = new MemoryBackedDataSource();
     await dataSource.initializeDataSource({
         accounts: {
-            player1: player.getData()
+            player1: deepCopy(player.getData())
         }
     });
 
@@ -2194,6 +2195,24 @@ test('Sell Stackables with decimals.', async () => {
     if (!weaponSlot) {fail();}
     expect(weaponSlot).toBeDefined();
     expect(weaponSlot.content.count).toBe(1);
+});
 
+test('daily test report', async () => {
+    const player = new Player({
+        lastAction: new Date()
+    });
+    
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        [Schema.Collections.Accounts]: {
+            ['player1']: player.getData(),
+            ['player2']: player.getData()
+        }
+    });
 
+    const chatrpg = new ChatRPG(dataSource);
+    const report = await chatrpg.createDailyReport();
+
+    expect(report).toBeDefined();
+    expect(report.activePlayersCount).toBe(2);
 });

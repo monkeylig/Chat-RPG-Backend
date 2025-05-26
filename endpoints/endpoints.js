@@ -46,7 +46,7 @@ function validatePayloadParameters(payload, params)
  * @param {Error} error 
  */
 function internalErrorCatch(req, res, error) {
-    let responce = {
+    let response = {
         message: 'Internal Error',
         errorCode: 0
     };
@@ -56,8 +56,8 @@ function internalErrorCatch(req, res, error) {
     let errorCode = 1;
     for(const rpgError in ChatRPGErrors) {
         if(ChatRPGErrors[rpgError] === error.message) {
-            responce.errorCode = errorCode;
-            responce.message = ChatRPGErrors[rpgError];
+            response.errorCode = errorCode;
+            response.message = ChatRPGErrors[rpgError];
             status = ChatRPGErrors[rpgError].includes('not found') ? 404 : 400;
             break;
         }
@@ -65,7 +65,7 @@ function internalErrorCatch(req, res, error) {
     }
 
     console.error(error);
-    sendResponceObject(res, responce, status);
+    sendResponseObject(res, response, status);
 }
 
 /**
@@ -75,12 +75,12 @@ function internalErrorCatch(req, res, error) {
  * @param {number} rpgErrorCode 
  * @param {number} errorCode 
  */
-function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 400) {
-    let responce = {
+function sendError(res, message = 'Bad request', rpgErrorCode = 1, errorCode = 400) {
+    let response = {
         message: message,
         errorCode: rpgErrorCode
     };
-    sendResponceObject(res, responce, errorCode);
+    sendResponseObject(res, response, errorCode);
 }
 
 /**
@@ -89,7 +89,7 @@ function sendError(res, message = 'Bad rquest', rpgErrorCode = 1, errorCode = 40
  * @param {object} message 
  * @param {number} status 
  */
-function sendResponceObject(res, message = {}, status = 200) {
+function sendResponseObject(res, message = {}, status = 200) {
     res.status(status);
     res.send(JSON.stringify(message));
 }
@@ -114,9 +114,9 @@ function default_options(req, res, next) {
     res.send('OK');
 }
 
-function get_starting_avatars(req, res, chatrpg) {
+function get_starting_avatars(req, res, chatRPG) {
     setStandardHeaders(res);
-    chatrpg.getStartingAvatars().then((avatars) => {
+    chatRPG.getStartingAvatars().then((avatars) => {
         res.status(200);
         avatars = avatars ? avatars : [];
         res.send(JSON.stringify(avatars));
@@ -124,10 +124,10 @@ function get_starting_avatars(req, res, chatrpg) {
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
 
-function get_game_info(req, res, chatrpg) {
+function get_game_info(req, res, chatRPG) {
     setStandardHeaders(res);
-    chatrpg.getGameInfo().then((gameInfo) => {
-        sendResponceObject(res, gameInfo);
+    chatRPG.getGameInfo().then((gameInfo) => {
+        sendResponseObject(res, gameInfo);
     })
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
@@ -140,9 +140,9 @@ function create_new_player_options(req, res) {
     res.send('OK');
 }
 
-function create_new_player(req, res, chatrpg) {
+function create_new_player(req, res, chatRPG) {
     setStandardHeaders(res);
-    let responce = {message: ''};
+    let response = {message: ''};
 
     const payloadParams = [
         {name: 'name', type: 'string'},
@@ -155,31 +155,31 @@ function create_new_player(req, res, chatrpg) {
     if(!validatePayloadParameters(req.body, payloadParams))
     {
         res.status(400);
-        responce.message = 'Data in payload malformed';
-        responce.errorCode = 1;
-        res.send(JSON.stringify(responce));
+        response.message = 'Data in payload malformed';
+        response.errorCode = 1;
+        res.send(JSON.stringify(response));
         return;
     }
 
     if(!req.query.hasOwnProperty('platform'))
     {
         res.status(400);
-        responce.message = 'missing query string "platform"';
-        responce.errorCode = 2;
-        res.send(JSON.stringify(responce));
+        response.message = 'missing query string "platform"';
+        response.errorCode = 2;
+        res.send(JSON.stringify(response));
         return;
     }
 
-    chatrpg.addNewPlayer(req.body.name, req.body.avatar, req.body.weaponType, req.body.vitalityBonus, req.body.playerId, req.query.platform)
+    chatRPG.addNewPlayer(req.body.name, req.body.avatar, req.body.weaponType, req.body.vitalityBonus, req.body.playerId, req.query.platform)
     .then(player => {
             res.status(200);
             res.send(JSON.stringify(player));
     }).catch(error => {
         if(error.message === ChatRPGErrors.playerExists) {
             res.status(400);
-            responce.message = "A player with the provided ID already exsists";
-            responce.errorCode = 2;
-            res.send(JSON.stringify(responce));
+            response.message = "A player with the provided ID already exists";
+            response.errorCode = 2;
+            res.send(JSON.stringify(response));
         }
         else {
             internalErrorCatch(req, res, error);
@@ -187,9 +187,9 @@ function create_new_player(req, res, chatrpg) {
     });
 }
 
-function get_player(req, res, chatrpg) {
+function get_player(req, res, chatRPG) {
     setStandardHeaders(res);
-    let responce = {message: ''};
+    let response = {message: ''};
     
     const queryParams = [
         {name: 'playerId', type: 'string'}
@@ -202,13 +202,13 @@ function get_player(req, res, chatrpg) {
     if(!validatePayloadParameters(req.query, queryParams))
     {
         res.status(400);
-        responce.message = 'missing query string keys';
-        responce.errorCode = 1;
-        res.send(JSON.stringify(responce));
+        response.message = 'missing query string keys';
+        response.errorCode = 1;
+        res.send(JSON.stringify(response));
         return;
     }
 
-    chatrpg.findPlayerById(req.query.playerId, req.query.platform)
+    chatRPG.findPlayerById(req.query.playerId, req.query.platform)
     .then(player => {
         res.status(200);
         res.send(JSON.stringify(player));
@@ -216,9 +216,9 @@ function get_player(req, res, chatrpg) {
     .catch(error => {
         if(error.message == ChatRPGErrors.playerNotFound) {
             res.status(400);
-            responce.message = error.message;
-            responce.errorCode = 2;
-            res.send(JSON.stringify(responce));
+            response.message = error.message;
+            response.errorCode = 2;
+            res.send(JSON.stringify(response));
         }
         else {
             internalErrorCatch(req, res, error);
@@ -226,9 +226,9 @@ function get_player(req, res, chatrpg) {
     });
 }
 
-function join_game(req, res, chatrpg) {
+function join_game(req, res, chatRPG) {
     setStandardHeaders(res);
-    let responce = {message: ''};
+    let response = {message: ''};
 
     const queryParams = [
         {name: 'playerId', type: 'string'},
@@ -238,13 +238,13 @@ function join_game(req, res, chatrpg) {
     if(!validatePayloadParameters(req.query, queryParams))
     {
         res.status(400);
-        responce.message = 'missing query string keys';
-        responce.errorCode = 1;
-        res.send(JSON.stringify(responce));
+        response.message = 'missing query string keys';
+        response.errorCode = 1;
+        res.send(JSON.stringify(response));
         return;
     }
 
-    chatrpg.joinGame(req.query.playerId, req.query.gameId)
+    chatRPG.joinGame(req.query.playerId, req.query.gameId)
     .then(gameState => {
         res.status(200);
         res.send(JSON.stringify(gameState));
@@ -252,7 +252,7 @@ function join_game(req, res, chatrpg) {
     }, (error) => {internalErrorCatch(req, res, error);});
 }
 
-function get_game(req, res, chatrpg) {
+function get_game(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -264,9 +264,9 @@ function get_game(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.getGame(req.query.gameId)
+    chatRPG.getGame(req.query.gameId)
     .then(gameUpdate => {
-        sendResponceObject(res, gameUpdate);
+        sendResponseObject(res, gameUpdate);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -279,7 +279,7 @@ function start_battle_options(req, res) {
     res.send('OK');
 }
 
-function start_battle(req, res, chatrpg) {
+function start_battle(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -305,14 +305,14 @@ function start_battle(req, res, chatrpg) {
         }
     }
 
-    chatrpg.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId, req.body.fallbackMonster)
+    chatRPG.startBattle(req.query.playerId, req.query.gameId, req.query.monsterId, req.body.fallbackMonster)
     .then(battleState => {
-        sendResponceObject(res, battleState);
+        sendResponseObject(res, battleState);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function battle_action(req, res, chatrpg) {
+function battle_action(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -346,14 +346,14 @@ function battle_action(req, res, chatrpg) {
         battleAction.itemId = req.query.itemId;
     }
 
-    chatrpg.battleAction(req.query.battleId, battleAction)
+    chatRPG.battleAction(req.query.battleId, battleAction)
     .then(battleUpdate => {
-        sendResponceObject(res, battleUpdate);
+        sendResponseObject(res, battleUpdate);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function equip_weapon(req, res, chatrpg) {
+function equip_weapon(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -366,14 +366,14 @@ function equip_weapon(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.equipWeapon(req.query.playerId, req.query.weaponId)
+    chatRPG.equipWeapon(req.query.playerId, req.query.weaponId)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function drop_weapon(req, res, chatrpg) {
+function drop_weapon(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -386,14 +386,14 @@ function drop_weapon(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.dropWeapon(req.query.playerId, req.query.weaponId)
+    chatRPG.dropWeapon(req.query.playerId, req.query.weaponId)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function equip_ability(req, res, chatrpg) {
+function equip_ability(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -407,14 +407,14 @@ function equip_ability(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.equipAbility(req.query.playerId, req.query.abilityBookId, Number(req.query.abilityIndex), req.query.replacedAbilityName)
+    chatRPG.equipAbility(req.query.playerId, req.query.abilityBookId, Number(req.query.abilityIndex), req.query.replacedAbilityName)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function drop_book(req, res, chatrpg) {
+function drop_book(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -427,14 +427,14 @@ function drop_book(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.dropBook(req.query.playerId, req.query.abilityBookName)
+    chatRPG.dropBook(req.query.playerId, req.query.abilityBookName)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function drop_item(req, res, chatrpg) {
+function drop_item(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -447,14 +447,14 @@ function drop_item(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.dropItem(req.query.playerId, req.query.itemName)
+    chatRPG.dropItem(req.query.playerId, req.query.itemName)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function get_shop(req, res, chatrpg) {
+function get_shop(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -466,14 +466,14 @@ function get_shop(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.getShop(req.query.shopId)
+    chatRPG.getShop(req.query.shopId)
     .then(shop => {
-        sendResponceObject(res, shop);
+        sendResponseObject(res, shop);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function buy(req, res, chatrpg) {
+function buy(req, res, chatRPG) {
     setStandardHeaders(res);
 
     const queryParams = [
@@ -492,14 +492,14 @@ function buy(req, res, chatrpg) {
         amount = Number(req.query.amount);
     }
 
-    chatrpg.buy(req.query.playerId, req.query.shopId, req.query.productId, amount)
+    chatRPG.buy(req.query.playerId, req.query.shopId, req.query.productId, amount)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function move_object_from_bag_to_inventory(req, res, chatrpg) {
+function move_object_from_bag_to_inventory(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if(!validatePayloadParameters(req.query, [
@@ -510,14 +510,14 @@ function move_object_from_bag_to_inventory(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.moveObjectFromBagToInventory(req.query.playerId, req.query.objectId)
+    chatRPG.moveObjectFromBagToInventory(req.query.playerId, req.query.objectId)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function get_inventory_page(req, res, chatrpg) {
+function get_inventory_page(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if(!validatePayloadParameters(req.query, [
@@ -528,14 +528,14 @@ function get_inventory_page(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.getInventoryPage(req.query.playerId, req.query.pageId)
+    chatRPG.getInventoryPage(req.query.playerId, req.query.pageId)
     .then(page => {
-        sendResponceObject(res, page);
+        sendResponseObject(res, page);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function move_object_from_inventory_to_bag(req, res, chatrpg) {
+function move_object_from_inventory_to_bag(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if(!validatePayloadParameters(req.query, [
@@ -547,14 +547,14 @@ function move_object_from_inventory_to_bag(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.moveObjectFromInventoryToBag(req.query.playerId, req.query.pageId, req.query.objectId)
+    chatRPG.moveObjectFromInventoryToBag(req.query.playerId, req.query.pageId, req.query.objectId)
     .then(moveResults => {
-        sendResponceObject(res, moveResults);
+        sendResponseObject(res, moveResults);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function product_purchase(req, res, chatrpg, secret) {
+function product_purchase(req, res, chatRPG, secret) {
     setStandardHeaders(res);
     if(!validatePayloadParameters(req.query, [
         {name: 'playerId', type: 'string'},
@@ -565,15 +565,19 @@ function product_purchase(req, res, chatrpg, secret) {
     }
     
     const receiptData = utility.verifyJWT(req.query.transactionReceipt, secret);
+    if (typeof receiptData === 'string') {
+        sendError(res, "Receipt verification failed");
+        return;
+    }
 
-    chatrpg.productPurchase(req.query.playerId, receiptData.data.product.sku)
+    chatRPG.productPurchase(req.query.playerId, receiptData.data.product.sku)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function claim_object(req, res, chatrpg) {
+function claim_object(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if(!validatePayloadParameters(req.query, [
@@ -584,14 +588,14 @@ function claim_object(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.claimObject(req.query.playerId, req.query.objectId)
+    chatRPG.claimObject(req.query.playerId, req.query.objectId)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
 
-function updateGame(req, res, chatrpg) {
+function updateGame(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if(!validatePayloadParameters(req.query, [
@@ -602,9 +606,9 @@ function updateGame(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.updateGame(req.query.gameId, req.query.mode)
+    chatRPG.updateGame(req.query.gameId, req.query.mode)
     .then(player => {
-        sendResponceObject(res, player);
+        sendResponseObject(res, player);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -613,9 +617,9 @@ function updateGame(req, res, chatrpg) {
  * 
  * @param {Request} req 
  * @param {Response} res 
- * @param {ChatRPG} chatrpg 
+ * @param {ChatRPG} chatRPG 
  */
-function useItem(req, res, chatrpg) {
+function useItem(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if (!validatePayloadParameters(req.query, [
@@ -627,9 +631,9 @@ function useItem(req, res, chatrpg) {
     }
 
     // @ts-ignore
-    chatrpg.useItem(req.query.playerId, req.query.objectId, req.body)
+    chatRPG.useItem(req.query.playerId, req.query.objectId, req.body)
     .then(update => {
-        sendResponceObject(res, update);
+        sendResponseObject(res, update);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -638,9 +642,9 @@ function useItem(req, res, chatrpg) {
  * 
  * @param {Request} req 
  * @param {Response} res 
- * @param {ChatRPG} chatrpg 
+ * @param {ChatRPG} chatRPG 
  */
-function resetAccount(req, res, chatrpg) {
+function resetAccount(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if (!validatePayloadParameters(req.query, [
@@ -651,9 +655,9 @@ function resetAccount(req, res, chatrpg) {
     }
 
     // @ts-ignore
-    chatrpg.resetAccount(req.query.playerId)
+    chatRPG.resetAccount(req.query.playerId)
     .then(update => {
-        sendResponceObject(res, update);
+        sendResponseObject(res, update);
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -662,9 +666,9 @@ function resetAccount(req, res, chatrpg) {
  * 
  * @param {Request} req 
  * @param {Response} res 
- * @param {ChatRPG} chatrpg 
+ * @param {ChatRPG} chatRPG 
  */
-function refreshDailyShop(req, res, chatrpg) {
+function refreshDailyShop(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if (!validatePayloadParameters(req.query, [
@@ -679,9 +683,9 @@ function refreshDailyShop(req, res, chatrpg) {
         return;
     }
 
-    chatrpg.refreshDailyShop()
+    chatRPG.refreshDailyShop()
     .then(update => {
-        sendResponceObject(res, {message: 'success!'});
+        sendResponseObject(res, {message: 'success!'});
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -690,9 +694,9 @@ function refreshDailyShop(req, res, chatrpg) {
  * 
  * @param {Request} req 
  * @param {Response} res 
- * @param {ChatRPG} chatrpg 
+ * @param {ChatRPG} chatRPG 
  */
-function sell(req, res, chatrpg) {
+function sell(req, res, chatRPG) {
     setStandardHeaders(res);
 
     if (!validatePayloadParameters(req.query, [
@@ -705,9 +709,42 @@ function sell(req, res, chatrpg) {
     }
 
     // @ts-ignore
-    chatrpg.sell(req.query.playerId, req.query.objectId, req.query.shopId, req.body)
+    chatRPG.sell(req.query.playerId, req.query.objectId, req.query.shopId, req.body)
     .then(update => {
-        sendResponceObject(res, update);
+        sendResponseObject(res, update);
+    })
+    .catch(error => internalErrorCatch(req, res, error));
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
+function dailyOperations(req, res, chatRPG) {
+    setStandardHeaders(res);
+
+    if (!validatePayloadParameters(req.query, [
+        {name: 'pwd', type: 'string'}
+    ])) {
+        sendError(res, "Missing Password");
+        return;
+    }
+
+    if (req.query.pwd != "change_me") {
+        sendError(res, "Wrong password");
+        return;
+    }
+
+    const promises = [];
+
+    promises.push(chatRPG.createDailyReport());
+    promises.push(chatRPG.refreshDailyShop());
+    
+    Promise.all(promises)
+    .then(update => {
+        sendResponseObject(res, {message: 'success!'});
     })
     .catch(error => internalErrorCatch(req, res, error));
 }
@@ -742,5 +779,6 @@ module.exports = {
     useItem,
     resetAccount,
     refreshDailyShop,
+    dailyOperations,
     sell
 };
