@@ -8,7 +8,8 @@ const Schema = {
         Battles: 'battles',
         Shops: 'shops',
         InventoryPages: 'inventory_pages',
-        Products: 'products'
+        Products: 'products',
+        DailyReports: 'daily_reports',
     },
     
     AvatarDocuments: {

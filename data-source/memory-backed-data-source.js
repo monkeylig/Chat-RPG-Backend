@@ -1,4 +1,10 @@
-const {IBackendDataSource, FieldValue, IBackendDataSourceAggregateQuery, IBackendDataSourceAggregateQuerySnapShot} = require("./backend-data-source")
+/**
+ * @import {BackendDatabaseProcessorManager, TransactionFunction} from "./backend-data-source"
+ */
+
+const {IBackendDataSource, FieldValue, IBackendDataSourceAggregateQuery, IBackendDataSourceAggregateQuerySnapShot,
+    IBackendDataSourceCollectionRef, IBackendDataSourceDocumentRef, IBackendDataSourceDocumentSnapshot,
+    IBackendDataSourceQuery, IBackendDataSourceQuerySnapShot, IBackendDataSourceTransaction} = require("./backend-data-source")
 
 const utility = require("../utility");
 
@@ -27,6 +33,10 @@ class MemoryBackedDataSource extends IBackendDataSource {
         this.dataSource = {};
     }
 
+    /**
+     * 
+     * @param {Object} initialData 
+     */
     async initializeDataSource(initialData={})
     {
         this.dataSource = initialData;
@@ -42,130 +52,92 @@ class MemoryBackedDataSource extends IBackendDataSource {
         }
     }
 
+    /**
+     * 
+     * @param {string} name 
+     * @returns {MemoryDataSourceCollectionRef}
+     */
     collection(name) {
-        return new MemoryDataSourceCollectionRef(this.dataSource, name);
+        return new MemoryDataSourceCollectionRef(this.dataSource, name, this.processorManager);
     }
 
+    /**
+     * 
+     * @param {TransactionFunction} transactionFunction 
+     * @returns {Promise<any>}
+     * @override
+     */
     async runTransaction(transactionFunction) {
-        return await transactionFunction(new MemoryDataSourceTransaction());
+        return await transactionFunction(new MemoryDataSourceTransaction(this.processorManager));
     }
-
-    //#region gen 2
-    async addDocumentToCollection(document, collection) {
-        this.verifyCollection(collection);
-
-        document._id = utility.genId();
-        this.dataSource[collection].push(document);
-
-        return document;
-    }
-
-    async getCollection(collection) {
-        this.verifyCollection(collection);
-
-        return this.dataSource[collection];
-    }
-
-    async findDocumentInCollection(value, macher, collection) {
-        this.verifyCollection(collection);
-
-        const collectionObj = this.dataSource[collection];
-        for(let i = 0; i < collectionObj.length; i++) {
-            if(collectionObj[i][macher] === value) {
-                return collectionObj[i];
-            }
-        }
-        return {};
-    }
-
-    async updateDocumentInCollection(filter, updateDoc, collection) {
-        this.verifyCollection(collection);
-
-        const collectionObj = this.dataSource[collection];
-        const targetDocuments = this.filterCollectionArray(filter, collectionObj);
-
-        for(const target of targetDocuments) {
-            this.applyUpdateDoc(updateDoc, target);
-        }
-    }
-
-    verifyCollection(collection) {
-        if(!this.dataSource.hasOwnProperty(collection)) {
-            this.dataSource[collection] = [];
-        }
-    }
-    //#endregion
-    //#region Legacy Interface
-    async getStartingAvatars() {
-        const avatars = this.dataSource["starting_avatars"];
-        if (avatars.length == 0)
-        {
-            return {};
-        }
-        return avatars;
-    }
-
-    async addAccount(obj) {
-        this.dataSource["accounts"].push(obj);
-    }
-    //#endregion
 }
 
-class MemoryDataSourceCollectionRef {
-
-    constructor(dataSource, collectionName) {
+class MemoryDataSourceCollectionRef extends IBackendDataSourceCollectionRef {
+    /**
+     * 
+     * @param {Object} dataSource 
+     * @param {string} collectionName 
+     * @param {BackendDatabaseProcessorManager} processorManager 
+     */
+    constructor(dataSource, collectionName, processorManager) {
+        super(collectionName, processorManager);
         this.dataSource = dataSource;
-        this.collectionName = collectionName;
     }
-    async add(object) {
+
+    /**
+     * @override
+     * @param {Object} object 
+     */
+    async _add(object) {
         this.verifyCollection();
 
         const id = utility.genId();
-        this.dataSource[this.collectionName][id] = object;
-        return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
+        this.dataSource[this.name][id] = Object.assign({}, object);
+        return new MemoryDataSourceDocumentRef(id, this.dataSource[this.name], this);
     }
 
+    /**
+     * @override
+     * @param {string} [path] 
+     */
     doc(path) {
         this.verifyCollection();
 
         if(!path) {
             const id = utility.genId();
-            return new MemoryDataSourceDocumentRef(id, this.dataSource[this.collectionName]);
+            return new MemoryDataSourceDocumentRef(id, this.dataSource[this.name], this);
         }
 
-        return new MemoryDataSourceDocumentRef(path, this.dataSource[this.collectionName]);
+        return new MemoryDataSourceDocumentRef(path, this.dataSource[this.name], this);
     }
 
+    /**
+     * @override
+     * @param {string} field 
+     * @param {string} opStr 
+     * @param {any} value 
+     */
     where(field, opStr, value) {
         if(!this.collectionExists()) {
-            return new MemoryDataSourceQuery(field, opStr, value, {});
+            return new MemoryDataSourceQuery(field, opStr, value, {}, this);
         }
 
-        return new MemoryDataSourceQuery(field, opStr, value, this.dataSource[this.collectionName]);
+        return new MemoryDataSourceQuery(field, opStr, value, this.dataSource[this.name], this);
     }
-
-    createDocument(object, id) {
-        const newObject = Object.assign({}, object);
-        if(id) {
-            newObject._id = id;    
-        }
-        else {
-            newObject._id = utility.genId();
-        }
-        return newObject;
-    }
-
     
     verifyCollection() {
         if(!this.collectionExists()) {
-            this.dataSource[this.collectionName] = {};
+            this.dataSource[this.name] = {};
         }
     }
 
     collectionExists() {
-        return this.dataSource.hasOwnProperty(this.collectionName);
+        return this.dataSource.hasOwnProperty(this.name);
     }
 
+    /**
+     * @override
+     */
     count() {
         return new MemoryDataSourceAggregateQuery(this);
     }
@@ -186,7 +158,7 @@ class MemoryDataSourceAggregateQuery extends IBackendDataSourceAggregateQuery {
      */
     async get() {
         let count = 0;
-        for (const doc in this.ref.dataSource[this.ref.collectionName]) {
+        for (const doc in this.ref.dataSource[this.ref.name]) {
             count += 1;
         }
         return new MemoryDataSourceAggregateQuerySnapShot({count});
@@ -210,24 +182,39 @@ class MemoryDataSourceAggregateQuerySnapShot extends IBackendDataSourceAggregate
     }
 }
 
-class MemoryDataSourceDocumentRef {
-    id;
-
-    constructor(id, collection) {
-
+class MemoryDataSourceDocumentRef extends IBackendDataSourceDocumentRef{
+    /**
+     * 
+     * @param {string} id 
+     * @param {Object.<string, any>} collection 
+     * @param {MemoryDataSourceCollectionRef} parent 
+     */
+    constructor(id, collection, parent) {
+        super(parent);
         this.id = id;
         this.collection = collection
     }
 
-    async get() {
+    /**
+     * @override
+     */
+    async _get() {
         return new MemoryDataSourceDocumentSnapshot(this.collection[this.id], this);
     }
 
-    async set(object) {
+    /**
+     * @override
+     * @param {Object} object 
+     */
+    async _set(object) {
         this.collection[this.id] = utility.deepCopy(object);
     }
 
-    async update(object) {
+    /**
+     * @override
+     * @param {Object} object 
+     */
+    async _update(object) {
         for(const field in object) {
             const dottedFields = field.split('.');
 
@@ -239,7 +226,7 @@ class MemoryDataSourceDocumentRef {
             const targetAttribute = dottedFields[dottedFields.length - 1];
 
             if(object[field] && object[field].hasOwnProperty('fieldType')) {
-                if(object[field].fieldType == FieldValue.Arraytype) {
+                if(object[field].fieldType == FieldValue.ArrayType) {
                     switch(object[field].arrayOp) {
                         case FieldValue.UnionOp: {
                             const array1 = leafObject[targetAttribute];
@@ -267,40 +254,49 @@ class MemoryDataSourceDocumentRef {
         }
     }
 
+    /**
+     * @override
+     */
     async delete() {
         delete this.collection[this.id];    
     }
 }
 
-class MemoryDataSourceDocumentSnapshot {
+class MemoryDataSourceDocumentSnapshot extends IBackendDataSourceDocumentSnapshot{
+    /**
+     * 
+     * @param {Object} document 
+     * @param {MemoryDataSourceDocumentRef} ref 
+     */
     constructor(document, ref) {
-        this.document = document;
-        this.ref = ref;
-
-        if(document) {
-            this.exists = true;
-        } else {
-            this.exists = false;
-        }
-    }
-
-    data() {
-        if (this.exists) {
-            return JSON.parse(JSON.stringify(this.document));
-        }
-
-        return;
+        super(ref, document);
     }
 }
 
-class MemoryDataSourceQuery {
-    constructor(field, opStr, value, collection) {
+/**
+ * In-memory implementation of a query.
+ * @extends IBackendDataSourceQuery
+ */
+class MemoryDataSourceQuery extends IBackendDataSourceQuery {
+    /**
+     * @param {string} field
+     * @param {string} opStr
+     * @param {any} value
+     * @param {Object.<string, any>} collection
+     * @param {MemoryDataSourceCollectionRef} parent 
+     */
+    constructor(field, opStr, value, collection, parent) {
+        super(parent);
         this.field = field;
         this.opStr = opStr;
         this.value = value;
         this.collection = collection;
     }
 
+    /**
+     * Executes the query and returns a snapshot.
+     * @returns {Promise<MemoryDataSourceQuerySnapShot>}
+     */
     async get() {
         const queryResults = [];
 
@@ -308,23 +304,39 @@ class MemoryDataSourceQuery {
             switch(this.opStr) {
                 case '==':
                     if(this.collection[document][this.field] == this.value){
-                        queryResults.push(await new MemoryDataSourceDocumentRef(document, this.collection).get());
+                        queryResults.push(await new MemoryDataSourceDocumentRef(document, this.collection,
+                            /**@type {MemoryDataSourceCollectionRef}*/(this.parent)
+                        )._get());
                     }
                     break;
             }
         }
         return new MemoryDataSourceQuerySnapShot(queryResults);
     }
+
+    count() {
+        return new MemoryDataSourceAggregateQuery(/**@type {MemoryDataSourceCollectionRef}*/(this.parent));
+    }
 }
 
-class MemoryDataSourceQuerySnapShot {
-    empty;
-
+/**
+ * Query snapshot for memory data source.
+ * @extends IBackendDataSourceQuerySnapShot
+ */
+class MemoryDataSourceQuerySnapShot extends IBackendDataSourceQuerySnapShot{
+    /**
+     * @param {MemoryDataSourceDocumentSnapshot[]} queryResults
+     */
     constructor(queryResults) {
+        super();
         this.docs = queryResults;
         this.empty = queryResults.length == 0;
     }
 
+    /**
+     * Iterates over each document in the snapshot.
+     * @param {(element: MemoryDataSourceDocumentSnapshot) => void} callback
+     */
     forEach(callback) {
         this.docs.forEach(element => {
             callback(element);
@@ -332,23 +344,57 @@ class MemoryDataSourceQuerySnapShot {
     }
 }
 
-class MemoryDataSourceTransaction {
-    async get(refOrQuery) {
+/**
+ * Transaction for memory data source.
+ * @extends IBackendDataSourceTransaction
+ */
+class MemoryDataSourceTransaction extends IBackendDataSourceTransaction {
+    /**
+     * Gets a document or query snapshot.
+     * @param {MemoryDataSourceDocumentRef|MemoryDataSourceQuery} refOrQuery
+     * @returns {Promise<any>}
+     * @override
+     */
+    async _get(refOrQuery) {
+        if (refOrQuery instanceof MemoryDataSourceDocumentRef) {
+            return await refOrQuery._get();
+        }
         return await refOrQuery.get();
     }
 
-    create(documentRef, data) {
-        documentRef.set(data);
+    /**
+     * Creates a document.
+     * @param {MemoryDataSourceDocumentRef} documentRef
+     * @param {Object} data
+     * @returns {this}
+     * @override
+     */
+    _create(documentRef, data) {
+        documentRef._set(data);
         return this;
     }
 
-    set(documentRef, data) {
-        documentRef.set(data);
+    /**
+     * Sets a document.
+     * @param {MemoryDataSourceDocumentRef} documentRef
+     * @param {Object} data
+     * @returns {this}
+     * @override
+     */
+    _set(documentRef, data) {
+        documentRef._set(data);
         return this;
     }
 
-    update(documentRef, updateObject) {
-        documentRef.update(updateObject);
+    /**
+     * Updates a document.
+     * @param {MemoryDataSourceDocumentRef} documentRef
+     * @param {Object} updateObject
+     * @returns {this}
+     * @override
+     */
+    _update(documentRef, updateObject) {
+        documentRef._update(updateObject);
         return this;
     }
 }

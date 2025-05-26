@@ -1,7 +1,7 @@
 /**
  * @import {PlayerData} from "./datastore-objects/agent"
  * @import {GConstructor} from "./utility"
- * @import {Transaction} from "../data-source/backend-data-source"
+ * @import {IBackendDataSourceTransaction} from "../data-source/backend-data-source"
  * @import {BattleStep} from "./battle-system/battle-steps"
  * @import {TransactionFunction} from "../data-source/backend-data-source"
  * @import {InventoryPageData} from "./datastore-objects/inventory-page"
@@ -34,6 +34,7 @@ const DatastoreObject = require("./datastore-objects/datastore-object");
 const { ItemBattleMove } = require("./battle-system/item-battle-move");
 const BattleSteps = require("./battle-system/battle-steps");
 const { GameCollection } = require("./datastore-objects/utilities");
+const { RPGDatabaseProcessor } = require("./rpg-database-processor");
 
 const PLAYER_STARTING_COINS = 2000;
 const WEAPONS_IN_SHOP_ROTATION = 20;
@@ -65,6 +66,7 @@ class ChatRPG {
      */
     constructor(dataSource) {
         this.#dataSource = dataSource;
+        this.#dataSource.addProcessor(new RPGDatabaseProcessor());
     }
 
     /**
@@ -347,7 +349,7 @@ class ChatRPG {
                 result: battle.result};
         }
 
-        await battleSnap.ref.set(battle);
+        await battleSnap.ref.update(battle);
 
         return {
             ...battle,
@@ -547,7 +549,7 @@ class ChatRPG {
             }
             
             const pageData = await this.#addObjectToPlayerInventoryT(player, objectData.content, objectData.type, transaction);
-            transaction.set(playerSnap.ref, player.getData());
+            transaction.update(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -601,7 +603,7 @@ class ChatRPG {
 
             player.onObjectRemovedFromInventory(pageId);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData());
+            transaction.update(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -638,7 +640,7 @@ class ChatRPG {
 
             player.onObjectRemovedFromInventory(page);
             transaction.set(pageRef, page.getData());
-            transaction.set(playerSnap.ref, player.getData());
+            transaction.update(playerSnap.ref, player.getData());
 
             return {
                 player: {...player.getData(), id: playerSnap.ref.id},
@@ -664,7 +666,7 @@ class ChatRPG {
                 await this.#addObjectToPlayerInventoryT(player, claimedObject.content, claimedObject.type, transaction);
             }
 
-            transaction.set(playerSnap.ref, player.getData());
+            transaction.update(playerSnap.ref, player.getData());
 
             return this.#returnPlayerResponce(player, playerSnap.ref.id);
         });
@@ -714,7 +716,7 @@ class ChatRPG {
                     break;
             }
 
-            transaction.set(playerSnap.ref, player.getData());
+            transaction.update(playerSnap.ref, player.getData());
             return this.#returnPlayerResponce(player, playerId);
         });
 
@@ -763,7 +765,7 @@ class ChatRPG {
      * Use an Item outside of battle from the player's bag.
      * @param {string} playerId
      * @param {string} objectId
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @returns {Promise<{
      * player: UserPlayerData,
      * usedItem: ItemData,
@@ -792,7 +794,7 @@ class ChatRPG {
      * @param {string} playerId 
      * @param {string} objectId 
      * @param {string} pageId
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @returns {Promise<{
      * player: UserPlayerData,
      * inventoryPage: InventoryPageData & {id: string}
@@ -884,7 +886,7 @@ class ChatRPG {
      * @param {string} objectId 
      * @param {Shop} shop 
      * @param {number} count
-     * @param {Transaction} transaction
+     * @param {IBackendDataSourceTransaction} transaction
      * @returns {Promise<{
      * player: UserPlayerData,
      * soldObject: Object
@@ -909,7 +911,7 @@ class ChatRPG {
      * @param {string} objectId 
      * @param {Shop} shop 
      * @param {number} count
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @returns {Promise<{
      * player: UserPlayerData,
      * inventoryPage: UserInventoryPageData,
@@ -1016,6 +1018,35 @@ class ChatRPG {
 
         await shopSnapshot.ref.set(shop.getData());
     }
+
+    /**
+     * 
+     * @returns {Promise<{
+     *    activePlayersCount: number,
+     *    created: any
+     * }>}
+     */
+    async createDailyReport() {
+        const DailyReportInterval = 24 * 1000 * 60 * 60; // 24 hours in milliseconds
+        const playersRef = this.#dataSource.collection(Schema.Collections.Accounts);
+        const cutoffDate = Date.now() - DailyReportInterval;
+        const dailyReport = {
+            created: FieldValue.Timestamp,
+            activePlayersCount: 0,
+        };
+
+        // Log the number of active players.
+        const activePlayersQuery = playersRef.where("lastAction", ">", this.#dataSource.timestamp(cutoffDate));
+        const activePlayersCountSnap = await activePlayersQuery.count().get();
+        const activePlayersCount = activePlayersCountSnap.data().count;
+        dailyReport.activePlayersCount = activePlayersCount;
+
+        const dailyReportsRef = this.#dataSource.collection(Schema.Collections.DailyReports);
+        await dailyReportsRef.add(dailyReport);
+
+        return dailyReport;
+    }
+
     /**
      * 
      * @param {Player} player 
@@ -1051,12 +1082,12 @@ class ChatRPG {
      * 
      * @param {GConstructor<TDatastoreType>} objectConstructor 
      * @param {(dataObject: TDatastoreType) => void} logicFunc 
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @param {string} collection 
      * @param {string} documentId 
      * @param {string} [notFoundError] 
      * @param {any[]} [extraConstructorArgs]
-     * @returns {Promise<*>}
+     * @returns {Promise<any>}
      */
     async #withObjectTransaction(objectConstructor, logicFunc, transaction, collection, documentId, notFoundError = ChatRPGErrors.objectNotFound, extraConstructorArgs=[]) {
         const documentRef = this.#dataSource.collection(collection).doc(documentId);
@@ -1069,7 +1100,7 @@ class ChatRPG {
         const dataObject = new objectConstructor(documentSnap.data(), ...extraConstructorArgs);
         const returnData = await Promise.resolve(logicFunc(dataObject));
 
-        transaction.set(documentRef, dataObject.getData());
+        transaction.update(documentRef, dataObject.getData());
 
         return returnData;
     }
@@ -1077,9 +1108,9 @@ class ChatRPG {
     /**
      * 
      * @param {(player: Player) => void} logicFunc 
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @param {string} playerId 
-     * @returns {Promise<*>}
+     * @returns {Promise<any>}
      */
     #withPlayerTransaction(logicFunc, transaction, playerId) {
         return this.#withObjectTransaction(Player, async (player) => {
@@ -1093,10 +1124,10 @@ class ChatRPG {
     /**
      * 
      * @param {(player: Player, page: InventoryPage) => void} logicFunc 
-     * @param {Transaction} transaction 
+     * @param {IBackendDataSourceTransaction} transaction 
      * @param {string} playerId 
      * @param {string} pageId 
-     * @returns {Promise<*>}
+     * @returns {Promise<any>}
      */
     async #withInventoryTransaction(logicFunc, transaction, playerId, pageId) {
         return this.#withObjectTransaction(Player, (player) => {
@@ -1225,7 +1256,7 @@ class ChatRPG {
 
     async #finishBattle(battleRef, playerRef, player, battlePlayer) {
         player.mergeBattlePlayer(battlePlayer);
-        await playerRef.set(player.getData());
+        await playerRef.update(player.getData());
         await battleRef.delete();
     }
 }

@@ -263,7 +263,6 @@ function BagHolderMixin(Base) {
  * @property {number} exp
  * @property {number} expToNextLevel
  * @property {Object.<string, EffectData>} effectsMap
- * @property {any} created
  */
 
 class Agent extends DatastoreObject {
@@ -287,7 +286,6 @@ class Agent extends DatastoreObject {
         agent.exp = 0;
         agent.expToNextLevel = 0;
         agent.effectsMap = {};
-        agent.created = FieldValue.Timestamp
 
 
         this.setStatsAtLevel(1);
@@ -636,7 +634,9 @@ class Agent extends DatastoreObject {
  * currentGameId: string,
  * twitchId: string,
  * inventory: {leger: {id: string, count: number}[]},
- * trackers: object
+ * trackers: object,
+ * lastAction: any,
+ * created: any
  * }} PlayerData
  */
 
@@ -667,6 +667,8 @@ class Player extends BagHolderMixin(Agent) {
             },
             deaths: 0
         };
+        agent.created = FieldValue.Timestamp
+        agent.lastAction = FieldValue.Timestamp
     }
 
     /**
