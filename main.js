@@ -27,7 +27,9 @@ function twitchJWTValidation(req, res, next) {
         next();
         return;
     }
-    else if(req.path === "/refresh_daily_shop") {
+    else if(
+        req.path === "/refresh_daily_shop" ||
+        req.path === "/daily_operations") {
         next();
         return;
     }

@@ -33,4 +33,7 @@ sandbox*
 logs
 *.log
 
+#offline scripts
+scripts/
+
 #!include:.gitignore
