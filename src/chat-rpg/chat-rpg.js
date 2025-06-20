@@ -13,7 +13,7 @@
  */
 
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
-const Schema = require("./datasource-schema");
+const {Schema} = require("./datasource-schema");
 const GameModes = require("./game-modes");
 const chatRPGUtility = require('./utility');
 const {Player} = require('./datastore-objects/agent');
@@ -46,14 +46,15 @@ const WeaponPriceByStar = {
 
 /**
  * @typedef {'bag'|'inventory'} StorageLocation
+ * @typedef {PlayerData & {id: string}} UserPlayerData
+ * @typedef {InventoryPageData & {id: string}} UserInventoryPageData
  */
 
+/**
+ * The main backend class
+ */
 class ChatRPG {
-    /**
-     * @typedef {PlayerData & {id: string}} UserPlayerData
-     * @typedef {InventoryPageData & {id: string}} UserInventoryPageData
-     */
-    /** @member {IBackendDataSource} */
+    
     #dataSource;
     
     static Platforms = {
@@ -150,17 +151,17 @@ class ChatRPG {
             player.setStatsAtLevel(1000);
             player.addCoins(100000000);
 
-            let book = Object.assign({}, gameplayObjects.content.books.fireBlade);
+            let book = new Book(gameplayObjects.content.books.fireBlade).getData();
             player.addBookToBag(unlockBook(book));
-            book = Object.assign({}, gameplayObjects.content.books.fireMagic);
+            book = new Book(gameplayObjects.content.books.fireMagic).getData();
             player.addBookToBag(unlockBook(book));
-            book = Object.assign({}, gameplayObjects.content.books.lightningBlade);
+            book = new Book(gameplayObjects.content.books.lightningBlade).getData();
             player.addBookToBag(unlockBook(book));
-            book = Object.assign({}, gameplayObjects.content.books.lightningMagic);
+            book = new Book(gameplayObjects.content.books.lightningMagic).getData();
             player.addBookToBag(unlockBook(book));
-            book = Object.assign({}, gameplayObjects.content.books.waterBlade);
+            book = new Book(gameplayObjects.content.books.waterBlade).getData();
             player.addBookToBag(unlockBook(book));
-            book = Object.assign({}, gameplayObjects.content.books.waterMagic);
+            book = new Book(gameplayObjects.content.books.waterMagic).getData();
             player.addBookToBag(unlockBook(book));
         }
 
@@ -1261,4 +1262,4 @@ class ChatRPG {
     }
 }
 
-module.exports = ChatRPG;
+module.exports = {ChatRPG};

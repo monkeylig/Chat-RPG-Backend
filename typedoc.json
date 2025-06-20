@@ -1,0 +1,15 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+        "src/**/*.js",
+    ],
+    "exclude": [
+        "src/test/**",
+        "src/**/*.test.*",
+    ],
+    "entryPointStrategy": "resolve",
+    "excludeReferences": true,
+    "excludePrivate": true,
+    "name": "Legion Slayer Backend",
+    "out": "doc"
+}

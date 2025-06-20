@@ -1,6 +1,6 @@
 /**
  * @import {Request, Response} from 'express'
- * @import ChatRPG from '../chat-rpg/chat-rpg'
+ * @import {ChatRPG} from '../chat-rpg/chat-rpg'
  */
 
 const ChatRPGErrors = require('../chat-rpg/errors');

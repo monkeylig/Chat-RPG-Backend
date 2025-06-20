@@ -1,22 +1,30 @@
 /**
+ * @module ObjectMapper
+ */
+/**
  * @typedef {Object} MapField
- * @property {any} value
- * @property {string} fieldName
- * @property {string} [comparisonMethod]
- * @property {KeyMapper} [nextMapper]
+ * @property {any} value - The value of the field
+ * @property {string} fieldName - The name of the field
+ * @property {string} [comparisonMethod] - The comparison method used for this field. If none is given then '=' is used.
+ * @property {KeyMapper} [nextMapper] - The next mapper to use if this one passed. Creates a logical AND.
+ */
+/**
  * 
  * @typedef {Object} KeyMapper
- * @property {MapField[]} mapFields
+ * @property {MapField[]} mapFields - An array of fields that must pass at least one comparison test for an object to match.
+ */
+/** 
  * 
- * @typedef {Object} ObjectMapper
- * @property {{key: KeyMapper, value: any}[]} keyFields
- * @property {any} default
+ * @typedef {Object} ObjectMapper - Describes how to map an arbitrary object to a value.
+ * @property {{key: KeyMapper, value: any}[]} keyFields - An array of keys to value pairings.
+ * @property {any} default - The default value of an object if no mapping is found.
  */
 
+
 /**
- * Return the value that is mapped to the key object using the map
- * @param {Object} key - The input object
- * @param {ObjectMapper} map - The map to use to find the object's value
+ * Return the value that is mapped to the key object using the map.
+ * @param {Object} key - The input object.
+ * @param {ObjectMapper} map - The map to use to find the object's value.
  * @returns {any}
  */
 function getObjectMapValue(key, map) {
@@ -35,7 +43,7 @@ function getObjectMapValue(key, map) {
 }
 
 /**
- * 
+ * @private
  * @param {Object} key 
  * @param {KeyMapper} keyMapper 
  * @returns {boolean}
@@ -75,6 +83,7 @@ function matchKeyMapper(key, keyMapper) {
 
 /**
  * 
+ * @private
  * @param {Object} key 
  * @param {MapField} mapField
  * @returns {boolean} 

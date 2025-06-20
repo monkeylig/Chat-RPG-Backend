@@ -80,8 +80,8 @@ const Schema = {
 
     ItemObjects: {
         name: '', //(string) name of item
-        count: 0, //(numer) the number of copies of the item
+        count: 0, //(number) the number of copies of the item
     }
 }
 
-module.exports = Schema;
+module.exports = {Schema};

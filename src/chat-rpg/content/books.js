@@ -6,7 +6,6 @@
 const { TargetEnum, PlayerActionType, PlayerActionStyle, ElementsEnum } = require('../battle-system/action');
 const animations = require('./animations');
 
-/**@type {AbilityBook} */
 const warriorMasteryI = {
     name: 'Warrior Mastery',
     icon: 'warrior_mastery_1.webp',
@@ -164,7 +163,6 @@ const warriorMasteryI = {
                         filter: {
                             attackType: 'strike'
                         },
-                        /**@type {AbilityData} */
                         ability: {
                             name: 'Parry',
                             target: 'opponent',
@@ -204,7 +202,6 @@ const warriorMasteryI = {
     ]
 };
 
-/**@type {AbilityBook} */
 const wizardMasteryI = {
     name: 'Wizard Mastery',
     icon: 'wizard_mastery_1.webp',
@@ -309,7 +306,6 @@ const wizardMasteryI = {
                             filter: {
                                 attackType: 'strike'
                             },
-                            /**@type {AbilityData} */
                             ability: {
                                 name: 'Repel',
                                 target: 'opponent',
@@ -361,7 +357,6 @@ const wizardMasteryI = {
                     }
                 }
             ],
-            /**@type {TopLevelAbilityData} */
             ability: {
                 name: 'Magic Blast',
                 type: 'magical',
@@ -377,7 +372,6 @@ const wizardMasteryI = {
     ]
 };
 
-/**@type {AbilityBook} */
 const fireMagic = {
     name: 'Fire Magic',
     icon: 'fire_magic_book.webp',
@@ -547,7 +541,6 @@ const fireMagic = {
                     customActions: [
                         {
                             name: 'EffectBoost',
-                            /**@type {EffectBoostData} */
                             data: {
                                 effectClass: 'ImbueEffect',
                                 imbueElements: ['fire'],
@@ -584,7 +577,6 @@ const fireMagic = {
                             customActions: [
                                 {
                                     name: 'EffectBoost',
-                                    /**@type {EffectBoostData} */
                                     data: {
                                         effectClass: 'ImbueEffect',
                                         imbueElements: ['fire'],
@@ -639,7 +631,6 @@ const fireMagic = {
     ]
 };
 
-/**@type {AbilityBook} */
 const waterMagic = {
     name: 'Water Magic',
     icon: 'water_magic_book.webp',
@@ -799,7 +790,6 @@ const waterMagic = {
                     customActions: [
                         {
                             name: 'EffectBoost',
-                            /**@type {EffectBoostData} */
                             data: {
                                 effectClass: 'ImbueEffect',
                                 imbueElements: ['ice'],
@@ -836,7 +826,6 @@ const waterMagic = {
                             customActions: [
                                 {
                                     name: 'EffectBoost',
-                                    /**@type {EffectBoostData} */
                                     data: {
                                         effectClass: 'ImbueEffect',
                                         imbueElements: ['ice'],
@@ -891,7 +880,6 @@ const waterMagic = {
     ]
 };
 
-/**@type {AbilityBook} */
 const lightningMagic = {
     name: "Lightning Magic",
     icon: "lightning_magic_book.webp",
@@ -1058,7 +1046,6 @@ const lightningMagic = {
                     customActions: [
                         {
                             name: 'EffectBoost',
-                            /**@type {EffectBoostData} */
                             data: {
                                 effectClass: 'ImbueEffect',
                                 imbueElements: ['lightning'],
@@ -1096,7 +1083,6 @@ const lightningMagic = {
                             customActions: [
                                 {
                                     name: 'EffectBoost',
-                                    /**@type {EffectBoostData} */
                                     data: {
                                         effectClass: 'ImbueEffect',
                                         imbueElements: ['lightning'],
@@ -1151,7 +1137,6 @@ const lightningMagic = {
     ]
 };
 
-/**@type {AbilityBook} */
 const fireBlade = {
     name: "Fire Blade",
     icon: "fire_blade_book.webp",
@@ -1214,7 +1199,6 @@ const fireBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     target: 'opponent',
                                     type: 'physical',
@@ -1260,7 +1244,6 @@ const fireBlade = {
                     class: 'AbilityStrikeEffect',
                     inputData: {
                         strikeDuration: 2,
-                        /**@type {AbilityData} */
                         ability: {
                             type: 'physical',
                             style: 'sword',
@@ -1322,7 +1305,6 @@ const fireBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     animation: animations.pyroSlash,
                                     type: 'physical',
@@ -1333,7 +1315,6 @@ const fireBlade = {
                                     customActions: [
                                         {
                                             name: 'EffectBoost',
-                                            /**@type {EffectBoostData} */
                                             data: {
                                                 effectClass: 'ImbueEffect',
                                                 imbueElements: ['fire'],
@@ -1359,7 +1340,6 @@ const fireBlade = {
                         target: 'self',
                         addEffect: {
                             class: 'ActionTriggerEffect',
-                            /**@type {ActionTriggerEffectData} */
                             inputData: {
                                 filter: {
                                     user: 'send',
@@ -1414,7 +1394,6 @@ const fireBlade = {
     ]
 };
 
-/**@type {AbilityBook} */
 const waterBlade = { 
     name: "Water Blade",
     icon: "water_blade_book.webp",
@@ -1477,7 +1456,6 @@ const waterBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     target: 'opponent',
                                     type: 'physical',
@@ -1523,7 +1501,6 @@ const waterBlade = {
                     class: 'AbilityStrikeEffect',
                     inputData: {
                         strikeDuration: 2,
-                        /**@type {AbilityData} */
                         ability: {
                             animation: animations.waterSlash,
                             type: 'physical',
@@ -1585,7 +1562,6 @@ const waterBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     type: 'physical',
                                     style: 'sword',
@@ -1596,7 +1572,6 @@ const waterBlade = {
                                     customActions: [
                                         {
                                             name: 'EffectBoost',
-                                            /**@type {EffectBoostData} */
                                             data: {
                                                 effectClass: 'ImbueEffect',
                                                 imbueElements: ['ice'],
@@ -1622,7 +1597,6 @@ const waterBlade = {
                         target: 'self',
                         addEffect: {
                             class: 'ActionTriggerEffect',
-                            /**@type {ActionTriggerEffectData} */
                             inputData: {
                                 filter: {
                                     user: 'send',
@@ -1669,7 +1643,6 @@ const waterBlade = {
                 customActions: [
                     {
                         name: 'EffectBoost',
-                        /**@type {EffectBoostData} */
                         data: {
                             effectClass: 'DrenchedEffect',
                             extraActions: [
@@ -1689,7 +1662,6 @@ const waterBlade = {
     ]
 };
 
-/**@type {AbilityBook} */
 const lightningBlade = {
     name: "Lightning Blade",
     icon: "lightning_blade_book.webp",
@@ -1752,7 +1724,6 @@ const lightningBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     target: 'opponent',
                                     type: 'physical',
@@ -1799,7 +1770,6 @@ const lightningBlade = {
                     class: 'AbilityStrikeEffect',
                     inputData: {
                         strikeDuration: 2,
-                        /**@type {AbilityData} */
                         ability: {
                             type: PlayerActionType.Physical,
                             style: PlayerActionStyle.Sword,
@@ -1860,7 +1830,6 @@ const lightningBlade = {
                             class: 'AbilityStrikeEffect',
                             inputData: {
                                 strikeDuration: 2,
-                                /**@type {AbilityData} */
                                 ability: {
                                     type: 'physical',
                                     style: 'sword',
@@ -1871,7 +1840,6 @@ const lightningBlade = {
                                     customActions: [
                                         {
                                             name: 'EffectBoost',
-                                            /**@type {EffectBoostData} */
                                             data: {
                                                 effectClass: 'ImbueEffect',
                                                 imbueElements: ['lightning'],
@@ -1897,7 +1865,6 @@ const lightningBlade = {
                         target: 'self',
                         addEffect: {
                             class: 'ActionTriggerEffect',
-                            /**@type {ActionTriggerEffectData} */
                             inputData: {
                                 filter: {
                                     user: 'send',
@@ -1944,7 +1911,7 @@ const lightningBlade = {
                 customActions: [
                     {
                         name: 'EffectBoost',
-                        /**@type {EffectBoostData} */
+                        /**@type {import('../battle-system/custom-actions/effect-boost').EffectBoostData} */
                         data: {
                             effectClass: 'SurgedEffect',
                             extraActions: [

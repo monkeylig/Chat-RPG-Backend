@@ -1,4 +1,4 @@
-const Schema = require("./datasource-schema");
+const {Schema} = require("./datasource-schema");
 const {MonsterClass, Monster} = require('./datastore-objects/monster-class')
 const Game = require('./datastore-objects/game');
 const utility = require('./utility');

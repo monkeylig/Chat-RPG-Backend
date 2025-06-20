@@ -1,6 +1,6 @@
 const { FieldValue } = require("../../data-source/backend-data-source");
 const MemoryBackedDataSource = require("../../data-source/memory-backed-data-source");
-const Schema = require("../datasource-schema");
+const {Schema} = require("../datasource-schema");
 const { RPGDatabaseProcessor } = require("../rpg-database-processor");
 
 test('Missing data', () => {

@@ -169,7 +169,7 @@ class FirebaseDataSourceAggregateQuery extends IBackendDataSourceAggregateQuery 
     /**
      * @typedef {FirebaseFirestore.AggregateQuery<{count: FirebaseFirestore.AggregateField<number>;}, DocumentData, DocumentData>} AgQuery
      * 
-     * @param {} agQuery 
+     * @param {AgQuery} agQuery 
      */
     constructor (agQuery) {
         super();

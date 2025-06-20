@@ -22,6 +22,7 @@ test('Testing parameter validation', async () => {
         { name: 'grade', type: 'number'}
     ])).toBeFalsy();
 
+    // @ts-ignore
     payload.name = 9;
     expect(utility.validatePayloadParameters(payload, [
         { name: 'name', type: 'string'},
