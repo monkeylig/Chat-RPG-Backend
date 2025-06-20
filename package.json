@@ -3,12 +3,14 @@
     "@types/jest": "^29.5.12",
     "jest": "^29.7.0",
     "seedrandom": "^3.0.5",
+    "typedoc": "^0.28.5",
     "typescript": "^5.5.0-beta"
   },
   "scripts": {
-    "start": "node main.js",
-    "test": "node test/execute-tests.js",
+    "start": "node src/main.js",
+    "test": "node src/test/execute-tests.js",
     "deploy": "gcloud app deploy --no-cache",
+    "doc": "npx typedoc --options typedoc.json --tsconfig jsconfig.json",
     "int-test": "node test/integration-test.js",
     "firebase_emulator": "firebase emulators:start --import=./emulator-export --project demo-test",
     "firebase_export": "firebase emulators:export ./emulator-export --project demo-test"
@@ -24,8 +26,7 @@
     "express": "^4.18.1",
     "firebase-admin": "^12.1.1",
     "jsonwebtoken": "^9.0.2",
-    "node-cron": "^3.0.3",
-    "uuid": "^9.0.0"
+    "uuid": "^11.1.0"
   },
   "repository": {
     "type": "git",

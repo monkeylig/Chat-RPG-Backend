@@ -2,8 +2,8 @@
  * @import {ObjectMapper} from '../chat-rpg/object-mapping'
  */
 
-const ChatRPG = require('../chat-rpg/chat-rpg');
-const Schema = require('../chat-rpg/datasource-schema');
+const {ChatRPG} = require('../chat-rpg/chat-rpg');
+const {Schema} = require('../chat-rpg/datasource-schema');
 const { Player } = require('../chat-rpg/datastore-objects/agent');
 const { InventoryPage } = require('../chat-rpg/datastore-objects/inventory-page');
 const { ShopItem, Shop } = require('../chat-rpg/datastore-objects/shop');

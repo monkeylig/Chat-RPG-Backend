@@ -13,7 +13,6 @@ const utility = require("../../utility");
 /** A class representing an object that is stored in a datastore. */
 class DatastoreObject {
     /** The raw data of the datastore object.
-     * @member {Object}
      */
     datastoreObject;
 

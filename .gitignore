@@ -136,4 +136,7 @@ dist
 emulator-export/
 
 # Local testing files
-sandbox*
+**/sandbox*
+
+# documentation
+doc/

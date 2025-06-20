@@ -1,5 +1,5 @@
 const { BackendDatabaseProcessor, IBackendDataSourceCollectionRef, IBackendDataSourceDocumentRef, FieldValue } = require("../data-source/backend-data-source");
-const Schema = require("./datasource-schema");
+const {Schema} = require("./datasource-schema");
 
 class RPGDatabaseProcessor extends BackendDatabaseProcessor {
     /**

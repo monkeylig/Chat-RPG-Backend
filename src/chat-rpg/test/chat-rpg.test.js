@@ -3,10 +3,10 @@
  * @import {ObjectMapper} from '../object-mapping'
  */
 
-const ChatRPG = require('../chat-rpg');
+const {ChatRPG} = require('../chat-rpg');
 const MemoryBackedDataSource = require('../../data-source/memory-backed-data-source');
 const chatRPGUtility = require('../utility');
-const Schema = require("../datasource-schema");
+const {Schema} = require("../datasource-schema");
 const {Player} = require('../datastore-objects/agent');
 const seedrandom = require('seedrandom');
 const { Shop, ShopItem } = require('../datastore-objects/shop');
@@ -20,7 +20,6 @@ const gameplayObjects = require('../gameplay-objects');
 const Ability = require('../datastore-objects/ability');
 const { findBattleStep } = require('../battle-system/utility');
 const { BattleMonster } = require('../datastore-objects/battle-agent');
-const { weapons } = require('../../sandbox/contentObjects');
 const { deepCopy } = require('../../utility');
 
 async function testSuccessRate(testFunc, totalAttempts = 100) {

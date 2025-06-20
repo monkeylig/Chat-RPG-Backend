@@ -5,12 +5,11 @@ const LOCAL_TEST_PORT = 4000;
 
 const express = require('express');
 
-const ChatRPG = require('./chat-rpg/chat-rpg');
+const {ChatRPG} = require('./chat-rpg/chat-rpg');
 const FirebaseDataSource = require('./data-source/firebase-data-source');
 const MemoryBackedDataSource = require('./data-source/memory-backed-data-source');
 const endpoints = require('./endpoints/endpoints');
 const utility = require('./utility');
-var cron = require('node-cron');
 
 let twitchExtentionSecret;
 
@@ -18,8 +17,8 @@ let twitchExtentionSecret;
  * 
  * @param {Request} req 
  * @param {Response} res 
- * @param {() => void} next 
- * @returns 
+ * @param {function(): void} next 
+ * @returns {void}
  */
 function twitchJWTValidation(req, res, next) {
     
@@ -55,6 +54,7 @@ function twitchJWTValidation(req, res, next) {
 
     try {
         const payload = utility.verifyJWT(auth[1], twitchExtentionSecret);
+        // @ts-ignore
         req.twitchUser = payload;
     }
     catch (/**@type {any}*/error) {
