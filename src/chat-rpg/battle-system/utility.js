@@ -8,7 +8,7 @@
 
 const { GeneratorCreatorType } = require("./battle-system-types");
 
-const EXP_LEVEL_CAP = 100;
+const EXP_LEVEL_CAP = 99;
 
 /**
  * 
