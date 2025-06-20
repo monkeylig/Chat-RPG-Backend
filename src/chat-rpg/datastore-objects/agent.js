@@ -225,7 +225,7 @@ function BagHolderMixin(Base) {
 
         /**
          * @param {string} weaponId 
-         * @returns {boolean} If the opteration succeeded
+         * @returns {boolean} If the operation succeeded
          */
         equipWeaponFromBag(weaponId) {
             const weaponObject = this.findObjectInBag(weaponId);
@@ -253,6 +253,7 @@ function BagHolderMixin(Base) {
  * @property {string} avatar
  * @property {WeaponData} weapon
  * @property {AbilityData[]} abilities
+ * @property {number} maxAbilities
  * @property {number} autoRevive
  * @property {number} maxHealth
  * @property {number} health
@@ -266,7 +267,7 @@ function BagHolderMixin(Base) {
  */
 
 class Agent extends DatastoreObject {
-    static MAXABILITIES = 5;
+    static MAX_ABILITIES = 6;
     constructor(objectData) {
         super(objectData);
     }
@@ -276,6 +277,7 @@ class Agent extends DatastoreObject {
         agent.avatar = 'unknown.png';
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.abilities = [];
+        agent.maxAbilities = Agent.MAX_ABILITIES;
         agent.autoRevive = 0;
         agent.maxHealth = 12;
         agent.health = 12;
@@ -575,7 +577,8 @@ class Agent extends DatastoreObject {
     }
 
     hasOpenAbilitySlot() {
-        return this.datastoreObject.abilities.length < Agent.MAXABILITIES;
+        const agent = this.getData();
+        return agent.abilities.length < agent.maxAbilities;
     }
 
     getUnflattenedData() {
