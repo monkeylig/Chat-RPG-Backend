@@ -467,10 +467,11 @@ class Agent extends DatastoreObject {
 
     /**
      * 
-     * @param {number} level 
-     * @returns {number}
+     * @param {number} level - The Agent's current level
+     * @returns {number} - The amount of exp needed to get to the next level
      */
     static getExpToNextLevel(level) {
+        level = Math.min(level, EXP_LEVEL_CAP)
         return this.expFunc(level + 1) - this.expFunc(level);
     }
 

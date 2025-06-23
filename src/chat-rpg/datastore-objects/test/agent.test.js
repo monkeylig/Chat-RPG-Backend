@@ -12,9 +12,8 @@ test("Exp calculation", () => {
     expect(Agent.getExpToNextLevel(10)).toBe(expFunc(11) - expFunc(10));
     expect(Agent.getExpToNextLevel(20)).toBe(expFunc(21) - expFunc(20));
     expect(Agent.getExpToNextLevel(30)).toBe(expFunc(31) - expFunc(30));
-    // expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP-1)).toBe(expFunc(EXP_LEVEL_CAP) - expFunc(EXP_LEVEL_CAP - 1));
-    // expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1) - Agent.getExpToNextLevel(EXP_LEVEL_CAP)).toBe(
-    //     Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1000) - Agent.getExpToNextLevel(EXP_LEVEL_CAP + 999));
+    expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP-1)).toBe(expFunc(EXP_LEVEL_CAP) - expFunc(EXP_LEVEL_CAP - 1));
+    expect(Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1)).toBe(Agent.getExpToNextLevel(EXP_LEVEL_CAP + 1000));
 });
 
 test('Changing levels', () => {
