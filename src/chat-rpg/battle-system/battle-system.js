@@ -21,9 +21,9 @@ const content = require("../content/content");
 const DatastoreObject = require("../datastore-objects/datastore-object");
 
 /**
+ * @typedef {'strike'|'strikeAbility'|'ability'|'item'|'escape'} PlayerActionType
  * @typedef {Object} PlayerActionRequest
- * @property {string} battleId
- * @property {string} type
+ * @property {PlayerActionType} type
  * @property {string} [abilityName]
  * @property {string} [itemId]
  */
@@ -200,7 +200,7 @@ class BattleSystem {
 
     /**
      * @typedef {Object} BattleMoveRequest
-     * @property {string} type
+     * @property {PlayerActionType} type
      * @property {number} speed
      * @property {number} priority
      * @property {Ability} [ability]
@@ -220,6 +220,18 @@ class BattleSystem {
         };
         if(actionRequest.type === 'strike') {
             battleMove.speed = new BattleWeapon(battlePlayer.getData().weapon).getModifiedSpeed();
+            battlePlayer.setEvasiveSpeed(battleMove.speed);
+        }
+        else if (actionRequest.type === 'strikeAbility') {
+            const weapon = new BattleWeapon(battlePlayer.getData().weapon);
+            const weaponData = weapon.getData();
+
+            if (battlePlayer.getData().ap < battlePlayer.getStrikeAbilityCost()) {
+                throw new Error(ChatRPGErrors.notEnoughAp);
+            }
+
+            battleMove.speed = weaponData.strikeAbility.speed ? weaponData.strikeAbility.speed : 0;
+            battleMove.priority = weaponData.strikeAbility.priority ? weaponData.strikeAbility.priority : 0;
             battlePlayer.setEvasiveSpeed(battleMove.speed);
         }
         else if(actionRequest.type === 'ability') {
@@ -265,11 +277,11 @@ class BattleSystem {
      * @returns {BattleStep[]}
      */
     executeBattleIteration(agent1, agent1Move, agent2, agent2Move) {
-        const randumInt = chatRPGUtility.getRandomIntInclusive(0, 1);
-        let firstMove = randumInt ? agent1Move : agent2Move;
-        let secondMove = !randumInt ? agent1Move : agent2Move;
-        let firstAgent = randumInt ? agent1 : agent2;
-        let secondAgent = !randumInt ? agent1 : agent2;
+        const randomInt = chatRPGUtility.getRandomIntInclusive(0, 1);
+        let firstMove = randomInt ? agent1Move : agent2Move;
+        let secondMove = !randomInt ? agent1Move : agent2Move;
+        let firstAgent = randomInt ? agent1 : agent2;
+        let secondAgent = !randomInt ? agent1 : agent2;
 
         if (agent1Move.priority > agent2Move.priority ||
             agent1Move.priority === agent2Move.priority && agent1Move.speed > agent2Move.speed) {
@@ -286,14 +298,14 @@ class BattleSystem {
             secondAgent = agent1;
         }
 
-        const checkdefeat = () => !firstAgent.isDefeated() && !secondAgent.isDefeated()
+        const checkDefeat = () => !firstAgent.isDefeated() && !secondAgent.isDefeated()
         /** @type {BattleStep[]} */
         const steps = [];
-        if(checkdefeat()) {
+        if(checkDefeat()) {
             steps.push(...this.executeMove(firstAgent, secondAgent, firstMove));
         }
 
-        if(checkdefeat()) {
+        if(checkDefeat()) {
             steps.push(...this.executeMove(secondAgent, firstAgent, secondMove));
         }
 
@@ -309,8 +321,12 @@ class BattleSystem {
      */
     executeMove(agent, opponent, agentMove) {
         if(agentMove.type === 'strike') {
-            const strikeMove = agent.strikeAbilityReady() ? new StrikeAbilityBattleMove(agent) : new StrikeBattleMove(agent);
+            const strikeMove = new StrikeBattleMove(agent);
             this.#battleContext.activateBattleMove(strikeMove);
+        }
+        else if (agentMove.type === 'strikeAbility') {
+            const strikeAbilityMove = new StrikeAbilityBattleMove(agent)
+            this.#battleContext.activateBattleMove(strikeAbilityMove);
         }
         else if(agentMove.type === 'ability' && agentMove.ability) {
             const abilityMove = new AbilityBattleMove(agent, agentMove.ability.getData());

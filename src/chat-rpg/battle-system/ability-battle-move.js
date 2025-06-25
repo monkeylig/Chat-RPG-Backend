@@ -55,8 +55,6 @@ class AbilityBattleMove extends BattleMove {
                 playerAction: {
                     targetPlayer: this.owner,
                     srcPlayer: this.owner,
-                    type: '',
-                    style: '',
                     apChange: -inputData.apCost
                 }
             };

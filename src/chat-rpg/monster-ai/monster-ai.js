@@ -27,14 +27,12 @@ function genericAi(monster, opponent, battle) {
             return {
                 type: 'ability',
                 abilityName: ability.getData().name,
-                battleId: ''
             };
         }
     }
 
     return {
         type: 'strike',
-        battleId: ''
     };
 }
 

@@ -55,14 +55,12 @@ test("Strike abilities", () => {
     chatRPGUtility.random = seedrandom('0');
     const battleSystem = new BattleSystem();
 
-    battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
-    battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
-    const steps = battleSystem.singlePlayerBattleIteration({type: 'strike', battleId: ""});
+    const steps = battleSystem.singlePlayerBattleIteration({type: 'strikeAbility', battleId: ""});
 
-    expect(steps[1].type).toMatch('info');
-    expect(/** @type {InfoBattleStep} */(steps[1]).action).toMatch('strikeAbility');
-    expect(/** @type {InfoBattleStep} */(steps[1]).targetId).toMatch('monster');
-    expect(/** @type {InfoBattleStep} */(steps[1]).actorId).toMatch('player');
+    expect(steps[6].type).toMatch('info');
+    expect(/** @type {InfoBattleStep} */(steps[6]).action).toMatch('strikeAbility');
+    expect(/** @type {InfoBattleStep} */(steps[6]).targetId).toMatch('monster');
+    expect(/** @type {InfoBattleStep} */(steps[6]).actorId).toMatch('player');
     
 });
 

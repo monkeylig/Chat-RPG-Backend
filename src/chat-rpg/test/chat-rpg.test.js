@@ -385,7 +385,7 @@ test('Battle Actions: Strike Ability', async () => {
                     baseDamage: 10,
                     name: "Cornia",
                     type: 'physical',
-                    speed: 10,
+                    speed: -10,
                     strikeAbility: new Ability({
                         baseDamage: 20,
                         name: "X ray"
@@ -401,11 +401,9 @@ test('Battle Actions: Strike Ability', async () => {
     let gameState = await chatrpg.joinGame(playerId.id, 'new game');
     let battleState = await chatrpg.startBattle(playerId.id, gameState.id, gameState.monsters[0].id);
 
-    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
-    battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strike'});
+    let battleUpdate = await chatrpg.battleAction(battleState.id, {type: 'strikeAbility'});
 
-    expect(battleUpdate.steps[1].description).toMatch(/X ray/);
+    expect(battleUpdate.steps[1].description).toMatch(/Brave/);
 });
 
 

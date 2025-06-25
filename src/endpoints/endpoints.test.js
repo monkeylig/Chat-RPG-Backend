@@ -294,7 +294,7 @@ test('Buying stuff', async () => {
         }
     });
 
-    let chatrpg = new ChatRPG(dataSource);
+    let chatRPG = new ChatRPG(dataSource);
 
     let res = new Res();
     let req = {
@@ -305,7 +305,7 @@ test('Buying stuff', async () => {
         }
     };
 
-    endpoints.buy(req, res, chatrpg);
+    endpoints.buy(req, res, chatRPG);
     let playerData = await res.waitForMessage();
 
     expect(playerData).toBeDefined();

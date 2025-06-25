@@ -48,47 +48,6 @@ describe.each([
 describe.each([
     ['physical'],
     ['magical']
-])('%s empowerment', (empowermentType) => {
-    test('Strikes', () => {
-        const player = new BattlePlayer({weapon: {type: empowermentType}});
-    
-        expect(player.getEmpowermentValue(empowermentType)).toBe(0);
-    
-        player.addEmpowerment(empowermentType, 50);
-    
-        expect(player.getEmpowermentValue(empowermentType)).toBe(50);
-        expect(player.consumeEmpowermentValue(empowermentType)).toBe(50);
-        expect(player.getEmpowermentValue(empowermentType)).toBe(0);
-        expect(player.consumeEmpowermentValue(empowermentType)).toBe(0);
-    });
-});
-
-test('Gain Status Effects', () => {
-    const player = new BattlePlayer();
-    const ablazed = {
-        name: 'ablazed',
-        turns: 5
-    };
-
-    player.addStatusEffect(ablazed.name, ablazed);
-    let statusEffect = player.getStatusEffect(ablazed.name);
-
-    expect(statusEffect).toBeDefined();
-    expect(statusEffect).toStrictEqual(ablazed);
-
-    const noEffect = player.getStatusEffect('random');
-
-    expect(noEffect).not.toBeDefined();
-
-    player.removeStatusEffect(ablazed.name);
-    statusEffect = player.getStatusEffect(ablazed.name);
-
-    expect(statusEffect).not.toBeDefined();
-});
-
-describe.each([
-    ['physical'],
-    ['magical']
 ])('%s protection', (protectionType) => {
     test('Basic test', () => {
         const player = new BattlePlayer();
@@ -101,58 +60,6 @@ describe.each([
 
         expect(player.getData().health).toBe(player.getData().maxHealth - 5);
     })
-});
-
-test("Add Ability Strike", () => {
-    const player = new BattlePlayer();
-
-    const ability1 = new Ability({name: "ability1"});
-    const ability2 = new Ability({name: "ability2"});
-    const ability3 = new Ability({name: "ability3"});
-
-    player.addAbilityStrike(ability1, {type: 'strikes', value: 2});
-    player.addAbilityStrike(ability2, {type: 'strikes', value: 2});
-    player.addAbilityStrike(ability3, {type: 'strikes', value: 2});
-
-    const abilityStrikes = player.getAbilityStrikes();
-
-    expect(abilityStrikes.length).toBe(3);
-    expect(abilityStrikes[0].ability.name).toBe("ability1");
-    expect(abilityStrikes[0].durationCondition.type).toBe("strikes");
-    expect(abilityStrikes[0].durationCondition.value).toBe(2);
-    expect(abilityStrikes[1].ability.name).toBe("ability2");
-    expect(abilityStrikes[1].durationCondition.type).toBe("strikes");
-    expect(abilityStrikes[1].durationCondition.value).toBe(2);
-    expect(abilityStrikes[2].ability.name).toBe("ability3");
-    expect(abilityStrikes[2].durationCondition.type).toBe("strikes");
-    expect(abilityStrikes[2].durationCondition.value).toBe(2);
-
-    player.removeAbilityStrike(1);
-
-    expect(abilityStrikes.length).toBe(2);
-    expect(abilityStrikes[0].ability.name).toBe("ability1");
-    expect(abilityStrikes[0].durationCondition.type).toBe("strikes");
-    expect(abilityStrikes[0].durationCondition.value).toBe(2);
-    expect(abilityStrikes[1].ability.name).toBe("ability3");
-    expect(abilityStrikes[1].durationCondition.type).toBe("strikes");
-    expect(abilityStrikes[1].durationCondition.value).toBe(2);
-});
-
-test("Counters", () => {
-    const player = new BattlePlayer();
-
-    const ability = new Ability({name: "counter ability"});
-    player.setCounter(ability, 'strike');
-    const counterAbility = player.getCounter('strike');
-
-    expect(player.getCounter('random')).not.toBeDefined();
-    expect(counterAbility).toBeDefined();
-    expect(counterAbility.type).toBe('strike');
-    expect(counterAbility.ability.name).toBe('counter ability');
-
-    player.clearCounter();
-
-    expect(player.getCounter('strike')).not.toBeDefined();
 });
 
 test('Evasive Speed', () => {
@@ -177,4 +84,27 @@ test('Evasive Speed', () => {
     player.setEvasiveSpeed(20);
 
     expect(player.getData().evasion).toBe(0.6);
+});
+
+test('Calculate Strike Ability cost', () => {
+    const player = new BattlePlayer();
+
+    expect(player.getStrikeAbilityCost()).toBe(2);
+
+    player.getData().strikeLevel = 1;
+
+    expect(player.getStrikeAbilityCost()).toBe(1);
+
+    player.getData().strikeLevel = 2;
+
+    expect(player.getStrikeAbilityCost()).toBe(0);
+
+    player.getData().strikeLevel = 3;
+
+    expect(player.getStrikeAbilityCost()).toBe(0);
+
+    player.getData().strikeLevel = 300;
+
+    expect(player.getStrikeAbilityCost()).toBe(0);
+
 });

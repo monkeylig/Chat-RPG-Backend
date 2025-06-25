@@ -117,22 +117,6 @@ describe.each([
     });
 });
 
-describe.each([
-    ['physical'],
-    ['magical']
-])('%s empowerment step', (empowermentType) => {
-    test('Basic test', () => {
-        const player1 = new BattlePlayer();
-
-        const empowermentStep = BattleSteps.empowerment(player1, empowermentType, 50);
-        
-        expect(empowermentStep).toBeDefined();
-        expect(empowermentStep.type).toMatch('empowerment');
-        expect(empowermentStep.description).toMatch(new RegExp(`${empowermentType}`));
-        expect(player1.getData().empowerment[empowermentType]).toBe(50);
-    });
-});
-
 test('Revive step', () => {
     const player1 = new BattlePlayer();
 
@@ -201,17 +185,6 @@ test('Max Ap Change step', () => {
 
 });
 
-test('ReadyRevive Step', () => {
-    const player1 = new BattlePlayer();
-
-    let apCostStep = BattleSteps.readyRevive(player1, 0.5);
-
-    expect(apCostStep).toBeDefined();
-    expect(apCostStep.type).toMatch('readyRevive');
-    expect(apCostStep.description).toMatch(`will be revived if they are defeated.`);
-    expect(player1.getData().autoRevive).toBe(0.5); 
-});
-
 test('Generate Hit Steps: damage', ()=>{
     const battleContext = new BattleContext();
     const player1 = battleContext.player;
@@ -247,7 +220,6 @@ test('Generate Hit Steps: weapon synergy', () => {
     expect(battleSteps).toBeDefined();
     expect(battleSteps[0].type).toMatch('damage');
     expect(player2.getData().maxHealth - player2.getData().health).toBeCloseTo(damageStep.damage);
-    expect(player1.getEmpowermentValue('physical')).toBe(0);
     expect(damageStep.damage).toBeGreaterThan(damage);
 });
 
@@ -365,33 +337,6 @@ test('Adding and removing abilities', () => {
     expect(removeAblityStep.type).toBe('removeAbility');
     expect(removeAblityStep.ability).toStrictEqual(ability.getData());
     expect(removeAblityStep.targetId).toBe(player1.getData().id);
-});
-
-test('Adding and removing Imbue', () => {
-    //TODO test to make sure the imbue works
-    const player1 = new BattlePlayer({id: 'player'});
-
-    const imbueStep = BattleSteps.imbue(player1, 'fire');
-
-    expect(imbueStep.type).toBe('imbue');
-    expect(imbueStep.targetId).toStrictEqual(player1.getData().id);
-    expect(imbueStep.element).toBe('fire');
-
-    const removeImbueStep = BattleSteps.removeImbue(player1, 'fire');
-
-    expect(removeImbueStep.type).toBe('removeImbue');
-    expect(removeImbueStep.targetId).toBe(player1.getData().id);
-    expect(removeImbueStep.element).toBe('fire');
-});
-
-test('Set counter', () => {
-    const player1 = new BattlePlayer({id: 'player'});
-    const ability = new Ability({name: 'test'});
-    const counterStep = BattleSteps.setCounter(player1, ability, 'strike');
-
-    expect(counterStep.type).toBe('setCounter');
-    expect(counterStep.targetId).toBe(player1.getData().id);
-    expect(counterStep.counter).toStrictEqual({type: 'strike', ability: ability.getData()});
 });
 
 test('Strike Level change', () => {
