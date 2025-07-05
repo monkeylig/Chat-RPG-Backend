@@ -37,14 +37,21 @@ function statAmp(datastoreObject, statAmp, stages) {
  * @param {Object} datastoreObject 
  * @param {string} stat 
  * @param {string} statAmp 
+ * @param {number} [min]
  * @returns {number}
  */
-function getModifiedStat(datastoreObject, stat, statAmp) {
+function getModifiedStat(datastoreObject, stat, statAmp, min) {
     let modifier = Math.abs(datastoreObject[statAmp]) * 0.25 + 1;
     if (datastoreObject[statAmp] < 0) {
         modifier = 1/modifier;
     }
-    return Math.max(datastoreObject[stat] * modifier, 1);
+
+    const result = datastoreObject[stat] * modifier;
+    if (min !== undefined) {
+        return Math.max(result, 1);
+    }
+
+    return result;
 }
 
 /**
@@ -123,8 +130,15 @@ function BattleAgentMixin(Base) {
             return statAmp(this.datastoreObject, stat, stages);
         }
 
-        getModifiedStat(stat, statAmp) {
-            return getModifiedStat(this.datastoreObject, stat, statAmp);
+        /**
+         * 
+         * @param {string} stat 
+         * @param {string} statAmp 
+         * @param {number} [min] 
+         * @returns 
+         */
+        getModifiedStat(stat, statAmp, min) {
+            return getModifiedStat(this.datastoreObject, stat, statAmp, min);
         }
 
         strengthAmp(stages) {
@@ -132,7 +146,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedStrength() {
-            return this.getModifiedStat('strength', 'strengthAmp');
+            return this.getModifiedStat('strength', 'strengthAmp', 1);
         }
 
         defenseAmp(stages) {
@@ -140,7 +154,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedDefense() {
-            return this.getModifiedStat('defense', 'defenseAmp');
+            return this.getModifiedStat('defense', 'defenseAmp', 1);
         }
 
         magicAmp(stages) {
@@ -148,7 +162,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedMagic() {
-            return this.getModifiedStat('magic', 'magicAmp');
+            return this.getModifiedStat('magic', 'magicAmp', 1);
         }
 
         fireResistAmp(stages) {

@@ -266,7 +266,7 @@ function BagHolderMixin(Base) {
  */
 
 class Agent extends DatastoreObject {
-    static MAX_ABILITIES = 6;
+    static MAX_ABILITIES = 5;
     constructor(objectData) {
         super(objectData);
     }

@@ -97,6 +97,24 @@ test('Testing getting starting avatars', async () => {
 
 });
 
+test('Getting the game guide', async () => {
+    const data = {
+        configs: {
+            gameGuide: {
+                content: 'testing'
+            }
+        }
+    }
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource(data);
+    const chatRPG = new ChatRPG(dataSource);
+
+    const guide = await chatRPG.getGameGuide();
+
+    expect(guide).toStrictEqual(data.configs.gameGuide);
+});
+
 test('Testing finding a Twitch player', async () => {
     const dataSource = new MemoryBackedDataSource();
     const ochiva = {

@@ -31,8 +31,7 @@ test('Generic Monster AI', () => {
     actionRequest = monsterAi.genericAi(monster, {}, {});
 
     expect(actionRequest).toBeDefined();
-    expect(actionRequest.type).toBe('ability');
-    expect(actionRequest.abilityName).toBe('ability3');
+    expect(actionRequest.type).toBe('strikeAbility');
 
     monster.getData().ap = 0;
     actionRequest = monsterAi.genericAi(monster, {}, {});

@@ -101,7 +101,7 @@ async function ArenaPostProcessGameState(dataSource, game, player) {
 }
 
 async function BattleRoyalCreateGame(dataSource) {
-    const battleRoyalGame = new Game({mode: 'battleRoyal', name: "Battle Royal", description: GameModes.battleRoyal.description});
+    const battleRoyalGame = new Game({mode: 'battleRoyale', name: "Battle Royale", description: GameModes.battleRoyale.description});
     const classNumbers = [];
 
     for(let i = 0; i < 10; i++) {
@@ -191,6 +191,14 @@ const GameModes = {
         postProcessGameState: ArenaPostProcessGameState,
         description: "Fight hordes of endlessly spawning monsters!"
     },
+    battleRoyale: {
+        name: 'Battle Royale',
+        createGame: BattleRoyalCreateGame,
+        onPlayerJoin: async()=>{},
+        onMonsterDefeated: BattleRoyalOnMonsterDefeated,
+        postProcessGameState: BattleRoyalPostProcessGameState,
+        description: "Defeat a monster, then a doppelganger of yourself will take it's place!"
+    },
     battleRoyal: {
         name: 'Battle Royale',
         createGame: BattleRoyalCreateGame,
@@ -198,7 +206,6 @@ const GameModes = {
         onMonsterDefeated: BattleRoyalOnMonsterDefeated,
         postProcessGameState: BattleRoyalPostProcessGameState,
         description: "Defeat a monster, then a doppelganger of yourself will take it's place!"
-
     }
 }
 

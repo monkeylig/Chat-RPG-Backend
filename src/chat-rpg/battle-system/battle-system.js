@@ -230,7 +230,7 @@ class BattleSystem {
                 throw new Error(ChatRPGErrors.notEnoughAp);
             }
 
-            battleMove.speed = weaponData.strikeAbility.speed ? weaponData.strikeAbility.speed : 0;
+            battleMove.speed = weapon.getModifiedSpeed();
             battleMove.priority = weaponData.strikeAbility.priority ? weaponData.strikeAbility.priority : 0;
             battlePlayer.setEvasiveSpeed(battleMove.speed);
         }

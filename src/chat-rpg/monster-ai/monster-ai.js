@@ -20,6 +20,14 @@ function genericAi(monster, opponent, battle) {
     const monsterData = monster.getData();
     if(useAbility && monsterData.abilities.length > 0 && monsterData.level > 1) {
         const choice = chatRPGUtility.getRandomIntInclusive(0, Math.min(monsterData.abilities.length - 1, Math.floor(monsterData.level/5)));
+        const useStrikeAbility = chatRPGUtility.chance(0.3);
+        if (useStrikeAbility) {
+            let apCost = monster.getStrikeAbilityCost();
+
+            if (monsterData.ap >= apCost) {
+                return {type: 'strikeAbility'};
+            }
+        }
         
         const ability = new Ability(monsterData.abilities[choice]);
         let apCost = ability.getData().apCost;
@@ -29,6 +37,7 @@ function genericAi(monster, opponent, battle) {
                 abilityName: ability.getData().name,
             };
         }
+        
     }
 
     return {

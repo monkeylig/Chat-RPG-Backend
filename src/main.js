@@ -83,6 +83,7 @@ function startServer(dataSource) {
     app.get('/', endpoints.welcome);
     app.get('/get_starting_avatars', (req, res) => endpoints.get_starting_avatars(req, res, chatrpg));
     app.get('/get_game_info', (req, res) => endpoints.get_game_info(req, res, chatrpg));
+    app.get('/get_game_guide', (req, res) => endpoints.getGameGuide(req, res, chatrpg));
     app.options('/create_new_player', endpoints.create_new_player_options);
     app.put('/create_new_player', (req, res) => endpoints.create_new_player(req, res, chatrpg));
     app.get('/get_player', (req, res) => endpoints.get_player(req, res, chatrpg));

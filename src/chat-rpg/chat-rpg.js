@@ -105,6 +105,21 @@ class ChatRPG {
         return {};
     }
 
+    /**
+     * 
+     * @returns {Promise<Object>}
+     */
+    async getGameGuide() {
+        const gameGuideSnap = await this.#dataSource.collection(Schema.Collections.Configs).doc('gameGuide').get();
+        const gameGuide = gameGuideSnap.data();
+
+        if (gameGuide) {
+            return gameGuide;
+        }
+
+        return {};
+    }
+
     async addNewPlayer(name, avatar, weaponType, vitalityBonus, platformId, platform) {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);

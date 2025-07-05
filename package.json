@@ -10,6 +10,7 @@
     "start": "node src/main.js",
     "test": "node src/test/execute-tests.js",
     "deploy": "gcloud app deploy --no-cache",
+    "deploy-dev": "gcloud app deploy --no-cache --version development --no-promote",
     "doc": "npx typedoc --options typedoc.json --tsconfig jsconfig.json",
     "int-test": "node test/integration-test.js",
     "firebase_emulator": "firebase emulators:start --import=./emulator-export --project demo-test",

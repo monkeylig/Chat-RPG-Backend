@@ -34,7 +34,7 @@ function validatePayloadParameters(payload, params)
         }
 
         const type = typeof value;
-        if(typeof type != params[i].type || value == 'undefined') {
+        if(type != params[i].type) {
             return false;
         }
     }
@@ -95,6 +95,18 @@ function sendResponseObject(res, message = {}, status = 200) {
     res.status(status);
     res.send(JSON.stringify(message));
 }
+
+/**
+ * 
+ * @param {Response} res 
+ * @param {object} message 
+ * @param {number} status 
+ */
+function sendResponse(res, message = {}, status = 200) {
+    setStandardHeaders(res);
+    res.status(status);
+    res.send(JSON.stringify(message));
+}
 //#endregion
 
 //#region Endpoints
@@ -126,10 +138,30 @@ function get_starting_avatars(req, res, chatRPG) {
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
 function get_game_info(req, res, chatRPG) {
     setStandardHeaders(res);
     chatRPG.getGameInfo().then((gameInfo) => {
         sendResponseObject(res, gameInfo);
+    })
+    .catch((error) => {internalErrorCatch(req, res, error);});
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
+function getGameGuide(req, res, chatRPG) {
+    chatRPG.getGameGuide()
+    .then((gameGuide) => {
+        sendResponse(res, gameGuide);
     })
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
@@ -771,6 +803,7 @@ module.exports = {
     default_options,
     get_starting_avatars,
     get_game_info,
+    getGameGuide,
     create_new_player_options,
     create_new_player,
     get_player,
