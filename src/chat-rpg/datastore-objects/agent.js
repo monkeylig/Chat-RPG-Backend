@@ -225,7 +225,7 @@ function BagHolderMixin(Base) {
 
         /**
          * @param {string} weaponId 
-         * @returns {boolean} If the opteration succeeded
+         * @returns {boolean} If the operation succeeded
          */
         equipWeaponFromBag(weaponId) {
             const weaponObject = this.findObjectInBag(weaponId);
@@ -249,34 +249,38 @@ function BagHolderMixin(Base) {
 
 /**
  * @typedef {Object} AgentData
- * @property {string} name
- * @property {string} avatar
- * @property {WeaponData} weapon
- * @property {AbilityData[]} abilities
- * @property {number} autoRevive
- * @property {number} maxHealth
- * @property {number} health
- * @property {number} strength
- * @property {number} magic
- * @property {number} defense
- * @property {number} level
- * @property {number} exp
- * @property {number} expToNextLevel
- * @property {Object.<string, EffectData>} effectsMap
+ * @property {string} name - The agent's name 
+ * @property {string} avatar - The image representing the agent's appearance
+ * @property {WeaponData} weapon - The weapon that is equipped on the agent
+ * @property {AbilityData[]} abilities - The abilities equipped on this agent
+ * @property {number} maxAbilities - The max number of abilities this agent can equip
+ * @property {number} maxHealth - The agent's maximum health points
+ * @property {number} health - The agent's current health points
+ * @property {number} strength - The agent's strength
+ * @property {number} magic - The agent's magic
+ * @property {number} defense - The agent's defense
+ * @property {number} level - The agent's level
+ * @property {number} exp - The agent's current experience
+ * @property {number} expToNextLevel - The amount of experience an agent needs to reach the next level
+ * @property {Object.<string, EffectData>} effectsMap - A map of effect that the agent will take into the next battle
  */
 
 class Agent extends DatastoreObject {
-    static MAXABILITIES = 5;
+    static MAX_ABILITIES = 5;
     constructor(objectData) {
         super(objectData);
     }
 
+    /**
+     * 
+     * @param {AgentData} agent 
+     */
     constructNewObject(agent) {
         agent.name = 'Unknown';
         agent.avatar = 'unknown.png';
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.abilities = [];
-        agent.autoRevive = 0;
+        agent.maxAbilities = Agent.MAX_ABILITIES;
         agent.maxHealth = 12;
         agent.health = 12;
         agent.strength = 12;
@@ -576,7 +580,8 @@ class Agent extends DatastoreObject {
     }
 
     hasOpenAbilitySlot() {
-        return this.datastoreObject.abilities.length < Agent.MAXABILITIES;
+        const agent = this.getData();
+        return agent.abilities.length < agent.maxAbilities;
     }
 
     getUnflattenedData() {
@@ -696,7 +701,6 @@ class Player extends BagHolderMixin(Agent) {
         thisPlayerData.level = battlePlayerData.level;
         thisPlayerData.exp = battlePlayerData.exp;
         thisPlayerData.expToNextLevel = battlePlayerData.expToNextLevel;
-        thisPlayerData.autoRevive = battlePlayerData.autoRevive;
         thisPlayerData.bag = battlePlayerData.bag;
         thisPlayerData.coins = battlePlayerData.coins;
         thisPlayerData.lastDrops = battlePlayerData.lastDrops;

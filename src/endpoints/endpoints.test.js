@@ -8,6 +8,7 @@ const { Player } = require('../chat-rpg/datastore-objects/agent');
 const { InventoryPage } = require('../chat-rpg/datastore-objects/inventory-page');
 const { ShopItem, Shop } = require('../chat-rpg/datastore-objects/shop');
 const { Weapon } = require('../chat-rpg/datastore-objects/weapon');
+const { content } = require('../chat-rpg/gameplay-objects');
 const MemoryBackedDataSource = require('../data-source/memory-backed-data-source');
 const endpoints = require('./endpoints');
 
@@ -72,6 +73,26 @@ test('Get game Info', async () => {
     const gameInfo = await res.waitForMessage();
 
     expect(gameInfo).toStrictEqual(testGameInfo);
+});
+
+test('Get Game Guide', async () => {
+    const testGameGuide = {
+        content: 'testing'
+    };
+
+    const dataSource = new MemoryBackedDataSource();
+    await dataSource.initializeDataSource({
+        configs: {
+            gameGuide: testGameGuide
+        }
+    });
+    const chatRPG = new ChatRPG(dataSource);
+
+    const res = new Res();
+    endpoints.getGameGuide({}, res, chatRPG);
+    const gameGuide = await res.waitForMessage();
+
+    expect(gameGuide).toStrictEqual(testGameGuide);
 });
 
 test('Create new player', async () => {
@@ -294,7 +315,7 @@ test('Buying stuff', async () => {
         }
     });
 
-    let chatrpg = new ChatRPG(dataSource);
+    let chatRPG = new ChatRPG(dataSource);
 
     let res = new Res();
     let req = {
@@ -305,7 +326,7 @@ test('Buying stuff', async () => {
         }
     };
 
-    endpoints.buy(req, res, chatrpg);
+    endpoints.buy(req, res, chatRPG);
     let playerData = await res.waitForMessage();
 
     expect(playerData).toBeDefined();

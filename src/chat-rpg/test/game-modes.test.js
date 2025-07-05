@@ -95,7 +95,7 @@ test('Battle Royal Create Game', async () => {
         }
     });
 
-    let battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
+    let battleRoyal = (await GameModes.battleRoyale.createGame(datasource)).getData();
 
     expect(battleRoyal.mode).toMatch("battleRoyal");
     expect(battleRoyal.monsters.length).toBe(10);
@@ -104,7 +104,7 @@ test('Battle Royal Create Game', async () => {
     datasource = new MemoryBackedDataSource();
     await datasource.initializeDataSource();
 
-    battleRoyal = (await GameModes.battleRoyal.createGame(datasource)).getData();
+    battleRoyal = (await GameModes.battleRoyale.createGame(datasource)).getData();
 
     expect(battleRoyal.mode).toMatch("battleRoyal");
     expect(battleRoyal.monsters.length).toBe(0);
@@ -124,8 +124,8 @@ test('Battle Royal OnMonsterDefeated', async () => {
     const player = new Player();
     player.setStatsAtLevel(30);
 
-    let battleRoyal = await GameModes.battleRoyal.createGame(datasource);
-    GameModes.battleRoyal.onMonsterDefeated(datasource, battleRoyal, player, {});
+    let battleRoyal = await GameModes.battleRoyale.createGame(datasource);
+    GameModes.battleRoyale.onMonsterDefeated(datasource, battleRoyal, player, {});
 
     expect(battleRoyal.getData().monsters[10].name).toBe(player.getData().name);
     expect(battleRoyal.getData().monsters[10].weaponDropRate).toBe(0);

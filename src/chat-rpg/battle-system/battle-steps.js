@@ -567,102 +567,6 @@ function maxApChange(battleAgent, value) {
     };
 }
 
-function readyReviveStep(battlePlayer, reviveAmount = 0.5) {
-    battlePlayer.getData().autoRevive = reviveAmount;
-    return {
-        type: 'readyRevive',
-        targetId: battlePlayer.getData().id,
-        autoRevive: reviveAmount,
-        description: `${battlePlayer.getData().name} will be revived if they are defeated.`
-    };
-}
-
-/**
- * 
- * @param {*} statusEffect 
- * @param {*} targetPlayer 
- * @param {*} refreshEffect 
- * @returns {BattleStep}
- */
-function gainStatusEffectStep(statusEffect, targetPlayer, refreshEffect = false) {
-    if(!refreshEffect && targetPlayer.getStatusEffect(statusEffect.name)) {
-        return infoStep();
-    }
-
-    targetPlayer.addStatusEffect(statusEffect.name, statusEffect);
-    const step = {
-        type: 'gainStatusEffect',
-        targetId: targetPlayer.getData().id,
-        description: `${targetPlayer.getData().name} is now ${statusEffect.name}!`,
-        statusEffect
-    };
-    return step;
-}
-
-/**
- * 
- * @param {*} statusEffect 
- * @param {*} targetPlayer 
- * @param {*} noDescription 
- * @returns {BattleStep}
- */
-function removeStatusEffectStep(statusEffect, targetPlayer, noDescription = false) {
-    if(!targetPlayer.getStatusEffect(statusEffect.name)) {
-        return infoStep();
-    }
-
-    targetPlayer.removeStatusEffect(statusEffect.name);
-
-    const step = {
-        type: 'removeStatusEffect',
-        targetId: targetPlayer.getData().id,
-        statusEffect
-    };
-
-    if(!noDescription) {
-        step.description = `${targetPlayer.getData().name} is no longer ${statusEffect.name}!`
-    }
-    return step;
-}
-
-function imbueStep(targetAgent, element, durationCondition) {
-    const weapon = new BattleWeapon(targetAgent.getData().weapon);
-    weapon.imbue(element, durationCondition);
-    targetAgent.getData().weapon = weapon.getData();
-
-    return {
-        type: 'imbue',
-        targetId: targetAgent.getData().id,
-        description: `${targetAgent.getData().name}'s weapon is imbued with ${element}!`,
-        element
-    };
-}
-
-function removeImbueStep(targetAgent, element) {
-    const weapon = new BattleWeapon(targetAgent.getData().weapon);
-    weapon.removeImbue(element);
-
-    return {
-        type: 'removeImbue',
-        targetId: targetAgent.getData().id,
-        element
-    };
-}
-
-function setCounterStep(targetAgent, counterAbility, counterType) {
-    targetAgent.setCounter(counterAbility, counterType);
-
-    return {
-        type: 'setCounter',
-        targetId: targetAgent.getData().id,
-        counter: {
-            type: counterType,
-            ability: counterAbility.getData(),
-        },
-        description: `${targetAgent.getData().name} is ready to defend.`
-    };
-}
-
 /**
  * @typedef {BattleStep & {
  * ability: AbilityData,
@@ -704,16 +608,6 @@ function removeAbility(targetAgent, abilityName) {
         targetId: targetAgent.getData().id,
         ability: abilityData,
         successful: abilityData !== undefined
-    };
-}
-
-function addAbilityStrikeStep(targetAgent, ability, durationCondition) {
-    targetAgent.addAbilityStrike(ability, durationCondition);
-
-    return {
-        type: 'addAbilityStrike',
-        targetId: targetAgent.getData().id,
-        ability: ability.getData()
     };
 }
 
@@ -925,15 +819,8 @@ const BattleSteps = {
     apGain: apGainStep,
     apChange,
     maxApChange,
-    readyRevive: readyReviveStep,
-    gainStatusEffect: gainStatusEffectStep,
-    removeStatusEffect: removeStatusEffectStep,
-    imbue: imbueStep,
-    removeImbue: removeImbueStep,
-    setCounter: setCounterStep,
     addAbility,
     removeAbility,
-    addAbilityStrike: addAbilityStrikeStep,
     strikeLevelChange: strikeLevelChangeStep,
     consumeItem,
     addEffect,

@@ -18,34 +18,6 @@ const { Weapon } = require('./weapon');
 const BATTLE_AP = 3;
 const MAX_STAT_AMP = 12;
 
-const statAmpTable = {
-    '-12': 0.25,
-    '-11': 0.2675,
-    '-10': 0.285,
-    '-9': 0.3075,
-    '-8': 0.33,
-    '-7': 0.365,
-    '-6': 0.4,
-    '-5': 0.45,
-    '-4': 0.5,
-    '-3': 0.58,
-    '-2': 0.66,
-    '-1': 0.80,
-    '0': 1,
-    '1': 1.25,
-    '2': 1.5,
-    '3': 1.75,
-    '4': 2,
-    '5': 2.25,
-    '6': 2.5,
-    '7': 2.75,
-    '8': 3,
-    '9': 3.25,
-    '10': 3.5,
-    '11': 3.75,
-    '12': 4
-};
-
 function statAmp(datastoreObject, statAmp, stages) {
     let ampAmount = 0;
     stages = Math.floor(stages);
@@ -65,42 +37,44 @@ function statAmp(datastoreObject, statAmp, stages) {
  * @param {Object} datastoreObject 
  * @param {string} stat 
  * @param {string} statAmp 
+ * @param {number} [min]
  * @returns {number}
  */
-function getModifiedStat(datastoreObject, stat, statAmp) {
+function getModifiedStat(datastoreObject, stat, statAmp, min) {
     let modifier = Math.abs(datastoreObject[statAmp]) * 0.25 + 1;
     if (datastoreObject[statAmp] < 0) {
         modifier = 1/modifier;
     }
-    return Math.max(datastoreObject[stat] * modifier, 1);
+
+    const result = datastoreObject[stat] * modifier;
+    if (min !== undefined) {
+        return Math.max(result, 1);
+    }
+
+    return result;
 }
 
 /**
- * @typedef {AgentData & {
- * weapon: BattleWeaponData,
- * ap: number,
- * maxAp: number,
- * strikeLevel: number, 
- * id: string,
- * strengthAmp: number, 
- * defenseAmp: number, 
- * magicAmp: number, 
- * reviveReady: boolean, 
- * empowerment: object,
- * protection: object,
- * statusEffects: object,
- * fireResist: number,
- * lightningResist: number,
- * waterResist: number,
- * iceResist: number,
- * fireResistAmp: number,
- * lightningResistAmp: number,
- * waterResistAmp: number,
- * iceResistAmp: number,
- * counter: object,
- * abilityStrikes: object[],
- * evasion: number
- * }} BattleAgentData
+ * @typedef {Object} _BattleAgentData
+ * @property {BattleWeaponData} weapon - The agent's weapon
+ * @property {number} ap
+ * @property {number} maxAp
+ * @property {number} strikeLevel
+ * @property {string} id
+ * @property {number} strengthAmp
+ * @property {number} magicAmp
+ * @property {object} protection
+ * @property {number} fireResist
+ * @property {number} lightningResist
+ * @property {number} waterResist
+ * @property {number} iceResist
+ * @property {number} fireResistAmp
+ * @property {number} lightningResistAmp
+ * @property {number} waterResistAmp
+ * @property {number} iceResistAmp
+ * @property {number} evasion
+ * 
+ * @typedef {AgentData & _BattleAgentData} BattleAgentData
  */
 
 /**
@@ -109,7 +83,8 @@ function getModifiedStat(datastoreObject, stat, statAmp) {
  */
 function BattleAgentMixin(Base) {
     return class BattleAgent extends Base {
-        STRIKE_ABILITY_TRIGGER = 2;
+        MAX_STRIKE_LEVEL = 2;
+        DEFAULT_STRIKE_ABILITY_COST = 2;
         /**
          * 
          * @param  {...any} objectData 
@@ -155,8 +130,15 @@ function BattleAgentMixin(Base) {
             return statAmp(this.datastoreObject, stat, stages);
         }
 
-        getModifiedStat(stat, statAmp) {
-            return getModifiedStat(this.datastoreObject, stat, statAmp);
+        /**
+         * 
+         * @param {string} stat 
+         * @param {string} statAmp 
+         * @param {number} [min] 
+         * @returns 
+         */
+        getModifiedStat(stat, statAmp, min) {
+            return getModifiedStat(this.datastoreObject, stat, statAmp, min);
         }
 
         strengthAmp(stages) {
@@ -164,7 +146,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedStrength() {
-            return this.getModifiedStat('strength', 'strengthAmp');
+            return this.getModifiedStat('strength', 'strengthAmp', 1);
         }
 
         defenseAmp(stages) {
@@ -172,7 +154,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedDefense() {
-            return this.getModifiedStat('defense', 'defenseAmp');
+            return this.getModifiedStat('defense', 'defenseAmp', 1);
         }
 
         magicAmp(stages) {
@@ -180,7 +162,7 @@ function BattleAgentMixin(Base) {
         }
 
         getModifiedMagic() {
-            return this.getModifiedStat('magic', 'magicAmp');
+            return this.getModifiedStat('magic', 'magicAmp', 1);
         }
 
         fireResistAmp(stages) {
@@ -242,54 +224,14 @@ function BattleAgentMixin(Base) {
             return totalResistance;
         }
 
-        setStrikeLevel(value) {
-            if (value > this.STRIKE_ABILITY_TRIGGER || value < 0) {
-                return;
-            }
-
-            this.datastoreObject.strikeLevel = value;
-        }
-
         changeStrikeLevel(value) {
-            const newValue = Math.max(0, Math.min(this.STRIKE_ABILITY_TRIGGER, this.datastoreObject.strikeLevel + value));
-            this.setStrikeLevel(newValue);
-        }
+            const newValue = Math.max(0, Math.min(this.MAX_STRIKE_LEVEL, this.datastoreObject.strikeLevel + value));
 
-        onStrike() {
-            this.setStrikeLevel(this.datastoreObject.strikeLevel + 1);
-
-            if(this.datastoreObject.ap < BATTLE_AP) {
-                this.datastoreObject.ap += 1;
-            }
-        }
-
-        onStrikeAbility() {
-            //this.onStrike(); Testing balance without this
-            this.datastoreObject.strikeLevel = 0;
+            this.getData().strikeLevel = newValue;
         }
 
         strikeAbilityReady() {
-            return this.datastoreObject.strikeLevel >= this.STRIKE_ABILITY_TRIGGER
-        }
-
-        onAbilityUsed(ability) {
-
-        }
-
-        addEmpowerment(type, value) {
-            if(!this.datastoreObject.empowerment.hasOwnProperty(type)) {
-                this.datastoreObject.empowerment[type] = 0;
-            }
-
-            this.datastoreObject.empowerment[type] += value;
-        }
-
-        getEmpowermentValue(type) {
-            if(!this.datastoreObject.empowerment.hasOwnProperty(type)) {
-                this.datastoreObject.empowerment[type] = 0;
-            }
-
-            return this.datastoreObject.empowerment[type];
+            return this.datastoreObject.strikeLevel >= this.MAX_STRIKE_LEVEL
         }
 
         addProtection(type, value) {
@@ -332,67 +274,6 @@ function BattleAgentMixin(Base) {
             return {totalDamage, protectedDamage};
         }
 
-        consumeEmpowermentValue(type) {
-            const value = this.getEmpowermentValue(type);
-            this.datastoreObject.empowerment[type] = 0;
-            return value;
-        }
-
-        addStatusEffect(name, statusEffect) {
-            this.datastoreObject.statusEffects[name] = Object.assign({}, statusEffect);
-        }
-
-        getStatusEffect(name) {
-            return this.datastoreObject.statusEffects[name];
-        }
-
-        removeStatusEffect(name) {
-            delete this.datastoreObject.statusEffects[name];
-        }
-
-        /**
-         * 
-         * @param {Ability} counterAbility The ability to be used as a counter
-         * @param {string} counterType The type of counter. 'strike' to counter a strike
-         */
-        setCounter(counterAbility, counterType) {
-            this.datastoreObject.counter = {
-                type: counterType,
-                ability: counterAbility.getData()
-            };
-        }
-
-        getCounter(counterType) {
-            if(this.datastoreObject.counter && this.datastoreObject.counter.type === counterType) {
-                return this.datastoreObject.counter;
-            }
-        }
-
-        clearCounter() {
-            this.datastoreObject.counter = null;
-        }
-
-        addAbilityStrike(ability, durationCondition) {
-            this.datastoreObject.abilityStrikes.push({
-                durationCondition,
-                ability: ability.getData()
-            });
-        }
-
-        removeAbilityStrike(abilityIndex) {
-            const abilityStrikes = this.datastoreObject.abilityStrikes;
-
-            if(abilityIndex >= abilityStrikes.length) {
-                return;
-            }
-
-            abilityStrikes.splice(abilityIndex, 1);
-        }
-
-        getAbilityStrikes() {
-            return this.datastoreObject.abilityStrikes;
-        }
-
         /**
          * 
          * @param {number} speed 
@@ -400,6 +281,18 @@ function BattleAgentMixin(Base) {
         setEvasiveSpeed(speed) {
             const maxEvasion = 0.3;
             this.getData().evasion = Math.max(0, speed/10 * maxEvasion);
+        }
+
+        /**
+         * Returns the amount of AP that it costs to use this agent's strike ability
+         */
+        getStrikeAbilityCost() {
+            const agent = this.getData();
+            let apCost = agent.weapon.strikeAbility.apCost;
+            if (!apCost) {
+                apCost = this.DEFAULT_STRIKE_ABILITY_COST;
+            }
+            return Math.max(0, apCost - agent.strikeLevel);
         }
 
         /**
@@ -486,32 +379,6 @@ class BattleWeapon extends Weapon {
     getModifiedSpeed() {
         const weapon = this.getData();
         return weapon.speed + weapon.speedAmp;
-    }
-
-    /**
-     * Imbue a weapon with an element
-     * @param {string} element The element to add to this weapon 
-     * @param {string | null} [durationCondition] How long this weapon stays imbued. null(default) or 'infinite' for infinite or 'strikeAbility' until the next strike ability
-     */
-    imbue(element, durationCondition = null) {
-        this.datastoreObject.imbuements[element] = {durationCondition};
-    }
-
-    removeImbue(element) {
-        this.datastoreObject.imbuements[element] = null;
-    }
-
-    getImbuedElements() {
-        const elements = [];
-        const imbuements = this.datastoreObject.imbuements;
-
-        for(const element in imbuements) {
-            if(imbuements[element]) {
-                elements.push(element);
-            }
-        }
-
-        return elements;
     }
 
     /**

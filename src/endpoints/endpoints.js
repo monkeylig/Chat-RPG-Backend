@@ -1,6 +1,7 @@
 /**
  * @import {Request, Response} from 'express'
  * @import {ChatRPG} from '../chat-rpg/chat-rpg'
+ * @import {PlayerActionRequest} from '../chat-rpg/battle-system/battle-system'
  */
 
 const ChatRPGErrors = require('../chat-rpg/errors');
@@ -19,7 +20,6 @@ function setStandardHeaders(res) {
  * 
  * @param {any} payload 
  * @param {{name: string, type: string}[]} params 
- * @returns 
  */
 function validatePayloadParameters(payload, params)
 {
@@ -28,11 +28,13 @@ function validatePayloadParameters(payload, params)
     }
 
     for(let i = 0; i < params.length; i++) {
-        if(!payload.hasOwnProperty(params[i].name)) {
+        const value = payload[params[i].name];
+        if(value === undefined) {
             return false;
         }
-        const type = typeof payload[params[i].name];
-        if(typeof payload[params[i].name] != params[i].type || payload[params[i].name] == 'undefined') {
+
+        const type = typeof value;
+        if(type != params[i].type) {
             return false;
         }
     }
@@ -93,6 +95,18 @@ function sendResponseObject(res, message = {}, status = 200) {
     res.status(status);
     res.send(JSON.stringify(message));
 }
+
+/**
+ * 
+ * @param {Response} res 
+ * @param {object} message 
+ * @param {number} status 
+ */
+function sendResponse(res, message = {}, status = 200) {
+    setStandardHeaders(res);
+    res.status(status);
+    res.send(JSON.stringify(message));
+}
 //#endregion
 
 //#region Endpoints
@@ -124,10 +138,30 @@ function get_starting_avatars(req, res, chatRPG) {
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
 
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
 function get_game_info(req, res, chatRPG) {
     setStandardHeaders(res);
     chatRPG.getGameInfo().then((gameInfo) => {
         sendResponseObject(res, gameInfo);
+    })
+    .catch((error) => {internalErrorCatch(req, res, error);});
+}
+
+/**
+ * 
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
+function getGameGuide(req, res, chatRPG) {
+    chatRPG.getGameGuide()
+    .then((gameGuide) => {
+        sendResponse(res, gameGuide);
     })
     .catch((error) => {internalErrorCatch(req, res, error);});
 }
@@ -312,6 +346,12 @@ function start_battle(req, res, chatRPG) {
     .catch(error => internalErrorCatch(req, res, error));
 }
 
+/**
+ * This endpoint is use to initiate an action in a battle
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {ChatRPG} chatRPG 
+ */
 function battle_action(req, res, chatRPG) {
     setStandardHeaders(res);
 
@@ -325,11 +365,20 @@ function battle_action(req, res, chatRPG) {
         return;
     }
 
+    if(req.query.actionType != 'strike' &&
+       req.query.actionType != 'strikeAbility' &&
+       req.query.actionType != 'ability' &&
+       req.query.actionType != 'item' &&
+       req.query.actionType != 'escape'
+    ) {
+        sendError(res, "Query parameters are malformed");
+        return;
+    }
+
+    /**@type {PlayerActionRequest} */
     const battleAction = {type: req.query.actionType};
     if(req.query.actionType === 'ability') {
-        if(!validatePayloadParameters(req.query, [
-            {name: 'abilityName', type: 'string'}
-        ])) {
+        if(!req.query.abilityName || typeof req.query.abilityName != 'string') {
             sendError(res, "Ability parameters are malformed");
             return;
         }
@@ -337,15 +386,14 @@ function battle_action(req, res, chatRPG) {
     }
 
     if(req.query.actionType === 'item') {
-        if(!validatePayloadParameters(req.query, [
-            {name: 'itemId', type: 'string'}
-        ])) {
+        if(!req.query.itemId || typeof req.query.itemId != 'string') {
             sendError(res, "Item parameters are malformed");
             return;
         }
         battleAction.itemId = req.query.itemId;
     }
 
+    // @ts-ignore
     chatRPG.battleAction(req.query.battleId, battleAction)
     .then(battleUpdate => {
         sendResponseObject(res, battleUpdate);
@@ -755,6 +803,7 @@ module.exports = {
     default_options,
     get_starting_avatars,
     get_game_info,
+    getGameGuide,
     create_new_player_options,
     create_new_player,
     get_player,

@@ -10,6 +10,7 @@
  * @import {ItemData} from "./datastore-objects/item"
  * @import {WeaponData} from "./datastore-objects/weapon"
  * @import {CollectionContainer} from "./datastore-objects/utilities"
+ * @import {PlayerActionRequest} from "./battle-system/battle-system"
  */
 
 const {FieldValue, IBackendDataSource} = require("../data-source/backend-data-source");
@@ -99,6 +100,21 @@ class ChatRPG {
 
         if(gameInfo) {
             return gameInfo;
+        }
+
+        return {};
+    }
+
+    /**
+     * 
+     * @returns {Promise<Object>}
+     */
+    async getGameGuide() {
+        const gameGuideSnap = await this.#dataSource.collection(Schema.Collections.Configs).doc('gameGuide').get();
+        const gameGuide = gameGuideSnap.data();
+
+        if (gameGuide) {
+            return gameGuide;
         }
 
         return {};
@@ -287,6 +303,12 @@ class ChatRPG {
         };
     }
 
+    /**
+     * Initiate an action in a battle
+     * @param {string} battleId 
+     * @param {PlayerActionRequest} actionRequest 
+     * @returns 
+     */
     async battleAction(battleId, actionRequest) {
         const battleSnap = await this.#dataSource.collection(Schema.Collections.Battles).doc(battleId).get();
 

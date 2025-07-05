@@ -43,13 +43,25 @@ class StrikeAbilityBattleMove extends BattleMove {
             return;
         }
 
-        yield {
-            playerAction: {
-                targetPlayer: this.owner,
-                srcPlayer: this.owner,
-                strikeLevelChange: -this.owner.getData().strikeLevel
-            }
+        if (this.owner.getStrikeAbilityCost()) {
+            yield {
+                playerAction: {
+                    targetPlayer: this.owner,
+                    srcPlayer: this.owner,
+                    apChange: -this.owner.getStrikeAbilityCost()
+                }
+            };
+        }
+
+        if (this.owner.getData().strikeLevel) {
+            yield {
+                playerAction: {
+                    targetPlayer: this.owner,
+                    srcPlayer: this.owner,
+                    strikeLevelChange: -this.owner.getData().strikeLevel
+                }
         };
+        }
 
         yield {
             infoAction: {
