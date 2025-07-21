@@ -303,6 +303,10 @@ class Agent extends DatastoreObject {
         return /** @type {AgentData} */ (this.datastoreObject);
     }
 
+    /**
+     * 
+     * @param {number} level 
+     */
     setStatsAtLevel(level) {
         Agent.setStatsAtLevel(this.getData(), level)
     }
