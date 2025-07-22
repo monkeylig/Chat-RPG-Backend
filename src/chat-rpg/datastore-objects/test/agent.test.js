@@ -1,3 +1,5 @@
+//@ts-check
+
 const { EXP_LEVEL_CAP } = require("../../battle-system/utility");
 const Ability = require("../ability");
 const { Player, Agent } = require("../agent");
@@ -198,6 +200,26 @@ test('Add and remove abilities', () => {
     expect(abilities.length).toBe(2);
     expect(abilities[0].name).toBe("ability1");
     expect(abilities[1].name).toBe("ability3");
+});
+
+test('Equip and replace abilities', () => {
+    const player = new Player();
+    const ability1 = new Ability({name: "ability1"});
+    const ability2 = new Ability({name: "ability2"});
+    const ability3 = new Ability({name: "ability3"});
+
+    player.equipAbility(ability1.getData());
+
+    expect(player.mysticAbilities.length).toBe(1);
+
+    player.equipAbility(ability2.getData());
+
+    expect(player.mysticAbilities.length).toBe(2);
+
+    player.equipAbility(ability3.getData(), 'ability1');
+
+    expect(player.mysticAbilities.length).toBe(2);
+
 });
 
 test('Prevent duplicate abilities', () => {

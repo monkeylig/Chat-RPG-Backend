@@ -2064,7 +2064,7 @@ test('Sell Stackables', async () => {
 
     const pageId = 'pageId';
     const page = new InventoryPage({}, pageId, player);
-    let weaponSlot = page.addObjectToInventory({stars: 1, count: 3}, 'weapon')
+    let weaponSlot = page.addObjectToInventory({stars: 1, count: 3, name: 'thing'}, 'weapon')
 
     expect(player.getData().inventory.leger.length).toBe(1);
     expect(player.getData().inventory.leger[0].count).toBe(1);
@@ -2144,7 +2144,7 @@ test('Sell Stackables with decimals.', async () => {
 
     const pageId = 'pageId';
     const page = new InventoryPage({}, pageId, player);
-    let weaponSlot = page.addObjectToInventory({stars: 1, count: 3}, 'weapon')
+    let weaponSlot = page.addObjectToInventory({stars: 1, count: 3, name: 'thing'}, 'weapon')
 
     expect(player.getData().inventory.leger.length).toBe(1);
     expect(player.getData().inventory.leger[0].count).toBe(1);

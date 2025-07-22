@@ -9,7 +9,7 @@ const { GameCollection} = require('./utilities');
 
 /**
  * @typedef {Object} InventoryPageData
- * @property {CollectionContainer[]} objects
+ * @property {CollectionContainer<Object>[]} objects
  */
 
 class InventoryPage extends DatastoreObject {
@@ -50,7 +50,7 @@ class InventoryPage extends DatastoreObject {
      * 
      * @param {Object} object - The object to be stored.
      * @param {string} type - The label of this object.
-     * @returns {CollectionContainer | undefined}
+     * @returns {CollectionContainer<Object> | undefined}
      */
     addObjectToInventory(object, type) {
         return this.pageCollection.addObject(object, type, InventoryPage.PAGE_CAPACITY);
@@ -60,7 +60,7 @@ class InventoryPage extends DatastoreObject {
      * 
      * @param {string} objectId - The id of the object
      * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
-     * @returns {CollectionContainer | undefined}
+     * @returns {CollectionContainer<Object> | undefined}
      */
     dropObjectFromInventory(objectId, options) {
         return this.pageCollection.dropObject(objectId, options);
@@ -69,7 +69,7 @@ class InventoryPage extends DatastoreObject {
     /**
      * 
      * @param {string} objectId 
-     * @returns {CollectionContainer | undefined}
+     * @returns {CollectionContainer<Object> | undefined}
      */
     findObjectById(objectId) {
         return this.pageCollection.findObjectById(objectId);
@@ -79,7 +79,7 @@ class InventoryPage extends DatastoreObject {
 class PageCollection extends GameCollection {
     /**
      * 
-     * @param {Collection} collection
+     * @param {Collection<Object>} collection
      * @param {string} [pageId] 
      * @param {Player} [player] 
      */
@@ -96,7 +96,7 @@ class PageCollection extends GameCollection {
      * @param {Object} object - The object to be stored.
      * @param {string} type - The label of this object.
      * @param {number} [limit] - The number of objects this collection can hold.
-     * @returns {CollectionContainer | undefined} The new object that was added.
+     * @returns {CollectionContainer<Object> | undefined} The new object that was added.
      */
     addObject(object, type, limit) {
         const inventoryObjects = this.collection;
@@ -114,7 +114,7 @@ class PageCollection extends GameCollection {
      * @override
      * @param {string} objectId - The id of the object
      * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
-     * @returns {CollectionContainer | undefined}
+     * @returns {CollectionContainer<Object> | undefined}
      */
     dropObject(objectId, options={}) {
         const inventoryObjects = this.collection;

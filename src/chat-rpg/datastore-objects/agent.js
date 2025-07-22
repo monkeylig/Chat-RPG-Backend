@@ -22,10 +22,10 @@ const { FieldValue } = require('../../data-source/backend-data-source');
  * @typedef {Object} BagHolderData
  * @property {{
  * capacity: number,
- * objects: Collection
+ * objects: Collection<Object>
 * }} bag
  * @property {{
- * objects: Collection
+ * objects: Collection<Object>
  * }} lastDrops
  * @property {number} coins
  */
@@ -75,7 +75,7 @@ function BagHolderMixin(Base) {
          * 
          * @param {Object} object 
          * @param {string} type 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         addObjectToBag(object, type) {
             const bag = this.datastoreObject.bag;
@@ -85,7 +85,7 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {string} id 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         findObjectInBag(id) {
             return findObjectInCollection(this.datastoreObject.bag.objects, id);
@@ -94,7 +94,7 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {string} name 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         findObjectInBagByName(name) {
             for(const object of this.datastoreObject.bag.objects) {
@@ -107,7 +107,7 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {string} id 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         dropObjectFromBag(id) {
             return dropObjectFromCollection(this.datastoreObject.bag.objects, id);
@@ -124,7 +124,7 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {Weapon} weapon 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         addWeaponToBag(weapon) {
             return this.addObjectToBag(weapon.getData(), 'weapon');
@@ -137,7 +137,7 @@ function BagHolderMixin(Base) {
         /**
          * 
          * @param {Item} item 
-         * @returns {CollectionContainer | undefined}
+         * @returns {CollectionContainer<Object> | undefined}
          */
         addItemToBag(item) {
             return this.addObjectToBag(item.getData(), 'item');
@@ -252,7 +252,8 @@ function BagHolderMixin(Base) {
  * @property {string} name - The agent's name 
  * @property {string} avatar - The image representing the agent's appearance
  * @property {WeaponData} weapon - The weapon that is equipped on the agent
- * @property {AbilityData[]} abilities - The abilities equipped on this agent
+ * @property {AbilityData[]} abilities (deprecated) The abilities equipped on this agent
+ * @property {Collection<AbilityData>} mysticAbilities The abilities equipped on this agent
  * @property {number} maxAbilities - The max number of abilities this agent can equip
  * @property {number} maxHealth - The agent's maximum health points
  * @property {number} health - The agent's current health points
@@ -265,10 +266,21 @@ function BagHolderMixin(Base) {
  * @property {Object.<string, EffectData>} effectsMap - A map of effect that the agent will take into the next battle
  */
 
+/**
+ * The agent class
+ */
 class Agent extends DatastoreObject {
     static MAX_ABILITIES = 5;
+    static ABILITY_CONTAINER_TYPE = 'ability'
+
+    /**
+     * 
+     * @param {AgentData} objectData 
+     */
     constructor(objectData) {
         super(objectData);
+
+        this.mysticAbilities = new GameCollection(this.getData().mysticAbilities, Agent.ABILITY_CONTAINER_TYPE);
     }
 
     /**
@@ -280,6 +292,7 @@ class Agent extends DatastoreObject {
         agent.avatar = 'unknown.png';
         agent.weapon = new Weapon(chatRPGUtility.defaultWeapon).getData();
         agent.abilities = [];
+        agent.mysticAbilities = [];
         agent.maxAbilities = Agent.MAX_ABILITIES;
         agent.maxHealth = 12;
         agent.health = 12;
@@ -533,35 +546,49 @@ class Agent extends DatastoreObject {
     }
 
     /**
-     * 
-     * @param {AbilityData} abilityData
+     * Add an ability to this agent. Returns true if the ability was added, and returns false if
+     * another ability with the same name is already on this agent.
+     * @param {AbilityData} abilityData - The ability to add
      * @returns {boolean} 
      */
     addAbility(abilityData) {
-        const datastoreObject = this.getData();
-        if (datastoreObject.abilities.find((ability) => ability.name === abilityData.name)) {
+        const thisObject = this.getData();
+        if (thisObject.abilities.find((ability) => ability.name === abilityData.name)) {
             return false;
         }
-        this.datastoreObject.abilities.push(abilityData);
+        thisObject.abilities.push(abilityData);
+        this.mysticAbilities.addObject(abilityData);
         return true;
     }
 
+    /**
+     * Equip an ability to this agent. You can optionally replace an existing ability.
+     * Returns true is the ability was equipped or false if the ability to replace was not found.
+     * 
+     * @param {AbilityData} abilityData - The ability to add
+     * @param {string} [replacedAbilityName] - The name of the ability to replace
+     * @returns {boolean}
+     */
     equipAbility(abilityData, replacedAbilityName)
     {
-        const abilities = this.datastoreObject.abilities;
+        const thisObject = this.getData();
+        const abilities = thisObject.abilities;
 
         if(replacedAbilityName) {
             const abilityIndex = abilities.findIndex(element => element.name === replacedAbilityName)
 
             if(abilityIndex === -1) {
-                return;
+                return false;
             }
 
             abilities[abilityIndex] = abilityData;
+            this.mysticAbilities.replaceObject(thisObject.mysticAbilities[abilityIndex].id, abilityData);
         }
         else if (this.hasOpenAbilitySlot()) {
             this.addAbility(abilityData);
         }
+
+        return true;
     }
     
     /**
@@ -579,10 +606,27 @@ class Agent extends DatastoreObject {
 
         const abilityData = abilities[abilityIndex];
         abilities.splice(abilityIndex, 1);
+        const target = this.mysticAbilities.findObjectByName(abilityName);
+        if (target) {
+            this.mysticAbilities.dropObject(target.id);
+        }
 
         return abilityData;
     }
 
+    syncMysticAbilities() {
+        const thisObject = this.getData();
+        thisObject.mysticAbilities = [];
+
+        for(const abilityData of thisObject.abilities) {
+            this.mysticAbilities.addObject(abilityData);
+        }
+    }
+
+    /**
+     * Returns is this agent has an ability slot open
+     * @returns {boolean}
+     */
     hasOpenAbilitySlot() {
         const agent = this.getData();
         return agent.abilities.length < agent.maxAbilities;

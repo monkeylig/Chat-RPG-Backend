@@ -430,7 +430,7 @@ test("/sell inventory", async () => {
     let player = new Player();
 
     let page = new InventoryPage({}, 'page', player);
-    let objectToSell = page.addObjectToInventory({stars: 3, count: 3}, 'weapon')
+    let objectToSell = page.addObjectToInventory({stars: 3, count: 3, name: "item"}, 'weapon')
     if (!objectToSell) {fail();}
 
     const shop = new Shop({

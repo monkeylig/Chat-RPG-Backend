@@ -6,38 +6,66 @@ const chatRPGUtility = require('../utility');
  */
 
 /**
+ * @template {Object} T
+ * 
  * @typedef {Object} CollectionContainer
  * @property {string} type
  * @property {string} id
- * @property {Object} content
+ * @property {T} content
  */
 
 /**
- * @typedef {CollectionContainer[]} Collection
+ * @template {Object} T
+ * @typedef {CollectionContainer<T>[]} Collection
+ */
+
+/**
+ * @typedef {Object} Stackable
+ * @property {number} count
+ * @property {string} name
  */
 
 /**
  * 
- * @param {Object} object 
- * @returns {boolean}
+ * @param {Object} [object] 
+ * @returns {object is Stackable}
  */
 function isStackable(object) {
-    return object.count != undefined && typeof object.count === 'number';
+    return (
+        object &&
+        object.count != undefined && typeof object.count === 'number' &&
+        object.name && typeof object.name === 'string');
+}
+
+/**
+ * 
+ * @template {Object} T
+ * @param {T} object 
+ * @param {string} type 
+ * @returns {CollectionContainer<T>}
+ */
+function newObjectContainer(object, type) {
+    return {
+        type,
+        id: utility.genId(),
+        content: object
+    };
 }
 
 /**
  * Adds an object to the container.
  * 
- * @param {Collection} collection - The collection to store the object in.
+ * @template {Object} T
+ * @param {Collection<T>} collection - The collection to store the object in.
  * @param {Object} object - The object to be stored.
  * @param {string} type - The label of this object.
  * @param {number} [limit] - The number of objects this collection can hold.
- * @returns {CollectionContainer | undefined} The new object that was added.
+ * @returns {CollectionContainer<T> | undefined} The new object that was added.
  */
 function addObjectToCollection(collection, object, type, limit) {
-    if(isStackable(object)) { // Don't like that this is checked here
+    if(isStackable(object)) {
         const itemObject = findObjectInCollectionByName(collection, object.name);
-        if(itemObject) {
+        if(itemObject && isStackable(itemObject.content)) {
             itemObject.content.count += object.count;
             return itemObject;
         }
@@ -47,11 +75,7 @@ function addObjectToCollection(collection, object, type, limit) {
         return;
     }
 
-    const objectContainer = {
-        type,
-        id: utility.genId(),
-        content: object
-    };
+    const objectContainer = newObjectContainer(object, type);
     collection.push(objectContainer);
     return objectContainer;
 }
@@ -59,13 +83,14 @@ function addObjectToCollection(collection, object, type, limit) {
 /**
  * Removes an Object from the container.
  * 
- * @param {Collection} collection - The collection that the object is stored in.
+ * @template {Object} T
+ * @param {Collection<T>} collection - The collection that the object is stored in.
  * @param {string} id - The id of the object
  * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
- * @returns {CollectionContainer | undefined} - The object that was removed
+ * @returns {CollectionContainer<T> | undefined} - The object that was removed
  */
 function dropObjectFromCollection(collection, id, options={}) {
-    const objectIndex = collection.findIndex(element => element.id === id);
+    const objectIndex = findObjectIndex(collection, id);
 
     if(objectIndex === -1) {
         return;
@@ -86,11 +111,41 @@ function dropObjectFromCollection(collection, id, options={}) {
 }
 
 /**
+ * 
+ * @template {Object} T
+ * @param {Collection<T>} collection 
+ * @param {string} id 
+ * @param {Object} object 
+ * @param {string} type 
+ */
+function replaceObject(collection, id, object, type) {
+    const objectIndex = findObjectIndex(collection, id);
+
+    if(objectIndex === -1) {
+        return;
+    }
+
+    collection[objectIndex] = newObjectContainer(object, type);
+    return collection[objectIndex];
+}
+
+/**
+ * 
+ * @template {Object} T
+ * @param {Collection<T>} collection 
+ * @param {string} id 
+ */
+function findObjectIndex(collection, id) {
+    return collection.findIndex(element => element.id === id);
+}
+
+/**
  * Find an object inside the container
  * 
- * @param {Collection} collection - The collection that the object is stored in.
+ * @template {Object} T
+ * @param {Collection<T>} collection - The collection that the object is stored in.
  * @param {string} id - The id of the object
- * @returns {CollectionContainer | undefined} The found object or undefined
+ * @returns {CollectionContainer<T> | undefined} The found object or undefined
  */
 function findObjectInCollection(collection, id) {
     const object = chatRPGUtility.findInObjectArray(collection, 'id', id);
@@ -103,43 +158,71 @@ function findObjectInCollection(collection, id) {
 
 /**
  * 
- * @param {Collection} collection - The collection that the object is stored in.
+ * @template {Object} T
+ * @param {Collection<T>} collection - The collection that the object is stored in.
  * @param {string} name - The name of the object. 
- * @returns {CollectionContainer | undefined} The found object or undefined
+ * @returns {CollectionContainer<T> | undefined} The found object or undefined
  */
 function findObjectInCollectionByName(collection, name) {
-    return collection.find((object) => object.content.name === name);
+    return collection.find((object) => {
+            const content = /**@type {{name?: string}}*/(object.content);
+            return content.name === name;
+        }
+    );
 }
 
+/**
+ * @template {Object} T
+ */
 class GameCollection {
     /**
      * 
-     * @param {Collection} collection 
+     * @param {Collection<T>} collection 
+     * @param {string} [itemType='default'] 
      */
-    constructor(collection) {
+    constructor(collection, itemType = 'default') {
         this.collection = collection;
+        this.defaultItemType = itemType;
     }
 
     /**
      * Find an object inside the container
      * 
      * @param {string} id - The id of the object
-     * @returns {CollectionContainer | undefined} The found object or undefined
+     * @returns {CollectionContainer<T> | undefined} The found object or undefined
      */
     findObjectById(id) {
         return findObjectInCollection(this.collection, id);
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     */
+    findObjectByName(name) {
+        return findObjectInCollectionByName(this.collection, name);
     }
     
     /**
      * Adds an object to the container.
      * 
      * @param {Object} object - The object to be stored.
-     * @param {string} type - The label of this object.
+     * @param {string} [type] - The label of this object.
      * @param {number} [limit] - The number of objects this collection can hold.
-     * @returns {CollectionContainer | undefined} The new object that was added.
+     * @returns {CollectionContainer<T> | undefined} The new object that was added.
      */
-    addObject(object, type, limit) {
+    addObject(object, type=this.defaultItemType, limit) {
         return addObjectToCollection(this.collection, object, type, limit);
+    }
+
+    /**
+     * 
+     * @param {string} id 
+     * @param {Object} object 
+     * @param {string} type 
+     */
+    replaceObject(id, object, type=this.defaultItemType) {
+        return replaceObject(this.collection, id, object, type);
     }
 
     /**
@@ -147,10 +230,13 @@ class GameCollection {
      * 
      * @param {string} id - The id of the object
      * @param {{count?: number}} [options] - additional options {count: number - Affects stackable objects, the number to remove from the collection}
-     * @returns {CollectionContainer | undefined} - The object that was removed
+     * @returns {CollectionContainer<T> | undefined} - The object that was removed
      */
     dropObject(id, options={}) {
         return dropObjectFromCollection(this.collection, id, options);
+    }
+    get length() {
+        return this.collection.length;
     }
 }
 
@@ -162,5 +248,6 @@ module.exports = {
     dropObjectFromCollection,
     findObjectInCollection,
     findObjectInCollectionByName,
+    replaceObject,
     GameCollection
 };

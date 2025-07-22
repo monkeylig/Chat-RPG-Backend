@@ -120,6 +120,16 @@ class ChatRPG {
         return {};
     }
 
+    /**
+     * 
+     * @param {string} name 
+     * @param {string} avatar 
+     * @param {string} weaponType 
+     * @param {string} vitalityBonus 
+     * @param {string} platformId 
+     * @param {string} platform 
+     * @returns 
+     */
     async addNewPlayer(name, avatar, weaponType, vitalityBonus, platformId, platform) {
 
         const platformIdProperty = this.#getPlatformIdProperty(platform);
@@ -432,52 +442,47 @@ class ChatRPG {
         return this.#returnPlayerResponce(player, playerId);
     }
 
+    /**
+     * 
+     * @param {string} playerId 
+     * @param {string} abilityBookId 
+     * @param {number} abilityIndex 
+     * @param {string} [replacedAbilityName] 
+     * @returns {Promise<UserPlayerData>}
+     */
     async equipAbility(playerId, abilityBookId, abilityIndex, replacedAbilityName) {
+        const playerResult = await this.#dataSource.runTransaction(async (transaction) => {
+            return await this.#withPlayerTransaction((player) => {
 
-        const playerSnap = await this.#findPlayer(playerId);
-        const playerData = playerSnap.data();
-        const player = new Player(playerData);
-        const bookObject = player.findObjectInBag(abilityBookId);
+                const bookObject = player.findObjectInBag(abilityBookId);
+                if(!bookObject) {
+                    throw new Error(ChatRPGErrors.bookNotInBag);
+                }
 
-        if(!bookObject) {
-            throw new Error(ChatRPGErrors.bookNotInBag);
-        }
+                const book = new Book(bookObject.content);
+                
+                if(abilityIndex >= book.getData().abilities.length || abilityIndex < 0) {
+                    throw new Error(ChatRPGErrors.badAbilityBookIndex);
+                }
 
-        const book = new Book(bookObject.content);
+                if(!book.isAbilityRequirementsMet(abilityIndex)) {
+                    throw new Error(ChatRPGErrors.abilityRequirementNotMet);
+                }
 
-        if(abilityIndex >= book.getData().abilities.length || abilityIndex < 0) {
-            throw new Error(ChatRPGErrors.badAbilityBookIndex);
-        }
+                if(!player.hasOpenAbilitySlot()) {
+                    throw new Error(ChatRPGErrors.abilitiesFull);
+                }
 
-        if(!book.isAbilityRequirementsMet(abilityIndex)) {
-            throw new Error(ChatRPGErrors.abilityRequirementNotMet);
-        }
+                const abilityBookEntry = book.getData().abilities[abilityIndex];
 
-        const abilityBookEntry = book.getData().abilities[abilityIndex];
+                if(!player.equipAbility(abilityBookEntry.ability, replacedAbilityName)){
+                    throw new Error(ChatRPGErrors.abilityNotFound);
+                }
 
-        let replacedAbility;
-
-        if(replacedAbilityName) {
-            replacedAbility = player.findAbilityByName(replacedAbilityName);
-
-            if(!replacedAbility) {
-                throw new Error(ChatRPGErrors.abilityNotFound);
-            }
-        }
-        else if(!player.hasOpenAbilitySlot()) {
-            throw new Error(ChatRPGErrors.abilitiesFull);
-        }
-
-        await this.#dataSource.runTransaction(async (transaction) => {
-
-            if(replacedAbility) {
-                transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayRemove(replacedAbility)});
-            }
-            transaction.update(playerSnap.ref, {'abilities': FieldValue.arrayUnion(abilityBookEntry.ability)});
+                return player.getData();
+            }, transaction, playerId);
         });
-
-        player.equipAbility(abilityBookEntry.ability, replacedAbilityName);
-        return this.#returnPlayerResponce(player, playerId);
+        return {...playerResult, id: playerId};
     }
 
     async getShop(shopId) {
